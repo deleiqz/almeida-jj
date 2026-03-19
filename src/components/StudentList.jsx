@@ -5,13 +5,13 @@ import Modal from './Modal';
 const StudentList = ({ students, addStudent }) => {
   const [isModalOpen, setModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [newStudent, setNewStudent] = useState({ name: '', status: 'pago', nextDue: '', amount: 120 });
+  const [newStudent, setNewStudent] = useState({ name: '', status: 'pago', nextDue: '', amount: 120, belt: 'Branca' });
 
   const handleSubmit = (e) => {
     e.preventDefault();
     addStudent({ ...newStudent, lastPayment: new Date().toISOString().split('T')[0] });
     setModalOpen(false);
-    setNewStudent({ name: '', status: 'pago', nextDue: '', amount: 120 });
+    setNewStudent({ name: '', status: 'pago', nextDue: '', amount: 120, belt: 'Branca' });
   };
 
   const filteredStudents = students.filter(s => 
@@ -106,6 +106,26 @@ const StudentList = ({ students, addStudent }) => {
               </select>
             </div>
             <div>
+              <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Faixa</label>
+              <select 
+                value={newStudent.belt}
+                onChange={(e) => setNewStudent({...newStudent, belt: e.target.value})}
+                style={{ width: '100%', padding: '12px', borderRadius: '8px', background: 'rgba(0,0,0,0.5)', border: '1px solid var(--card-border)', color: 'white' }}
+              >
+                <option value="Branca">Branca</option>
+                <option value="Cinza">Cinza</option>
+                <option value="Amarela">Amarela</option>
+                <option value="Laranja">Laranja</option>
+                <option value="Verde">Verde</option>
+                <option value="Azul">Azul</option>
+                <option value="Roxa">Roxa</option>
+                <option value="Marrom">Marrom</option>
+                <option value="Preta">Preta</option>
+              </select>
+            </div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div>
               <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Valor (R$)</label>
               <input 
                 type="number" 
@@ -114,16 +134,16 @@ const StudentList = ({ students, addStudent }) => {
                 style={{ width: '100%', padding: '12px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--card-border)', color: 'white' }}
               />
             </div>
-          </div>
-          <div>
-            <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Próximo Vencimento</label>
-            <input 
-              required
-              type="date" 
-              value={newStudent.nextDue}
-              onChange={(e) => setNewStudent({...newStudent, nextDue: e.target.value})}
-              style={{ width: '100%', padding: '12px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--card-border)', color: 'white' }}
-            />
+            <div>
+              <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Próximo Vencimento</label>
+              <input 
+                required
+                type="date" 
+                value={newStudent.nextDue}
+                onChange={(e) => setNewStudent({...newStudent, nextDue: e.target.value})}
+                style={{ width: '100%', padding: '12px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--card-border)', color: 'white' }}
+              />
+            </div>
           </div>
           <button type="submit" className="btn-primary" style={{ marginTop: '10px' }}>Confirmar Cadastro</button>
         </form>

@@ -4,12 +4,16 @@ import { supabase } from '../lib/supabase';
 export const useStore = () => {
   const [students, setStudents] = useState([]);
   const [expenses, setExpenses] = useState([]);
+  const [classes, setClasses] = useState([]);
+  const [attendance, setAttendance] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const fetchDisplayData = async () => {
     setLoading(true);
     const { data: stds } = await supabase.from('students').select('*').order('name');
     const { data: exps } = await supabase.from('expenses').select('*').order('due_date');
+    const { data: cls } = await supabase.from('classes').select('*').order('time');
+    const { data: attn } = await supabase.from('attendance').select('*').order('date', { ascending: false });
     
     if (stds) setStudents(stds.map(s => ({
       ...s,
@@ -21,6 +25,9 @@ export const useStore = () => {
       ...e,
       dueDate: e.due_date
     })));
+
+    if (cls) setClasses(cls);
+    if (attn) setAttendance(attn);
     
     setLoading(false);
   };
@@ -36,8 +43,29 @@ export const useStore = () => {
         status: student.status, 
         next_due: student.nextDue, 
         amount: student.amount,
+        belt: student.belt || 'Branca',
         last_payment: new Date().toISOString().split('T')[0]
       }
+    ]);
+    if (error) console.error(error);
+    fetchDisplayData();
+  };
+
+  const updateStudentBelt = async (id, belt) => {
+    const { error } = await supabase.from('students').update({ belt }).eq('id', id);
+    if (error) console.error(error);
+    fetchDisplayData();
+  };
+
+  const addClass = async (newClass) => {
+    const { error } = await supabase.from('classes').insert([newClass]);
+    if (error) console.error(error);
+    fetchDisplayData();
+  };
+
+  const markAttendance = async (studentId, classId) => {
+    const { error } = await supabase.from('attendance').insert([
+      { student_id: studentId, class_id: classId, date: new Date().toISOString().split('T')[0] }
     ]);
     if (error) console.error(error);
     fetchDisplayData();
@@ -73,5 +101,9 @@ export const useStore = () => {
     };
   };
 
-  return { students, expenses, addStudent, addExpense, getStats, loading };
+  return { 
+    students, expenses, classes, attendance, 
+    addStudent, updateStudentBelt, addClass, markAttendance, addExpense, 
+    getStats, loading 
+  };
 };

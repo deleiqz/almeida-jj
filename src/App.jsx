@@ -1,11 +1,14 @@
 import { useState } from 'react';
-import { LayoutDashboard, Users, CreditCard, Settings, Dumbbell } from 'lucide-react';
+import { LayoutDashboard, Users, CreditCard, Settings, Dumbbell, CheckCircle } from 'lucide-react';
 import logo from './assets/logo.jpg';
 import jjBg from './assets/jj-bg.png';
 import Dashboard from './components/Dashboard';
 import StudentList from './components/StudentList';
 import ExpenseList from './components/ExpenseList';
 import Maintenance from './components/Maintenance';
+import BeltControl from './components/BeltControl';
+import Attendance from './components/Attendance';
+import ClassList from './components/ClassList';
 import { useStore } from './hooks/useStore';
 import Login from './components/Login';
 import { supabase } from './lib/supabase';
@@ -16,7 +19,11 @@ const App = () => {
   const [user, setUser] = useState(null);
   const [role, setRole] = useState(null);
   const [userName, setUserName] = useState('');
-  const { students, expenses, addStudent, addExpense, getStats, loading } = useStore();
+  const { 
+    students, expenses, classes, attendance, 
+    addStudent, updateStudentBelt, addClass, markAttendance, addExpense, 
+    getStats, loading 
+  } = useStore();
 
   const handleLogin = (user, role, name) => {
     setUser(user);
@@ -33,6 +40,9 @@ const App = () => {
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
     { id: 'students', label: 'Alunos', icon: <Users size={20} /> },
+    { id: 'belts', label: 'Faixas', icon: <Dumbbell size={20} /> },
+    { id: 'attendance', label: 'Chamada', icon: <CheckCircle size={20} /> },
+    { id: 'classes', label: 'Turmas', icon: <LayoutDashboard size={20} /> },
     { id: 'expenses', label: 'Financeiro', icon: <CreditCard size={20} />, restricted: true },
     { id: 'maintenance', label: 'Manutenção', icon: <Settings size={20} />, restricted: true },
   ];
@@ -50,6 +60,9 @@ const App = () => {
     switch (activeTab) {
       case 'dashboard': return <Dashboard stats={getStats()} role={normalizedRole} />;
       case 'students': return <StudentList students={students} addStudent={addStudent} />;
+      case 'belts': return <BeltControl students={students} updateStudentBelt={updateStudentBelt} />;
+      case 'attendance': return <Attendance students={students} classes={classes} attendance={attendance} markAttendance={markAttendance} />;
+      case 'classes': return <ClassList classes={classes} addClass={addClass} />;
       case 'expenses': return ['admin', 'master'].includes(normalizedRole) ? <ExpenseList expenses={expenses} addExpense={addExpense} /> : <Dashboard stats={getStats()} role={normalizedRole} />;
       case 'maintenance': return ['admin', 'master'].includes(normalizedRole) ? <Maintenance /> : <Dashboard stats={getStats()} role={normalizedRole} />;
       default: return <Dashboard stats={getStats()} role={normalizedRole} />;
@@ -64,9 +77,11 @@ const App = () => {
     <div className="app-container" style={{ 
       display: 'flex', 
       minHeight: '100vh',
-      backgroundImage: `linear-gradient(rgba(10, 10, 10, 0.95), rgba(10, 10, 10, 0.95)), url(${jjBg})`,
-      backgroundSize: 'cover',
+      backgroundColor: '#0a0a0a',
+      backgroundImage: `linear-gradient(rgba(10, 10, 10, 0.85), rgba(10, 10, 10, 0.85)), url(${jjBg})`,
+      backgroundSize: '800px',
       backgroundPosition: 'center',
+      backgroundRepeat: 'no-repeat',
       backgroundAttachment: 'fixed'
     }}>
       {/* Sidebar */}
