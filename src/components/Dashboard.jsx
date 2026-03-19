@@ -27,14 +27,14 @@ const Dashboard = ({ stats, role }) => {
         <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
           <div style={{ flex: 1, height: '12px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px', overflow: 'hidden' }}>
             <div style={{ 
-              width: `${(stats.paidStudents / stats.totalStudents) * 100}%`, 
+              width: `${stats.totalStudents > 0 ? (stats.paidStudents / stats.totalStudents) * 100 : 0}%`, 
               height: '100%', 
               background: 'var(--accent-secondary)',
               boxShadow: '0 0 15px rgba(16, 185, 129, 0.4)'
             }}></div>
           </div>
           <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-            {Math.round((stats.paidStudents / stats.totalStudents) * 100)}% dos alunos em dia
+            {stats.totalStudents > 0 ? Math.round((stats.paidStudents / stats.totalStudents) * 100) : 0}% dos alunos em dia
           </span>
         </div>
       </div>
