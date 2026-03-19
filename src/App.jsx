@@ -14,11 +14,13 @@ const App = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [user, setUser] = useState(null);
   const [role, setRole] = useState(null);
+  const [userName, setUserName] = useState('');
   const { students, expenses, addStudent, addExpense, getStats, loading } = useStore();
 
-  const handleLogin = (user, role) => {
+  const handleLogin = (user, role, name) => {
     setUser(user);
     setRole(role);
+    setUserName(name || '');
   };
 
   const handleLogout = async () => {
@@ -101,9 +103,9 @@ const App = () => {
         <div style={{ marginTop: 'auto', padding: '15px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px' }}>
           <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '5px' }}>Logado como:</div>
           <div style={{ fontWeight: '600', fontSize: '0.9rem', marginBottom: '15px' }}>
-            {user.email} <br/>
+            {userName || user.email} <br/>
             <span style={{ color: 'var(--accent-primary)', fontSize: '0.8rem' }}>
-              [{role === 'master' ? 'Desenvolvedor Master' : role === 'admin' ? 'Dono Master' : 'Funcionário'}]
+              [{normalizedRole === 'master' ? 'Desenvolvedor Master' : normalizedRole === 'admin' ? 'Dono Master' : 'Funcionário'}]
             </span>
           </div>
           <button 
