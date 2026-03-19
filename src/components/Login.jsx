@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { LogIn, Lock, Mail, UserPlus, ArrowLeft, CheckCircle, HelpCircle } from 'lucide-react';
+import { LogIn, Lock, Mail, UserPlus, ArrowLeft, CheckCircle, HelpCircle, Eye, EyeOff } from 'lucide-react';
 import logo from '../assets/logo.jpg';
 
 const Login = ({ onLogin }) => {
@@ -8,6 +8,7 @@ const Login = ({ onLogin }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
@@ -170,13 +171,13 @@ const Login = ({ onLogin }) => {
               <div style={{ position: 'relative' }}>
                 <Lock style={{ position: 'absolute', left: '12px', top: '12px', color: 'var(--text-secondary)' }} size={18} />
                 <input 
-                  type="password" 
+                  type={showPassword ? "text" : "password"} 
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   style={{
                     width: '100%',
-                    padding: '12px 12px 12px 40px',
+                    padding: '12px 40px 12px 40px',
                     background: 'rgba(255,255,255,0.05)',
                     border: '1px solid var(--card-border)',
                     borderRadius: '10px',
@@ -185,6 +186,21 @@ const Login = ({ onLogin }) => {
                   }}
                   required
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{
+                    position: 'absolute',
+                    right: '12px',
+                    top: '12px',
+                    background: 'transparent',
+                    border: 'none',
+                    color: 'var(--text-secondary)',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
               </div>
             </div>
           )}
