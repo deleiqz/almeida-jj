@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
 import { LayoutDashboard, Users, CreditCard, Settings, Dumbbell } from 'lucide-react';
 import logo from './assets/logo.jpg';
+import jjBg from './assets/jj-bg.png';
 import Dashboard from './components/Dashboard';
 import StudentList from './components/StudentList';
 import ExpenseList from './components/ExpenseList';
@@ -60,7 +60,14 @@ const App = () => {
   }
 
   return (
-    <div className="app-container" style={{ display: 'flex', minHeight: '100vh' }}>
+    <div className="app-container" style={{ 
+      display: 'flex', 
+      minHeight: '100vh',
+      backgroundImage: `linear-gradient(rgba(10, 10, 10, 0.95), rgba(10, 10, 10, 0.95)), url(${jjBg})`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundAttachment: 'fixed'
+    }}>
       {/* Sidebar */}
       <nav className="glass" style={{ 
         width: '260px', 

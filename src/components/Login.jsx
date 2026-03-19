@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
-import { supabase } from '../lib/supabase';
 import { LogIn, Lock, Mail, UserPlus, ArrowLeft, CheckCircle, HelpCircle, Eye, EyeOff } from 'lucide-react';
 import logo from '../assets/logo.jpg';
+import jjBg from '../assets/jj-bg.png';
 
 const Login = ({ onLogin }) => {
   const [view, setView] = useState('login'); // 'login', 'register', 'forgot'
@@ -94,7 +93,9 @@ const Login = ({ onLogin }) => {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      background: 'var(--bg-color)',
+      backgroundImage: `linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url(${jjBg})`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
       padding: '20px'
     }}>
       <div className="glass-card" style={{
