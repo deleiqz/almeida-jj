@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { LogIn, Lock, Mail, UserPlus, ArrowLeft, CheckCircle } from 'lucide-react';
+import logo from '../assets/logo.jpg';
 
 const Login = ({ onLogin }) => {
   const [isRegistering, setIsRegistering] = useState(false);
@@ -88,18 +89,11 @@ const Login = ({ onLogin }) => {
         padding: '40px',
         textAlign: 'center'
       }}>
-        <div style={{ 
-          background: 'var(--accent-primary)', 
-          width: '60px', 
-          height: '60px', 
-          borderRadius: '15px', 
-          margin: '0 auto 20px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}>
-          {isRegistering ? <UserPlus color="black" size={30} /> : <Lock color="black" size={30} />}
-        </div>
+        <img 
+          src={logo} 
+          alt="Almeida JJ Logo" 
+          style={{ width: '80px', height: '80px', borderRadius: '15px', marginBottom: '20px', objectFit: 'cover', border: '2px solid var(--accent-primary)' }} 
+        />
         
         <h1 style={{ fontSize: '1.8rem', marginBottom: '10px', textTransform: 'uppercase', fontWeight: 800 }}>
           Almeida<span style={{ color: 'var(--accent-primary)' }}>JJ</span>

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { LayoutDashboard, Users, CreditCard, Settings, Dumbbell } from 'lucide-react';
+import logo from './assets/logo.jpg';
 import Dashboard from './components/Dashboard';
 import StudentList from './components/StudentList';
 import ExpenseList from './components/ExpenseList';
@@ -69,9 +70,7 @@ const App = () => {
         position: 'fixed'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '40px', padding: '0 10px' }}>
-          <div style={{ background: 'var(--accent-primary)', padding: '8px', borderRadius: '10px', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Dumbbell color="black" size={24} />
-          </div>
+          <img src={logo} alt="Logo" style={{ width: '45px', height: '45px', borderRadius: '8px', objectFit: 'cover' }} />
           <h1 style={{ fontSize: '1.4rem', fontWeight: '800', letterSpacing: '-0.5px', textTransform: 'uppercase' }}>Almeida<span style={{ color: 'var(--accent-primary)' }}>JJ</span></h1>
         </div>
 
