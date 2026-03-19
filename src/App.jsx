@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { LayoutDashboard, Users, CreditCard, Settings, Dumbbell } from 'lucide-react';
 import logo from './assets/logo.jpg';
 import jjBg from './assets/jj-bg.png';

@@ -1,3 +1,5 @@
+import React, { useState } from 'react';
+import { supabase } from '../lib/supabase';
 import { LogIn, Lock, Mail, UserPlus, ArrowLeft, CheckCircle, HelpCircle, Eye, EyeOff } from 'lucide-react';
 import logo from '../assets/logo.jpg';
 import jjBg from '../assets/jj-bg.png';
