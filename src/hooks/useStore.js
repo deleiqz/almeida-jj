@@ -18,7 +18,8 @@ export const useStore = () => {
     if (stds) setStudents(stds.map(s => ({
       ...s,
       nextDue: s.next_due,
-      lastPayment: s.last_payment
+      lastPayment: s.last_payment,
+      amount: s.payment_value // Map payment_value to amount for the UI
     })));
     
     if (exps) setExpenses(exps.map(e => ({
@@ -42,7 +43,8 @@ export const useStore = () => {
         name: student.name, 
         status: student.status, 
         next_due: student.nextDue, 
-        amount: student.amount,
+        payment_value: student.amount, // Map amount back to payment_value
+        phone: student.phone,
         belt: student.belt || 'Branca',
         last_payment: new Date().toISOString().split('T')[0]
       }

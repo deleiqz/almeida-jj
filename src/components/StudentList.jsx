@@ -5,13 +5,13 @@ import Modal from './Modal';
 const StudentList = ({ students, addStudent }) => {
   const [isModalOpen, setModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [newStudent, setNewStudent] = useState({ name: '', status: 'pago', nextDue: '', amount: 120, belt: 'Branca' });
+  const [newStudent, setNewStudent] = useState({ name: '', status: 'pago', nextDue: '', amount: 150, belt: 'Branca', phone: '' });
 
   const handleSubmit = (e) => {
     e.preventDefault();
     addStudent({ ...newStudent, lastPayment: new Date().toISOString().split('T')[0] });
     setModalOpen(false);
-    setNewStudent({ name: '', status: 'pago', nextDue: '', amount: 120, belt: 'Branca' });
+    setNewStudent({ name: '', status: 'pago', nextDue: '', amount: 150, belt: 'Branca', phone: '' });
   };
 
   const filteredStudents = students.filter(s => 
@@ -56,8 +56,8 @@ const StudentList = ({ students, addStudent }) => {
             <thead>
               <tr>
                 <th>Nome</th>
+                <th>Telefone</th>
                 <th>Status</th>
-                <th>Último Pagto</th>
                 <th>Próximo Venc.</th>
                 <th>Valor</th>
               </tr>
@@ -66,12 +66,12 @@ const StudentList = ({ students, addStudent }) => {
               {filteredStudents.map(student => (
                 <tr key={student.id}>
                   <td>{student.name}</td>
+                  <td style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{student.phone || '-'}</td>
                   <td>
                     <span className={`badge badge-${student.status === 'pago' ? 'paid' : student.status === 'pendente' ? 'pending' : 'overdue'}`}>
                       {student.status.charAt(0).toUpperCase() + student.status.slice(1)}
                     </span>
                   </td>
-                  <td>{student.lastPayment}</td>
                   <td>{student.nextDue}</td>
                   <td>R$ {student.amount}</td>
                 </tr>
@@ -90,6 +90,16 @@ const StudentList = ({ students, addStudent }) => {
               type="text" 
               value={newStudent.name}
               onChange={(e) => setNewStudent({...newStudent, name: e.target.value})}
+              style={{ width: '100%', padding: '12px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--card-border)', color: 'white' }}
+            />
+          </div>
+          <div className="form-group">
+            <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Telefone / WhatsApp</label>
+            <input 
+              type="text" 
+              placeholder="(11) 99999-9999"
+              value={newStudent.phone}
+              onChange={(e) => setNewStudent({...newStudent, phone: e.target.value})}
               style={{ width: '100%', padding: '12px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--card-border)', color: 'white' }}
             />
           </div>
