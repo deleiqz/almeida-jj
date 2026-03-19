@@ -5,17 +5,36 @@ import StudentList from './components/StudentList';
 import ExpenseList from './components/ExpenseList';
 import Maintenance from './components/Maintenance';
 import { useStore } from './hooks/useStore';
+import Login from './components/Login';
+import { supabase } from './lib/supabase';
+import { LogOut } from 'lucide-react';
 
 const App = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [user, setUser] = useState(null);
+  const [role, setRole] = useState(null);
   const { students, expenses, addStudent, addExpense, getStats, loading } = useStore();
+
+  const handleLogin = (user, role) => {
+    setUser(user);
+    setRole(role);
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+    setRole(null);
+  };
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
     { id: 'students', label: 'Alunos', icon: <Users size={20} /> },
-    { id: 'expenses', label: 'Financeiro', icon: <CreditCard size={20} /> },
-    { id: 'maintenance', label: 'Manutenção', icon: <Settings size={20} /> },
+    { id: 'expenses', label: 'Financeiro', icon: <CreditCard size={20} />, restricted: true },
+    { id: 'maintenance', label: 'Manutenção', icon: <Settings size={20} />, restricted: true },
   ];
+
+  const normalizedRole = role?.toLowerCase();
+  const filteredNavItems = navItems.filter(item => !item.restricted || ['admin', 'master'].includes(normalizedRole));
 
   const renderContent = () => {
     if (loading) return (
@@ -25,13 +44,17 @@ const App = () => {
     );
 
     switch (activeTab) {
-      case 'dashboard': return <Dashboard stats={getStats()} />;
+      case 'dashboard': return <Dashboard stats={getStats()} role={normalizedRole} />;
       case 'students': return <StudentList students={students} addStudent={addStudent} />;
-      case 'expenses': return <ExpenseList expenses={expenses} addExpense={addExpense} />;
-      case 'maintenance': return <Maintenance />;
-      default: return <Dashboard stats={getStats()} />;
+      case 'expenses': return ['admin', 'master'].includes(normalizedRole) ? <ExpenseList expenses={expenses} addExpense={addExpense} /> : <Dashboard stats={getStats()} role={normalizedRole} />;
+      case 'maintenance': return ['admin', 'master'].includes(normalizedRole) ? <Maintenance /> : <Dashboard stats={getStats()} role={normalizedRole} />;
+      default: return <Dashboard stats={getStats()} role={normalizedRole} />;
     }
   };
+
+  if (!user) {
+    return <Login onLogin={handleLogin} />;
+  }
 
   return (
     <div className="app-container" style={{ display: 'flex', minHeight: '100vh' }}>
@@ -53,7 +76,7 @@ const App = () => {
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
-          {navItems.map((item) => (
+          {filteredNavItems.map((item) => (
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id)}
@@ -63,7 +86,7 @@ const App = () => {
                 gap: '12px',
                 padding: '12px 16px',
                 borderRadius: '12px',
-                background: activeTab === item.id ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
+                background: activeTab === item.id ? 'rgba(255, 215, 0, 0.1)' : 'transparent',
                 color: activeTab === item.id ? 'var(--accent-primary)' : 'var(--text-secondary)',
                 textAlign: 'left',
                 width: '100%',
@@ -76,9 +99,33 @@ const App = () => {
           ))}
         </div>
 
-        <div style={{ marginTop: 'auto', padding: '20px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px' }}>
-          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Logado como:</div>
-          <div style={{ fontWeight: '600' }}>Admin Academia</div>
+        <div style={{ marginTop: 'auto', padding: '15px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px' }}>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '5px' }}>Logado como:</div>
+          <div style={{ fontWeight: '600', fontSize: '0.9rem', marginBottom: '15px' }}>
+            {user.email} <br/>
+            <span style={{ color: 'var(--accent-primary)', fontSize: '0.8rem' }}>
+              [{role === 'master' ? 'Desenvolvedor Master' : role === 'admin' ? 'Dono Master' : 'Funcionário'}]
+            </span>
+          </div>
+          <button 
+            onClick={handleLogout}
+            style={{ 
+              width: '100%', 
+              padding: '8px', 
+              background: 'rgba(239, 68, 68, 0.1)', 
+              color: '#ef4444', 
+              border: 'none', 
+              borderRadius: '8px',
+              fontSize: '0.85rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              cursor: 'pointer'
+            }}
+          >
+            <LogOut size={16} /> Sair
+          </button>
         </div>
       </nav>
 

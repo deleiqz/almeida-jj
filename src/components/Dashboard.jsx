@@ -1,11 +1,11 @@
 import React from 'react';
 import { Users, DollarSign, TrendingUp, AlertCircle } from 'lucide-react';
 
-const Dashboard = ({ stats }) => {
+const Dashboard = ({ stats, role }) => {
   const cardData = [
     { title: "Total Alunos", value: stats.totalStudents, icon: <Users size={24} />, color: "var(--accent-primary)" },
-    { title: "Receita Mensal", value: `R$ ${stats.totalRevenue.toLocaleString()}`, icon: <TrendingUp size={24} />, color: "var(--accent-secondary)" },
-    { title: "Despesas", value: `R$ ${stats.totalExpenses.toLocaleString()}`, icon: <DollarSign size={24} />, color: "var(--danger)" },
+    { title: "Receita Mensal", value: ['admin', 'master'].includes(role) ? `R$ ${stats.totalRevenue.toLocaleString()}` : '***', icon: <TrendingUp size={24} />, color: "var(--accent-secondary)" },
+    { title: "Despesas", value: ['admin', 'master'].includes(role) ? `R$ ${stats.totalExpenses.toLocaleString()}` : '***', icon: <DollarSign size={24} />, color: "var(--danger)" },
     { title: "Pendentes/Atenção", value: stats.pendingStudents, icon: <AlertCircle size={24} />, color: "var(--warning)" },
   ];
 
