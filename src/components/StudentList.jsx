@@ -1,17 +1,58 @@
 import React, { useState } from 'react';
-import { Search, UserPlus } from 'lucide-react';
+import { Search, Plus, Edit2 } from 'lucide-react';
 import Modal from './Modal';
 
-const StudentList = ({ students, addStudent }) => {
+const StudentList = ({ students, classes, enrollments, addStudent, updateStudent }) => {
   const [isModalOpen, setModalOpen] = useState(false);
+  const [isEditMode, setEditMode] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [newStudent, setNewStudent] = useState({ name: '', status: 'pago', nextDue: '', amount: 150, belt: 'Branca', phone: '' });
+  const [newStudent, setNewStudent] = useState({ 
+    name: '', status: 'pago', nextDue: '', amount: 150, belt: 'Branca', phone: '', plan: 'Mensal', classId: '' 
+  });
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    addStudent({ ...newStudent, lastPayment: new Date().toISOString().split('T')[0] });
+    if (isEditMode) {
+      updateStudent(editingId, newStudent);
+    } else {
+      addStudent({ ...newStudent, lastPayment: new Date().toISOString().split('T')[0] });
+    }
+    closeModal();
+  };
+
+  const openAddModal = () => {
+    setEditMode(false);
+    setNewStudent({ name: '', status: 'pago', nextDue: '', amount: 150, belt: 'Branca', phone: '', plan: 'Mensal', classId: '' });
+    setModalOpen(true);
+  };
+
+  const openEditModal = (student) => {
+    const studentEnrollment = enrollments.find(e => e.student_id === student.id);
+    setEditMode(true);
+    setEditingId(student.id);
+    setNewStudent({ 
+      name: student.name, 
+      status: student.status, 
+      nextDue: student.nextDue, 
+      amount: student.amount, 
+      belt: student.belt, 
+      phone: student.phone || '', 
+      plan: student.plan || 'Mensal',
+      classId: studentEnrollment?.class_id || ''
+    });
+    setModalOpen(true);
+  };
+
+  const closeModal = () => {
     setModalOpen(false);
-    setNewStudent({ name: '', status: 'pago', nextDue: '', amount: 150, belt: 'Branca', phone: '' });
+    setEditingId(null);
+  };
+
+  const getStudentClass = (studentId) => {
+    const enrollment = enrollments.find(e => e.student_id === studentId);
+    if (!enrollment) return '-';
+    return classes.find(c => c.id === enrollment.class_id)?.name || '-';
   };
 
   const filteredStudents = students.filter(s => 
@@ -22,12 +63,8 @@ const StudentList = ({ students, addStudent }) => {
     <div className="student-list">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
         <h2 className="title-gradient">Gestão de Alunos</h2>
-        <button 
-          className="btn-primary" 
-          onClick={() => setModalOpen(true)}
-          style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
-        >
-          <UserPlus size={18} /> Novo Aluno
+        <button className="btn-primary" onClick={openAddModal} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Plus size={18} /> Novo Aluno
         </button>
       </div>
 
@@ -57,9 +94,11 @@ const StudentList = ({ students, addStudent }) => {
               <tr>
                 <th>Nome</th>
                 <th>Telefone</th>
+                <th>Turma</th>
+                <th>Plano</th>
                 <th>Status</th>
-                <th>Próximo Venc.</th>
-                <th>Valor</th>
+                <th>Vencimento</th>
+                <th>Ações</th>
               </tr>
             </thead>
             <tbody>
@@ -67,13 +106,26 @@ const StudentList = ({ students, addStudent }) => {
                 <tr key={student.id}>
                   <td>{student.name}</td>
                   <td style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{student.phone || '-'}</td>
+                  <td style={{ fontSize: '0.85rem' }}>{getStudentClass(student.id)}</td>
+                  <td>
+                    <span style={{ fontSize: '0.75rem', padding: '2px 6px', borderRadius: '4px', background: 'rgba(255,255,255,0.1)', color: 'var(--accent-primary)' }}>
+                      {student.plan}
+                    </span>
+                  </td>
                   <td>
                     <span className={`badge badge-${student.status === 'pago' ? 'paid' : student.status === 'pendente' ? 'pending' : 'overdue'}`}>
                       {student.status.charAt(0).toUpperCase() + student.status.slice(1)}
                     </span>
                   </td>
                   <td>{student.nextDue}</td>
-                  <td>R$ {student.amount}</td>
+                  <td>
+                    <button 
+                      onClick={() => openEditModal(student)}
+                      style={{ background: 'transparent', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer', padding: '5px' }}
+                    >
+                      <Edit2 size={16} />
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -81,7 +133,7 @@ const StudentList = ({ students, addStudent }) => {
         </div>
       </div>
 
-      <Modal title="Cadastrar Novo Aluno" isOpen={isModalOpen} onClose={() => setModalOpen(false)}>
+      <Modal title={isEditMode ? "Editar Aluno" : "Cadastrar Novo Aluno"} isOpen={isModalOpen} onClose={closeModal}>
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div className="form-group">
             <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Nome Completo</label>
@@ -93,26 +145,43 @@ const StudentList = ({ students, addStudent }) => {
               style={{ width: '100%', padding: '12px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--card-border)', color: 'white' }}
             />
           </div>
-          <div className="form-group">
-            <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Telefone / WhatsApp</label>
-            <input 
-              type="text" 
-              placeholder="(11) 99999-9999"
-              value={newStudent.phone}
-              onChange={(e) => setNewStudent({...newStudent, phone: e.target.value})}
-              style={{ width: '100%', padding: '12px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--card-border)', color: 'white' }}
-            />
-          </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
             <div>
-              <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Status</label>
+              <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Telefone</label>
+              <input 
+                type="text" 
+                placeholder="(11) 99999-9999"
+                value={newStudent.phone}
+                onChange={(e) => setNewStudent({...newStudent, phone: e.target.value})}
+                style={{ width: '100%', padding: '12px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--card-border)', color: 'white' }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Turma</label>
               <select 
-                value={newStudent.status}
-                onChange={(e) => setNewStudent({...newStudent, status: e.target.value})}
+                value={newStudent.classId}
+                onChange={(e) => setNewStudent({...newStudent, classId: e.target.value})}
                 style={{ width: '100%', padding: '12px', borderRadius: '8px', background: 'rgba(0,0,0,0.5)', border: '1px solid var(--card-border)', color: 'white' }}
               >
-                <option value="pago">Pago</option>
-                <option value="pendente">Pendente</option>
+                <option value="">Selecione a Turma</option>
+                {classes.map(c => (
+                  <option key={c.id} value={c.id}>{c.name} ({c.time})</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Plano</label>
+              <select 
+                value={newStudent.plan}
+                onChange={(e) => setNewStudent({...newStudent, plan: e.target.value})}
+                style={{ width: '100%', padding: '12px', borderRadius: '8px', background: 'rgba(0,0,0,0.5)', border: '1px solid var(--card-border)', color: 'white' }}
+              >
+                <option value="Mensal">Mensal</option>
+                <option value="Semestral">Semestral</option>
+                <option value="Anual">Anual</option>
               </select>
             </div>
             <div>
@@ -134,6 +203,7 @@ const StudentList = ({ students, addStudent }) => {
               </select>
             </div>
           </div>
+
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
             <div>
               <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Valor (R$)</label>
@@ -145,17 +215,33 @@ const StudentList = ({ students, addStudent }) => {
               />
             </div>
             <div>
-              <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Próximo Vencimento</label>
-              <input 
-                required
-                type="date" 
-                value={newStudent.nextDue}
-                onChange={(e) => setNewStudent({...newStudent, nextDue: e.target.value})}
-                style={{ width: '100%', padding: '12px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--card-border)', color: 'white' }}
-              />
+              <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Status</label>
+              <select 
+                value={newStudent.status}
+                onChange={(e) => setNewStudent({...newStudent, status: e.target.value})}
+                style={{ width: '100%', padding: '12px', borderRadius: '8px', background: 'rgba(0,0,0,0.5)', border: '1px solid var(--card-border)', color: 'white' }}
+              >
+                <option value="pago">Pago</option>
+                <option value="pendente">Pendente</option>
+                <option value="vencido">Vencido</option>
+              </select>
             </div>
           </div>
-          <button type="submit" className="btn-primary" style={{ marginTop: '10px' }}>Confirmar Cadastro</button>
+
+          <div>
+            <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Próximo Vencimento</label>
+            <input 
+              required
+              type="date" 
+              value={newStudent.nextDue}
+              onChange={(e) => setNewStudent({...newStudent, nextDue: e.target.value})}
+              style={{ width: '100%', padding: '12px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--card-border)', color: 'white' }}
+            />
+          </div>
+
+          <button type="submit" className="btn-primary" style={{ marginTop: '10px' }}>
+            {isEditMode ? "Salvar Alterações" : "Confirmar Cadastro"}
+          </button>
         </form>
       </Modal>
     </div>

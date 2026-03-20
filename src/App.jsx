@@ -20,8 +20,8 @@ const App = () => {
   const [role, setRole] = useState(null);
   const [userName, setUserName] = useState('');
   const { 
-    students, expenses, classes, attendance, 
-    addStudent, updateStudentBelt, addClass, markAttendance, addExpense, 
+    students, expenses, classes, attendance, enrollments,
+    addStudent, updateStudent, enrollStudent, updateStudentBelt, addClass, markAttendance, addExpense, 
     getStats, loading 
   } = useStore();
 
@@ -59,10 +59,10 @@ const App = () => {
 
     switch (activeTab) {
       case 'dashboard': return <Dashboard stats={getStats()} role={normalizedRole} />;
-      case 'students': return <StudentList students={students} addStudent={addStudent} />;
+      case 'students': return <StudentList students={students} classes={classes} enrollments={enrollments} addStudent={addStudent} updateStudent={updateStudent} />;
       case 'belts': return <BeltControl students={students} updateStudentBelt={updateStudentBelt} />;
-      case 'attendance': return <Attendance students={students} classes={classes} attendance={attendance} markAttendance={markAttendance} />;
-      case 'classes': return <ClassList classes={classes} addClass={addClass} />;
+      case 'attendance': return <Attendance students={students} classes={classes} attendance={attendance} enrollments={enrollments} markAttendance={markAttendance} />;
+      case 'classes': return <ClassList classes={classes} enrollments={enrollments} addClass={addClass} />;
       case 'expenses': return ['admin', 'master'].includes(normalizedRole) ? <ExpenseList expenses={expenses} addExpense={addExpense} /> : <Dashboard stats={getStats()} role={normalizedRole} />;
       case 'maintenance': return ['admin', 'master'].includes(normalizedRole) ? <Maintenance /> : <Dashboard stats={getStats()} role={normalizedRole} />;
       default: return <Dashboard stats={getStats()} role={normalizedRole} />;

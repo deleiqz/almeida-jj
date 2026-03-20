@@ -1,96 +1,118 @@
 import React, { useState } from 'react';
-import { Calendar, CheckCircle, Users } from 'lucide-react';
+import { Check, Calendar } from 'lucide-react';
 
-const Attendance = ({ students, classes, attendance, markAttendance }) => {
+const Attendance = ({ students, classes, attendance, enrollments, markAttendance }) => {
   const [selectedClassId, setSelectedClassId] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
 
+  const enrolledStudentIds = enrollments
+    .filter(e => e.class_id === selectedClassId)
+    .map(e => e.student_id);
+
+  const studentsInClass = students.filter(s => enrolledStudentIds.includes(s.id));
+
+  const isPresent = (studentId) => {
+    return attendance.some(a => a.student_id === studentId && a.class_id === selectedClassId && a.date === date);
+  };
+
   const handleMark = (studentId) => {
-    if (selectedClassId) {
+    if (!isPresent(studentId)) {
       markAttendance(studentId, selectedClassId);
     }
   };
 
-  const isPresent = (studentId) => {
-    return attendance.some(a => a.student_id === studentId && a.class_id === Number(selectedClassId) && a.date === date);
-  };
-
   return (
-    <div className="attendance-content">
-      <h2 className="title-gradient" style={{ marginBottom: '24px' }}>Chamada de Alunos</h2>
+    <div className="attendance">
+      <h2 className="title-gradient" style={{ marginBottom: '24px' }}>Chamada Diária</h2>
 
-      <div className="dashboard-grid" style={{ gridTemplateColumns: '1fr 2fr', gap: '24px' }}>
-        <div className="glass" style={{ padding: '24px' }}>
-          <h3 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <Calendar size={20} color="var(--accent-primary)" /> Configuração
-          </h3>
-          <div className="form-group" style={{ marginBottom: '16px' }}>
-            <label>Selecione a Turma</label>
+      <div className="glass" style={{ padding: '24px', marginBottom: '24px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+          <div>
+            <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Selecionar Turma</label>
             <select 
               value={selectedClassId}
               onChange={(e) => setSelectedClassId(e.target.value)}
-              style={{ width: '100%', padding: '12px', borderRadius: '8px', background: 'rgba(0,0,0,0.5)', border: '1px solid var(--card-border)', color: 'white', marginTop: '8px' }}
+              style={{ width: '100%', padding: '12px', borderRadius: '8px', background: 'rgba(0,0,0,0.5)', border: '1px solid var(--card-border)', color: 'white' }}
             >
-              <option value="">Selecione...</option>
+              <option value="">Selecione uma turma...</option>
               {classes.map(c => (
                 <option key={c.id} value={c.id}>{c.name} ({c.time})</option>
               ))}
             </select>
           </div>
-          <div className="form-group">
-            <label>Data</label>
+          <div>
+            <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Data</label>
             <input 
               type="date" 
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              style={{ width: '100%', padding: '12px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--card-border)', color: 'white', marginTop: '8px' }}
+              style={{ width: '100%', padding: '12px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--card-border)', color: 'white' }}
             />
           </div>
         </div>
+      </div>
 
-        <div className="glass" style={{ padding: '24px' }}>
-          <h3 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <Users size={20} color="var(--accent-secondary)" /> Alunos
-          </h3>
+      {selectedClassId ? (
+        <div className="glass" style={{ padding: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <h3 style={{ margin: 0 }}>Alunos Matriculados ({studentsInClass.length})</h3>
+            <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+              {classes.find(c => c.id === selectedClassId)?.name} - {date}
+            </span>
+          </div>
           
-          {!selectedClassId ? (
-            <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '40px' }}>Selecione uma turma para iniciar a chamada.</p>
+          {studentsInClass.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {studentsInClass.map(student => (
+                <div 
+                  key={student.id} 
+                  className="glass" 
+                  style={{ 
+                    padding: '12px 20px', 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center',
+                    borderLeft: `4px solid ${isPresent(student.id) ? 'var(--accent-primary)' : 'transparent'}`
+                  }}
+                >
+                  <div>
+                    <div style={{ fontWeight: '500' }}>{student.name}</div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Faixa {student.belt}</div>
+                  </div>
+                  <button 
+                    onClick={() => handleMark(student.id)}
+                    disabled={isPresent(student.id)}
+                    style={{ 
+                      width: '40px', 
+                      height: '40px', 
+                      borderRadius: '50%', 
+                      border: 'none', 
+                      background: isPresent(student.id) ? 'var(--accent-primary)' : 'rgba(255,255,255,0.05)',
+                      color: isPresent(student.id) ? 'black' : 'var(--text-secondary)',
+                      cursor: isPresent(student.id) ? 'default' : 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    <Check size={20} />
+                  </button>
+                </div>
+              ))}
+            </div>
           ) : (
-            <div className="table-container">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Nome</th>
-                    <th>Presença</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {students.map(student => (
-                    <tr key={student.id}>
-                      <td>{student.name}</td>
-                      <td>
-                        {isPresent(student.id) ? (
-                          <span style={{ color: 'var(--accent-secondary)', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold' }}>
-                            <CheckCircle size={18} /> Presente
-                          </span>
-                        ) : (
-                          <button 
-                            onClick={() => handleMark(student.id)}
-                            className="btn-primary" 
-                            style={{ padding: '6px 12px', fontSize: '0.8rem', background: 'rgba(255,215,0,0.1)', color: 'var(--accent-primary)' }}
-                          >
-                            Marcar Presença
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>
+              Nenhum aluno matriculado nesta turma ainda.
             </div>
           )}
         </div>
-      </div>
+      ) : (
+        <div style={{ textAlign: 'center', padding: '60px' }} className="glass">
+          <Calendar size={48} style={{ color: 'var(--text-secondary)', marginBottom: '16px', opacity: 0.3 }} />
+          <p style={{ color: 'var(--text-secondary)' }}>Selecione uma turma para realizar a chamada.</p>
+        </div>
+      )}
     </div>
   );
 };
