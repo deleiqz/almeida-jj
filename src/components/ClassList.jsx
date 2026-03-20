@@ -4,14 +4,29 @@ import Modal from './Modal';
 
 const ClassList = ({ classes, enrollments, addClass }) => {
   const [isModalOpen, setModalOpen] = useState(false);
-  const [newClass, setNewClass] = useState({ name: '', time: '', instructor: '', capacity: 20 });
+  const [newClass, setNewClass] = useState({ name: '', time: '', instructor: '', capacity: 20, days: [] });
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (newClass.days.length === 0) {
+      alert("Selecione pelo menos um dia da semana.");
+      return;
+    }
     addClass(newClass);
     setModalOpen(false);
-    setNewClass({ name: '', time: '', instructor: '', capacity: 20 });
+    setNewClass({ name: '', time: '', instructor: '', capacity: 20, days: [] });
   };
+
+  const toggleDay = (day) => {
+    setNewClass(prev => ({
+      ...prev,
+      days: prev.days.includes(day) 
+        ? prev.days.filter(d => d !== day)
+        : [...prev.days, day]
+    }));
+  };
+
+  const weekDays = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
 
   const getEnrollmentCount = (classId) => {
     return enrollments.filter(e => e.class_id === classId).length;
@@ -45,6 +60,9 @@ const ClassList = ({ classes, enrollments, addClass }) => {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)', marginBottom: '8px' }}>
                   <Users size={16} /> 
                   <span style={{ fontSize: '0.9rem' }}>Instrutor: {c.instructor}</span>
+                </div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--accent-primary)', opacity: 0.8 }}>
+                  {c.days?.join(', ') || 'Dias não definidos'}
                 </div>
               </div>
 
@@ -82,6 +100,7 @@ const ClassList = ({ classes, enrollments, addClass }) => {
               style={{ width: '100%', padding: '12px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--card-border)', color: 'white' }}
             />
           </div>
+          
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
             <div>
               <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Horário</label>
@@ -105,6 +124,7 @@ const ClassList = ({ classes, enrollments, addClass }) => {
               />
             </div>
           </div>
+
           <div className="form-group">
             <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Instrutor</label>
             <input 
@@ -115,6 +135,32 @@ const ClassList = ({ classes, enrollments, addClass }) => {
               style={{ width: '100%', padding: '12px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--card-border)', color: 'white' }}
             />
           </div>
+
+          <div>
+            <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Dias da Semana</label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              {weekDays.map(day => (
+                <button
+                  key={day}
+                  type="button"
+                  onClick={() => toggleDay(day)}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '20px',
+                    fontSize: '0.8rem',
+                    border: '1px solid var(--card-border)',
+                    background: newClass.days.includes(day) ? 'var(--accent-primary)' : 'transparent',
+                    color: newClass.days.includes(day) ? 'black' : 'white',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  {day}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <button type="submit" className="btn-primary" style={{ marginTop: '10px' }}>Salvar Turma</button>
         </form>
       </Modal>

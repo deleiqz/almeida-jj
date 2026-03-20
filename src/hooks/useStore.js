@@ -42,66 +42,72 @@ export const useStore = () => {
   }, []);
 
   const addStudent = async (student) => {
-    const { data, error } = await supabase.from('students').insert([
-      { 
-        name: student.name, 
-        status: student.status, 
-        next_due: student.nextDue, 
-        payment_value: student.amount,
-        phone: student.phone,
-        belt: student.belt || 'Branca',
-        plan: student.plan || 'Mensal',
+    const { classId, ...studentData } = student;
+    const { data, error } = await supabase
+      .from('students')
+      .insert([{ 
+        name: studentData.name, 
+        belt: studentData.belt || 'Branca', 
+        status: studentData.status, 
+        next_due: studentData.nextDue, 
+        payment_value: studentData.amount,
+        phone: studentData.phone,
+        plan: studentData.plan || 'Mensal',
         last_payment: new Date().toISOString().split('T')[0]
-      }
-    ]).select();
-
+      }])
+      .select();
+    
     if (error) {
       console.error(error);
-    } else if (student.classId && data?.[0]) {
-      await enrollStudent(data[0].id, student.classId);
+    } else if (data && data.length > 0 && classId) {
+      await enrollStudent(data[0].id, classId);
     }
     fetchDisplayData();
   };
 
   const updateStudent = async (id, updates) => {
-    const { error } = await supabase.from('students').update({
-      name: updates.name,
-      phone: updates.phone,
-      status: updates.status,
-      next_due: updates.nextDue,
-      payment_value: updates.amount,
-      plan: updates.plan,
-      belt: updates.belt
-    }).eq('id', id);
+    const { classId, ...studentData } = updates;
+    const { error } = await supabase
+      .from('students')
+      .update({ 
+        name: studentData.name, 
+        belt: studentData.belt, 
+        status: studentData.status, 
+        next_due: studentData.nextDue, 
+        payment_value: studentData.amount,
+        phone: studentData.phone,
+        plan: studentData.plan
+      })
+      .eq('id', id);
     
     if (error) console.error(error);
     
-    // Update enrollment if classId provided
-    if (updates.classId) {
-      await enrollStudent(id, updates.classId);
+    if (classId) {
+      await enrollStudent(id, classId);
     }
-    
     fetchDisplayData();
   };
 
   const enrollStudent = async (studentId, classId) => {
+    if (!classId) return;
+    
     // Check limit
-    const currentEnrollments = enrollments.filter(e => e.class_id === classId).length;
+    const classEnrollments = enrollments.filter(e => e.class_id === classId);
     const targetClass = classes.find(c => c.id === classId);
     const limit = targetClass?.capacity || 20;
-
-    if (currentEnrollments >= limit) {
-      alert(`Erro: A turma "${targetClass?.name}" atingiu o limite de ${limit} alunos.`);
-      return false;
+    
+    if (classEnrollments.length >= limit) {
+      const isAlreadyEnrolled = classEnrollments.some(e => e.student_id === studentId);
+      if (!isAlreadyEnrolled) {
+        alert(`Limite de ${limit} alunos atingido para esta turma!`);
+        return;
+      }
     }
 
-    // Upsert enrollment (one class per student for simplicity, or remove existing if multi-class not allowed)
-    const { error } = await supabase.from('class_enrollments').upsert([
-      { student_id: studentId, class_id: classId }
-    ], { onConflict: 'student_id, class_id' });
-    
+    // Replace enrollment (one class per student)
+    await supabase.from('class_enrollments').delete().eq('student_id', studentId);
+    const { error } = await supabase.from('class_enrollments').insert({ student_id: studentId, class_id: classId });
     if (error) console.error(error);
-    return !error;
   };
 
   const updateStudentBelt = async (id, belt) => {
