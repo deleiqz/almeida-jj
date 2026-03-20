@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { Plus, Users, Clock } from 'lucide-react';
+import { Plus, Users, Clock, Edit2 } from 'lucide-react';
 import Modal from './Modal';
 
-const ClassList = ({ classes, enrollments, addClass }) => {
+const ClassList = ({ classes, enrollments, addClass, updateClass, deleteClass }) => {
   const [isModalOpen, setModalOpen] = useState(false);
+  const [isEditMode, setEditMode] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const [newClass, setNewClass] = useState({ name: '', time: '', instructor: '', capacity: 20, days: [] });
 
   const handleSubmit = (e) => {
@@ -12,9 +14,45 @@ const ClassList = ({ classes, enrollments, addClass }) => {
       alert("Selecione pelo menos um dia da semana.");
       return;
     }
-    addClass(newClass);
-    setModalOpen(false);
+    
+    if (isEditMode) {
+      updateClass(editingId, newClass);
+    } else {
+      addClass(newClass);
+    }
+    
+    closeModal();
+  };
+
+  const openAddModal = () => {
+    setEditMode(false);
     setNewClass({ name: '', time: '', instructor: '', capacity: 20, days: [] });
+    setModalOpen(true);
+  };
+
+  const openEditModal = (clase) => {
+    setEditMode(true);
+    setEditingId(clase.id);
+    setNewClass({
+      name: clase.name,
+      time: clase.time,
+      instructor: clase.instructor,
+      capacity: clase.capacity,
+      days: clase.days || []
+    });
+    setModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setModalOpen(false);
+    setEditingId(null);
+    setNewClass({ name: '', time: '', instructor: '', capacity: 20, days: [] });
+  };
+
+  const handleDelete = (id, name) => {
+    if (window.confirm(`Tem certeza que deseja excluir a turma "${name}"?`)) {
+      deleteClass(id);
+    }
   };
 
   const toggleDay = (day) => {
@@ -36,7 +74,7 @@ const ClassList = ({ classes, enrollments, addClass }) => {
     <div className="class-list">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
         <h2 className="title-gradient">Gestão de Turmas</h2>
-        <button className="btn-primary" onClick={() => setModalOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <button className="btn-primary" onClick={openAddModal} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Plus size={18} /> Nova Turma
         </button>
       </div>
@@ -51,8 +89,10 @@ const ClassList = ({ classes, enrollments, addClass }) => {
             <div key={c.id} className="card glass">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '16px' }}>
                 <h3 style={{ color: 'var(--accent-primary)', margin: 0 }}>{c.name}</h3>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-                  <Clock size={16} /> {c.time}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                    <Clock size={16} /> {c.time}
+                  </div>
                 </div>
               </div>
               
@@ -82,12 +122,27 @@ const ClassList = ({ classes, enrollments, addClass }) => {
                   }} />
                 </div>
               </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px', paddingTop: '15px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                <button 
+                  onClick={() => openEditModal(c)}
+                  style={{ background: 'transparent', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                >
+                  <Edit2 size={14} /> Editar
+                </button>
+                <button 
+                  onClick={() => handleDelete(c.id, c.name)}
+                  style={{ background: 'transparent', border: 'none', color: '#ff4d4d', cursor: 'pointer', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                >
+                  Excluir
+                </button>
+              </div>
             </div>
           );
         })}
       </div>
 
-      <Modal title="Cadastrar Nova Turma" isOpen={isModalOpen} onClose={() => setModalOpen(false)}>
+      <Modal title={isEditMode ? "Editar Turma" : "Cadastrar Nova Turma"} isOpen={isModalOpen} onClose={closeModal}>
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div className="form-group">
             <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Nome da Turma</label>
@@ -161,7 +216,9 @@ const ClassList = ({ classes, enrollments, addClass }) => {
             </div>
           </div>
 
-          <button type="submit" className="btn-primary" style={{ marginTop: '10px' }}>Salvar Turma</button>
+          <button type="submit" className="btn-primary" style={{ marginTop: '10px' }}>
+            {isEditMode ? "Salvar Alterações" : "Salvar Turma"}
+          </button>
         </form>
       </Modal>
     </div>

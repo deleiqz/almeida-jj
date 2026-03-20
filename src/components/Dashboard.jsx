@@ -24,7 +24,7 @@ const Dashboard = ({ stats, role }) => {
       
       <div className="glass" style={{ padding: '24px', marginTop: '20px' }}>
         <h3 style={{ marginBottom: '16px' }}>Saúde Financeira</h3>
-        <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '20px', alignItems: 'center', marginBottom: '20px' }}>
           <div style={{ flex: 1, height: '12px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px', overflow: 'hidden' }}>
             <div style={{ 
               width: `${stats.totalStudents > 0 ? (stats.paidStudents / stats.totalStudents) * 100 : 0}%`, 
@@ -37,6 +37,20 @@ const Dashboard = ({ stats, role }) => {
             {stats.totalStudents > 0 ? Math.round((stats.paidStudents / stats.totalStudents) * 100) : 0}% dos alunos em dia
           </span>
         </div>
+
+        {['admin', 'master'].includes(role) && stats.revenueByMethod && (
+          <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '20px' }}>
+            <h4 style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '12px' }}>Recebimentos por Método</h4>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px' }}>
+              {Object.entries(stats.revenueByMethod).map(([method, amount]) => (
+                <div key={method} className="glass" style={{ padding: '10px 15px', borderRadius: '8px', border: '1px solid var(--card-border)' }}>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{method}</div>
+                  <div style={{ fontSize: '1rem', fontWeight: 'bold', color: 'var(--accent-primary)' }}>R$ {amount.toLocaleString()}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

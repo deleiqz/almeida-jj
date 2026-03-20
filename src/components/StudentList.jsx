@@ -8,7 +8,7 @@ const StudentList = ({ students, classes, enrollments, addStudent, updateStudent
   const [editingId, setEditingId] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [newStudent, setNewStudent] = useState({ 
-    name: '', status: 'pago', nextDue: '', amount: 150, belt: 'Branca', phone: '', plan: 'Mensal', classId: '' 
+    name: '', status: 'pago', nextDue: '', amount: 150, belt: 'Branca', phone: '', plan: 'Mensal', classId: '', paymentMethod: 'Pix' 
   });
 
   const handleSubmit = (e) => {
@@ -23,7 +23,7 @@ const StudentList = ({ students, classes, enrollments, addStudent, updateStudent
 
   const openAddModal = () => {
     setEditMode(false);
-    setNewStudent({ name: '', status: 'pago', nextDue: '', amount: 150, belt: 'Branca', phone: '', plan: 'Mensal', classId: '' });
+    setNewStudent({ name: '', status: 'pago', nextDue: '', amount: 150, belt: 'Branca', phone: '', plan: 'Mensal', classId: '', paymentMethod: 'Pix' });
     setModalOpen(true);
   };
 
@@ -39,6 +39,7 @@ const StudentList = ({ students, classes, enrollments, addStudent, updateStudent
       belt: student.belt, 
       phone: student.phone || '', 
       plan: student.plan || 'Mensal',
+      paymentMethod: student.paymentMethod || 'Pix',
       classId: studentEnrollment?.class_id || ''
     });
     setModalOpen(true);
@@ -108,9 +109,12 @@ const StudentList = ({ students, classes, enrollments, addStudent, updateStudent
                   <td style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{student.phone || '-'}</td>
                   <td style={{ fontSize: '0.85rem' }}>{getStudentClass(student.id)}</td>
                   <td>
-                    <span style={{ fontSize: '0.75rem', padding: '2px 6px', borderRadius: '4px', background: 'rgba(255,255,255,0.1)', color: 'var(--accent-primary)' }}>
-                      {student.plan}
-                    </span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <span style={{ fontSize: '0.75rem', padding: '2px 6px', borderRadius: '4px', background: 'rgba(255,255,255,0.1)', color: 'var(--accent-primary)', alignSelf: 'flex-start' }}>
+                        {student.plan}
+                      </span>
+                      <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>{student.paymentMethod}</span>
+                    </div>
                   </td>
                   <td>
                     <span className={`badge badge-${student.status === 'pago' ? 'paid' : student.status === 'pendente' ? 'pending' : 'overdue'}`}>
@@ -228,15 +232,30 @@ const StudentList = ({ students, classes, enrollments, addStudent, updateStudent
             </div>
           </div>
 
-          <div>
-            <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Próximo Vencimento</label>
-            <input 
-              required
-              type="date" 
-              value={newStudent.nextDue}
-              onChange={(e) => setNewStudent({...newStudent, nextDue: e.target.value})}
-              style={{ width: '100%', padding: '12px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--card-border)', color: 'white' }}
-            />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Próximo Vencimento</label>
+              <input 
+                required
+                type="date" 
+                value={newStudent.nextDue}
+                onChange={(e) => setNewStudent({...newStudent, nextDue: e.target.value})}
+                style={{ width: '100%', padding: '12px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--card-border)', color: 'white' }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Forma de Pagamento</label>
+              <select 
+                value={newStudent.paymentMethod}
+                onChange={(e) => setNewStudent({...newStudent, paymentMethod: e.target.value})}
+                style={{ width: '100%', padding: '12px', borderRadius: '8px', background: 'rgba(0,0,0,0.5)', border: '1px solid var(--card-border)', color: 'white' }}
+              >
+                <option value="Pix">Pix</option>
+                <option value="Dinheiro">Dinheiro</option>
+                <option value="Cartão de Crédito">Cartão de Crédito</option>
+                <option value="Cartão de Débito">Cartão de Débito</option>
+              </select>
+            </div>
           </div>
 
           <button type="submit" className="btn-primary" style={{ marginTop: '10px' }}>

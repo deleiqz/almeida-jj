@@ -22,7 +22,8 @@ export const useStore = () => {
       nextDue: s.next_due,
       lastPayment: s.last_payment,
       amount: s.payment_value,
-      plan: s.plan || 'Mensal'
+      plan: s.plan || 'Mensal',
+      paymentMethod: s.payment_method || 'Pix'
     })));
     
     if (exps) setExpenses(exps.map(e => ({
@@ -53,6 +54,7 @@ export const useStore = () => {
         payment_value: studentData.amount,
         phone: studentData.phone,
         plan: studentData.plan || 'Mensal',
+        payment_method: studentData.paymentMethod || 'Pix',
         last_payment: new Date().toISOString().split('T')[0]
       }])
       .select();
@@ -76,7 +78,8 @@ export const useStore = () => {
         next_due: studentData.nextDue, 
         payment_value: studentData.amount,
         phone: studentData.phone,
-        plan: studentData.plan
+        plan: studentData.plan,
+        payment_method: studentData.paymentMethod
       })
       .eq('id', id);
     
@@ -116,8 +119,20 @@ export const useStore = () => {
     fetchDisplayData();
   };
 
-  const addClass = async (newClass) => {
-    const { error } = await supabase.from('classes').insert([newClass]);
+  const addClass = async (claseData) => {
+    const { error } = await supabase.from('classes').insert([claseData]);
+    if (error) console.error(error);
+    fetchDisplayData();
+  };
+
+  const updateClass = async (id, updates) => {
+    const { error } = await supabase.from('classes').update(updates).eq('id', id);
+    if (error) console.error(error);
+    fetchDisplayData();
+  };
+
+  const deleteClass = async (id) => {
+    const { error } = await supabase.from('classes').delete().eq('id', id);
     if (error) console.error(error);
     fetchDisplayData();
   };
@@ -147,7 +162,17 @@ export const useStore = () => {
     const totalStudents = students.length;
     const paidStudents = students.filter(s => s.status === "pago").length;
     const pendingStudents = students.filter(s => s.status === "pendente" || s.status === "vencido").length;
-    const totalRevenue = students.reduce((acc, s) => acc + Number(s.amount), 0);
+    
+    // Revenue by method
+    const revenueByMethod = students.reduce((acc, s) => {
+      if (s.status === "pago") {
+        const method = s.paymentMethod || 'Pix';
+        acc[method] = (acc[method] || 0) + Number(s.amount);
+      }
+      return acc;
+    }, {});
+
+    const totalRevenue = Object.values(revenueByMethod).reduce((sum, val) => sum + val, 0);
     const totalExpenses = expenses.reduce((acc, e) => acc + Number(e.amount), 0);
     
     return {
@@ -156,13 +181,14 @@ export const useStore = () => {
       pendingStudents,
       totalRevenue,
       totalExpenses,
+      revenueByMethod,
       netProfit: totalRevenue - totalExpenses
     };
   };
 
   return { 
     students, expenses, classes, attendance, enrollments,
-    addStudent, updateStudent, enrollStudent, updateStudentBelt, addClass, markAttendance, addExpense, 
+    addStudent, updateStudent, enrollStudent, updateStudentBelt, addClass, updateClass, deleteClass, markAttendance, addExpense, 
     getStats, loading 
   };
 };

@@ -62,8 +62,13 @@ const App = () => {
       case 'students': return <StudentList students={students} classes={classes} enrollments={enrollments} addStudent={addStudent} updateStudent={updateStudent} />;
       case 'belts': return <BeltControl students={students} updateStudentBelt={updateStudentBelt} />;
       case 'attendance': return <Attendance students={students} classes={classes} attendance={attendance} enrollments={enrollments} markAttendance={markAttendance} />;
-      case 'classes': return <ClassList classes={classes} enrollments={enrollments} addClass={addClass} />;
-      case 'expenses': return ['admin', 'master'].includes(normalizedRole) ? <ExpenseList expenses={expenses} addExpense={addExpense} /> : <Dashboard stats={getStats()} role={normalizedRole} />;
+      case 'classes':        return <ClassList 
+          classes={classes} 
+          enrollments={enrollments} 
+          addClass={addClass}
+          updateClass={updateClass}
+          deleteClass={deleteClass}
+        />; case 'expenses': return ['admin', 'master'].includes(normalizedRole) ? <ExpenseList expenses={expenses} addExpense={addExpense} /> : <Dashboard stats={getStats()} role={normalizedRole} />;
       case 'maintenance': return ['admin', 'master'].includes(normalizedRole) ? <Maintenance /> : <Dashboard stats={getStats()} role={normalizedRole} />;
       default: return <Dashboard stats={getStats()} role={normalizedRole} />;
     }
