@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { LayoutDashboard, Users, CreditCard, Settings, Dumbbell, CheckCircle } from 'lucide-react';
+import { LayoutDashboard, Users, CreditCard, Settings, Dumbbell, CheckCircle, Send } from 'lucide-react';
 import logo from './assets/logo.jpg';
 import jjBg from './assets/jj-bg.png';
 import Dashboard from './components/Dashboard';
