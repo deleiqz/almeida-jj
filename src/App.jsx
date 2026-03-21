@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { LayoutDashboard, Users, CreditCard, Settings, Dumbbell, CheckCircle, Send } from 'lucide-react';
 import logo from './assets/logo.jpg';
 import jjBg from './assets/jj-bg.png';
@@ -18,10 +18,55 @@ import { LogOut } from 'lucide-react';
 
 const App = () => {
   const isPublicRegistration = window.location.search.includes('registro');
-  const [activeTab, setActiveTab] = useState('dashboard');
-  const [user, setUser] = useState(null);
-  const [role, setRole] = useState(null);
-  const [userName, setUserName] = useState('');
+  
+  // Persistence: initialize from localStorage
+  const [activeTab, setActiveTab] = useState(() => localStorage.getItem('activeTab') || 'dashboard');
+  const [user, setUser] = useState(() => JSON.parse(localStorage.getItem('user')) || null);
+  const [role, setRole] = useState(() => localStorage.getItem('role') || null);
+  const [userName, setUserName] = useState(() => localStorage.getItem('userName') || '');
+
+  // Persistence: save to localStorage on change
+  useEffect(() => {
+    localStorage.setItem('activeTab', activeTab);
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (user) localStorage.setItem('user', JSON.stringify(user));
+    else localStorage.removeItem('user');
+  }, [user]);
+
+  useEffect(() => {
+    if (role) localStorage.setItem('role', role);
+    else localStorage.removeItem('role');
+  }, [role]);
+
+  useEffect(() => {
+    if (userName) localStorage.setItem('userName', userName);
+    else localStorage.removeItem('userName');
+  }, [userName]);
+
+  // Sync Supabase session on mount
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        setUser(session.user);
+        // If we have a session but no role/name in localStorage, we can't easily get it here 
+        // without another query, but since handleLogin sets them, they should be in localStorage.
+      } else {
+        handleLogout();
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        setUser(session.user);
+      } else {
+        handleLogout();
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
   const { 
     students, expenses, classes, attendance, enrollments,
     addStudent, updateStudent, enrollStudent, updateStudentBelt, addClass, markAttendance, addExpense, 
@@ -38,6 +83,8 @@ const App = () => {
     await supabase.auth.signOut();
     setUser(null);
     setRole(null);
+    setUserName('');
+    localStorage.clear();
   };
 
   const navItems = [

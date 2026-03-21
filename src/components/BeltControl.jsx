@@ -1,3 +1,4 @@
+import React, { useState } from 'react';
 import { Award, Save, AlertTriangle } from 'lucide-react';
 import { BELT_THRESHOLDS } from '../hooks/useStore';
 
