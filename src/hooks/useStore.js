@@ -1,6 +1,18 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 
+export const BELT_THRESHOLDS = {
+  'Branca': 30,
+  'Cinza': 40,
+  'Amarela': 50,
+  'Laranja': 60,
+  'Verde': 70,
+  'Azul': 100,
+  'Roxa': 150,
+  'Marrom': 200,
+  'Preta': 300
+};
+
 export const useStore = () => {
   const [students, setStudents] = useState([]);
   const [expenses, setExpenses] = useState([]);
@@ -114,7 +126,13 @@ export const useStore = () => {
   };
 
   const updateStudentBelt = async (id, belt) => {
-    const { error } = await supabase.from('students').update({ belt }).eq('id', id);
+    const { error } = await supabase
+      .from('students')
+      .update({ 
+        belt, 
+        belt_promotion_date: new Date().toISOString().split('T')[0] 
+      })
+      .eq('id', id);
     if (error) console.error(error);
     fetchDisplayData();
   };
@@ -143,6 +161,21 @@ export const useStore = () => {
     ]);
     if (error) console.error(error);
     fetchDisplayData();
+  };
+
+  const getStudentAttendanceCount = (studentId, belt) => {
+    const student = students.find(s => s.id === studentId);
+    if (!student) return 0;
+    
+    // If we had a belt_promotion_date, we'd filter attendance by that date.
+    // For now, we'll assume either the student's belt is the one they started with,
+    // or we'll need that field. I'll add logic to filter by student.belt_promotion_date if it exists.
+    const promotionDate = student.belt_promotion_date || student.created_at || '1970-01-01';
+    
+    return attendance.filter(a => 
+      a.student_id === studentId && 
+      new Date(a.date) >= new Date(promotionDate)
+    ).length;
   };
 
   const addExpense = async (expense) => {
@@ -189,6 +222,6 @@ export const useStore = () => {
   return { 
     students, expenses, classes, attendance, enrollments,
     addStudent, updateStudent, enrollStudent, updateStudentBelt, addClass, updateClass, deleteClass, markAttendance, addExpense, 
-    getStats, loading 
+    getStats, getStudentAttendanceCount, loading 
   };
 };

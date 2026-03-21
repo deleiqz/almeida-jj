@@ -9,12 +9,15 @@ import Maintenance from './components/Maintenance';
 import BeltControl from './components/BeltControl';
 import Attendance from './components/Attendance';
 import ClassList from './components/ClassList';
+import Notifications from './components/Notifications';
 import { useStore } from './hooks/useStore';
 import Login from './components/Login';
+import RegistrationForm from './components/RegistrationForm';
 import { supabase } from './lib/supabase';
 import { LogOut } from 'lucide-react';
 
 const App = () => {
+  const isPublicRegistration = window.location.search.includes('registro');
   const [activeTab, setActiveTab] = useState('dashboard');
   const [user, setUser] = useState(null);
   const [role, setRole] = useState(null);
@@ -22,7 +25,7 @@ const App = () => {
   const { 
     students, expenses, classes, attendance, enrollments,
     addStudent, updateStudent, enrollStudent, updateStudentBelt, addClass, markAttendance, addExpense, 
-    getStats, loading 
+    getStats, getStudentAttendanceCount, loading 
   } = useStore();
 
   const handleLogin = (user, role, name) => {
@@ -43,6 +46,7 @@ const App = () => {
     { id: 'belts', label: 'Faixas', icon: <Dumbbell size={20} /> },
     { id: 'attendance', label: 'Chamada', icon: <CheckCircle size={20} /> },
     { id: 'classes', label: 'Turmas', icon: <LayoutDashboard size={20} /> },
+    { id: 'notifications', label: 'Notificações', icon: <Send size={20} /> },
     { id: 'expenses', label: 'Financeiro', icon: <CreditCard size={20} />, restricted: true },
     { id: 'maintenance', label: 'Manutenção', icon: <Settings size={20} />, restricted: true },
   ];
@@ -60,7 +64,7 @@ const App = () => {
     switch (activeTab) {
       case 'dashboard': return <Dashboard stats={getStats()} role={normalizedRole} />;
       case 'students': return <StudentList students={students} classes={classes} enrollments={enrollments} addStudent={addStudent} updateStudent={updateStudent} />;
-      case 'belts': return <BeltControl students={students} updateStudentBelt={updateStudentBelt} />;
+      case 'belts': return <BeltControl students={students} updateStudentBelt={updateStudentBelt} getStudentAttendanceCount={getStudentAttendanceCount} />;
       case 'attendance': return <Attendance students={students} classes={classes} attendance={attendance} enrollments={enrollments} markAttendance={markAttendance} />;
       case 'classes':        return <ClassList 
           classes={classes} 
@@ -68,11 +72,17 @@ const App = () => {
           addClass={addClass}
           updateClass={updateClass}
           deleteClass={deleteClass}
-        />; case 'expenses': return ['admin', 'master'].includes(normalizedRole) ? <ExpenseList expenses={expenses} addExpense={addExpense} /> : <Dashboard stats={getStats()} role={normalizedRole} />;
+        />; 
+      case 'notifications': return <Notifications students={students} />;
+      case 'expenses': return ['admin', 'master'].includes(normalizedRole) ? <ExpenseList expenses={expenses} addExpense={addExpense} /> : <Dashboard stats={getStats()} role={normalizedRole} />;
       case 'maintenance': return ['admin', 'master'].includes(normalizedRole) ? <Maintenance /> : <Dashboard stats={getStats()} role={normalizedRole} />;
       default: return <Dashboard stats={getStats()} role={normalizedRole} />;
     }
   };
+
+  if (isPublicRegistration) {
+    return <RegistrationForm />;
+  }
 
   if (!user) {
     return <Login onLogin={handleLogin} />;

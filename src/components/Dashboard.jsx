@@ -1,7 +1,9 @@
-import React from 'react';
-import { Users, DollarSign, TrendingUp, AlertCircle } from 'lucide-react';
+import { Users, DollarSign, TrendingUp, AlertCircle, Share2, ClipboardCheck } from 'lucide-react';
+import { useState } from 'react';
 
 const Dashboard = ({ stats, role }) => {
+  const [copied, setCopied] = useState(false);
+
   const cardData = [
     { title: "Total Alunos", value: stats.totalStudents, icon: <Users size={24} />, color: "var(--accent-primary)" },
     { title: "Receita Mensal", value: ['admin', 'master'].includes(role) ? `R$ ${stats.totalRevenue.toLocaleString()}` : '***', icon: <TrendingUp size={24} />, color: "var(--accent-secondary)" },
@@ -9,9 +11,25 @@ const Dashboard = ({ stats, role }) => {
     { title: "Pendentes/Atenção", value: stats.pendingStudents, icon: <AlertCircle size={24} />, color: "var(--warning)" },
   ];
 
+  const copyRegistrationLink = () => {
+    const url = window.location.origin + window.location.pathname + '?registro';
+    navigator.clipboard.writeText(url);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
     <div className="dashboard-content">
-      <h2 style={{ marginBottom: '24px', fontWeight: '600' }} className="title-gradient">Visão Geral</h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+        <h2 style={{ fontWeight: '600', margin: 0 }} className="title-gradient">Visão Geral</h2>
+        <button 
+          onClick={copyRegistrationLink}
+          className="btn-primary"
+          style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', fontSize: '0.9rem', background: copied ? 'var(--accent-secondary)' : '' }}
+        >
+          {copied ? <><ClipboardCheck size={18} /> Link Copiado!</> : <><Share2 size={18} /> Link de Cadastro (Zap)</>}
+        </button>
+      </div>
       <div className="dashboard-grid">
         {cardData.map((card, i) => (
           <div key={i} className="glass card-stat">

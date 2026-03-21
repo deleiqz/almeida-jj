@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { Award, Save } from 'lucide-react';
+import { Award, Save, AlertTriangle } from 'lucide-react';
+import { BELT_THRESHOLDS } from '../hooks/useStore';
 
-const BeltControl = ({ students, updateStudentBelt }) => {
+const BeltControl = ({ students, updateStudentBelt, getStudentAttendanceCount }) => {
   const belts = [
     { name: 'Branca', color: '#ffffff' },
     { name: 'Cinza', color: '#808080' },
@@ -40,38 +40,67 @@ const BeltControl = ({ students, updateStudentBelt }) => {
                 <tr>
                   <th>Nome</th>
                   <th>Faixa Atual</th>
+                  <th>Aulas (Nível)</th>
                   <th>Ação</th>
                 </tr>
               </thead>
               <tbody>
-                {students.map(student => (
-                  <tr key={student.id}>
-                    <td>{student.name}</td>
-                    <td>
-                      <span style={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        gap: '8px',
-                        padding: '4px 8px',
-                        borderRadius: '6px',
-                        background: 'rgba(255,255,255,0.05)',
-                        border: `1px solid ${belts.find(b => b.name === student.belt)?.color || '#fff'}`
-                      }}>
-                        <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: belts.find(b => b.name === student.belt)?.color || '#fff' }}></div>
-                        {student.belt}
-                      </span>
-                    </td>
-                    <td>
-                      <button 
-                        onClick={() => { setSelectedStudent(student); setNewBelt(student.belt); }}
-                        className="btn-primary" 
-                        style={{ padding: '6px 12px', fontSize: '0.8rem' }}
-                      >
-                        Trocar Faixa
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {students.map(student => {
+                  const count = getStudentAttendanceCount(student.id, student.belt);
+                  const threshold = BELT_THRESHOLDS[student.belt] || 0;
+                  const remaining = threshold - count;
+                  const isClose = threshold > 0 && remaining <= 3 && remaining > 0;
+                  const canGraduate = threshold > 0 && count >= threshold;
+
+                  return (
+                    <tr key={student.id}>
+                      <td>{student.name}</td>
+                      <td>
+                        <span style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: '8px',
+                          padding: '4px 8px',
+                          borderRadius: '6px',
+                          background: 'rgba(255,255,255,0.05)',
+                          border: `1px solid ${belts.find(b => b.name === student.belt)?.color || '#fff'}`
+                        }}>
+                          <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: belts.find(b => b.name === student.belt)?.color || '#fff' }}></div>
+                          {student.belt}
+                        </span>
+                      </td>
+                      <td>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ 
+                            fontWeight: '600',
+                            color: canGraduate ? '#10b981' : isClose ? '#fbbf24' : 'inherit'
+                          }}>
+                            {count}/{threshold > 0 ? threshold : '--'}
+                          </span>
+                          {isClose && (
+                            <div title={`Faltam apenas ${remaining} aulas!`} style={{ color: '#fbbf24', display: 'flex' }}>
+                              <AlertTriangle size={14} />
+                            </div>
+                          )}
+                          {canGraduate && (
+                            <div title="Pronto para graduar!" style={{ color: '#10b981', display: 'flex' }}>
+                              <Award size={14} />
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td>
+                        <button 
+                          onClick={() => { setSelectedStudent(student); setNewBelt(student.belt); }}
+                          className="btn-primary" 
+                          style={{ padding: '6px 12px', fontSize: '0.8rem' }}
+                        >
+                          Trocar Faixa
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
