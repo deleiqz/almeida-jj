@@ -1,3 +1,4 @@
+import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { Send, CheckCircle, Upload, Shield } from 'lucide-react';
 import logo from '../assets/logo.jpg';
