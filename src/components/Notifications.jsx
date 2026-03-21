@@ -9,6 +9,18 @@ const Notifications = ({ students }) => {
   const [currentIndex, setCurrentIndex] = useState(-1);
   const [sentIds, setSentIds] = useState(new Set());
   const [copiedNumbers, setCopiedNumbers] = useState(false);
+  const [sendMode, setSendMode] = useState('manual'); // 'manual' or 'api'
+  const [apiConfig, setApiConfig] = useState(() => {
+    const saved = localStorage.getItem('whatsapp_api_config');
+    return saved ? JSON.parse(saved) : { instance: '', token: '', clientToken: '' };
+  });
+  const [isSendingAuto, setIsSendingAuto] = useState(false);
+
+  // Save API config to localStorage
+  const saveApiConfig = (newConfig) => {
+    setApiConfig(newConfig);
+    localStorage.setItem('whatsapp_api_config', JSON.stringify(newConfig));
+  };
 
   const filteredStudents = students.filter(s => {
     const matchesSearch = (s.name || '').toLowerCase().includes(searchTerm.toLowerCase());
@@ -30,26 +42,86 @@ const Notifications = ({ students }) => {
     }
   };
 
-  const sendNext = () => {
+  const sendNext = async () => {
     if (currentIndex >= 0 && currentIndex < sendingQueue.length) {
       const student = sendingQueue[currentIndex];
-      if (student.phone) {
-        const phone = student.phone.replace(/\D/g, '');
-        // Using whatsapp://send as it's often more reliable for desktop apps
-        const url = `https://web.whatsapp.com/send?phone=55${phone}&text=${encodeURIComponent(message)}`;
+      if (!student.phone) return skipNext();
+
+      const phone = student.phone.replace(/\D/g, '');
+      const fullPhone = `55${phone}`;
+
+      if (sendMode === 'manual') {
+        const url = `https://web.whatsapp.com/send?phone=${fullPhone}&text=${encodeURIComponent(message)}`;
         window.open(url, '_blank');
-        
-        setSentIds(prev => new Set(prev).add(student.id));
-        
-        if (currentIndex + 1 < sendingQueue.length) {
-          setCurrentIndex(prev => prev + 1);
-        } else {
-          alert("Disparo concluído!");
-          setSendingQueue([]);
-          setCurrentIndex(-1);
+        updateProgress(student.id);
+      } else {
+        // Professional Mode (Z-API example)
+        if (!apiConfig.instance || !apiConfig.token) {
+          alert("Configure a Instância e o Token da Z-API primeiro!");
+          return cancelQueue();
+        }
+
+        setIsSendingAuto(true);
+        try {
+          const response = await fetch(`https://api.z-api.io/instances/${apiConfig.instance}/token/${apiConfig.token}/send-text`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Client-Token': apiConfig.clientToken
+            },
+            body: JSON.stringify({
+              phone: fullPhone,
+              message: message
+            })
+          });
+
+          if (response.ok) {
+            updateProgress(student.id);
+            // In API mode, we can auto-advance with a delay
+            if (currentIndex + 1 < sendingQueue.length) {
+              setTimeout(() => sendNext(), 2000); // 2 seconds delay between messages
+            } else {
+              finishQueue();
+            }
+          } else {
+            const err = await response.json();
+            alert(`Erro na API: ${err.message || 'Erro desconhecido'}`);
+            setIsSendingAuto(false);
+          }
+        } catch (error) {
+          alert(`Erro de conexão: ${error.message}`);
+          setIsSendingAuto(false);
         }
       }
     }
+  };
+
+  const updateProgress = (studentId) => {
+    setSentIds(prev => new Set(prev).add(studentId));
+    if (sendMode === 'manual') {
+      if (currentIndex + 1 < sendingQueue.length) {
+        setCurrentIndex(prev => prev + 1);
+      } else {
+        finishQueue();
+      }
+    } else {
+      setCurrentIndex(prev => prev + 1);
+    }
+  };
+
+  const skipNext = () => {
+    if (currentIndex + 1 < sendingQueue.length) {
+      setCurrentIndex(prev => prev + 1);
+    } else {
+      finishQueue();
+    }
+  };
+
+  const finishQueue = () => {
+    alert("Disparo concluído!");
+    setSendingQueue([]);
+    setCurrentIndex(-1);
+    setIsSendingAuto(false);
   };
 
   const cancelQueue = () => {
@@ -84,6 +156,58 @@ const Notifications = ({ students }) => {
 
       <div className="dashboard-grid" style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '24px' }}>
         <div className="glass" style={{ padding: '24px' }}>
+          <div style={{ display: 'flex', gap: '20px', marginBottom: '20px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '15px' }}>
+            <button 
+              onClick={() => setSendMode('manual')}
+              style={{ 
+                background: 'none', border: 'none', color: sendMode === 'manual' ? 'var(--accent-primary)' : 'var(--text-secondary)',
+                padding: '8px 0', borderBottom: sendMode === 'manual' ? '2px solid var(--accent-primary)' : 'none',
+                cursor: 'pointer', fontWeight: sendMode === 'manual' ? 'bold' : 'normal'
+              }}
+            >
+              Modo Manual (Abas)
+            </button>
+            <button 
+              onClick={() => setSendMode('api')}
+              style={{ 
+                background: 'none', border: 'none', color: sendMode === 'api' ? 'var(--accent-primary)' : 'var(--text-secondary)',
+                padding: '8px 0', borderBottom: sendMode === 'api' ? '2px solid var(--accent-primary)' : 'none',
+                cursor: 'pointer', fontWeight: sendMode === 'api' ? 'bold' : 'normal'
+              }}
+            >
+              Modo Profissional (API Z-API)
+            </button>
+          </div>
+
+          {sendMode === 'api' && (
+            <div className="glass" style={{ padding: '15px', marginBottom: '20px', background: 'rgba(255,215,0,0.02)', border: '1px dashed var(--accent-primary)' }}>
+              <h4 style={{ fontSize: '0.9rem', marginBottom: '10px' }}>Configuração Z-API</h4>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+                <input 
+                  type="text" placeholder="Instance ID" 
+                  value={apiConfig.instance}
+                  onChange={(e) => saveApiConfig({...apiConfig, instance: e.target.value})}
+                  style={{ padding: '8px', fontSize: '0.8rem', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '4px' }}
+                />
+                <input 
+                  type="text" placeholder="Token" 
+                  value={apiConfig.token}
+                  onChange={(e) => saveApiConfig({...apiConfig, token: e.target.value})}
+                  style={{ padding: '8px', fontSize: '0.8rem', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '4px' }}
+                />
+                <input 
+                  type="text" placeholder="Client Token (Opcional)" 
+                  value={apiConfig.clientToken}
+                  onChange={(e) => saveApiConfig({...apiConfig, clientToken: e.target.value})}
+                  style={{ padding: '8px', fontSize: '0.8rem', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '4px' }}
+                />
+              </div>
+              <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '8px' }}>
+                * Suas chaves ficam salvas apenas neste navegador por segurança.
+              </p>
+            </div>
+          )}
+
           <div style={{ marginBottom: '20px' }}>
             <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Mensagem para Disparo</label>
             <textarea 
@@ -144,9 +268,10 @@ const Notifications = ({ students }) => {
                 <button 
                   onClick={sendNext}
                   className="btn-primary"
-                  style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px' }}
+                  disabled={isSendingAuto}
+                  style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px', opacity: isSendingAuto ? 0.7 : 1 }}
                 >
-                  <Send size={18} /> Enviar Próximo ({currentIndex + 1}/{sendingQueue.length})
+                  <Send size={18} /> {sendMode === 'api' ? (isSendingAuto ? 'Enviando...' : 'Iniciar Envio Automático') : `Enviar Próximo (${currentIndex + 1}/${sendingQueue.length})`}
                 </button>
               </div>
             )}
