@@ -80,8 +80,8 @@ const RegistrationForm = () => {
       }]);
 
     if (error) {
-      alert("Erro ao enviar cadastro. Por favor, tente novamente.");
-      console.error(error);
+      alert(`Erro ao enviar cadastro: ${error.message}\n\nVerifique se todas as colunas foram criadas no Supabase.`);
+      console.error("Erro detalhado:", error);
     } else {
       setSubmitted(true);
     }

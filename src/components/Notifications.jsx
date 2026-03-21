@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Send, Users, CheckCircle, Search } from 'lucide-react';
+import { Send, Users, CheckCircle, Search, Copy } from 'lucide-react';
 
 const Notifications = ({ students }) => {
   const [message, setMessage] = useState('');
@@ -8,9 +8,10 @@ const Notifications = ({ students }) => {
   const [sendingQueue, setSendingQueue] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(-1);
   const [sentIds, setSentIds] = useState(new Set());
+  const [copiedNumbers, setCopiedNumbers] = useState(false);
 
   const filteredStudents = students.filter(s => {
-    const matchesSearch = s.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = (s.name || '').toLowerCase().includes(searchTerm.toLowerCase());
     if (filter === 'all') return matchesSearch;
     if (filter === 'active') return matchesSearch && s.status === 'pago';
     if (filter === 'pending') return matchesSearch && (s.status === 'pendente' || s.status === 'vencido');
@@ -34,6 +35,7 @@ const Notifications = ({ students }) => {
       const student = sendingQueue[currentIndex];
       if (student.phone) {
         const phone = student.phone.replace(/\D/g, '');
+        // Using whatsapp://send as it's often more reliable for desktop apps
         const url = `https://web.whatsapp.com/send?phone=55${phone}&text=${encodeURIComponent(message)}`;
         window.open(url, '_blank');
         
@@ -55,9 +57,23 @@ const Notifications = ({ students }) => {
     setCurrentIndex(-1);
   };
 
+  const copyAllNumbers = () => {
+    const numbers = filteredStudents
+      .map(s => (s.phone || '').replace(/\D/g, ''))
+      .filter(p => p)
+      .map(p => `55${p}`)
+      .join('\n');
+    
+    if (!numbers) return alert("Nenhum número encontrado!");
+    
+    navigator.clipboard.writeText(numbers);
+    setCopiedNumbers(true);
+    setTimeout(() => setCopiedNumbers(false), 2000);
+  };
+
   const sendSingle = (student) => {
     if (!message) return alert("Digite uma mensagem primeiro!");
-    const phone = student.phone.replace(/\D/g, '');
+    const phone = (student.phone || '').replace(/\D/g, '');
     const url = `https://web.whatsapp.com/send?phone=55${phone}&text=${encodeURIComponent(message)}`;
     window.open(url, '_blank');
   };
@@ -66,7 +82,7 @@ const Notifications = ({ students }) => {
     <div className="notifications-container">
       <h2 className="title-gradient" style={{ marginBottom: '24px' }}>Notificações via WhatsApp</h2>
 
-      <div className="dashboard-grid" style={{ gridTemplateColumns: '1.5fr 1fr', gap: '24px' }}>
+      <div className="dashboard-grid" style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '24px' }}>
         <div className="glass" style={{ padding: '24px' }}>
           <div style={{ marginBottom: '20px' }}>
             <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Mensagem para Disparo</label>
@@ -88,10 +104,27 @@ const Notifications = ({ students }) => {
             />
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-              Selecionados: <strong>{filteredStudents.length}</strong> alunos
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+              <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                Selecionados: <strong>{filteredStudents.length}</strong> alunos
+              </div>
+              <button 
+                onClick={copyAllNumbers}
+                className="glass"
+                style={{ 
+                  display: 'flex', alignItems: 'center', gap: '6px',
+                  fontSize: '0.8rem', padding: '8px 16px', border: '1px solid var(--card-border)', 
+                  background: copiedNumbers ? 'rgba(16,185,129,0.1)' : 'transparent', 
+                  color: copiedNumbers ? '#10b981' : 'var(--text-secondary)',
+                  cursor: 'pointer'
+                }}
+              >
+                {copiedNumbers ? <CheckCircle size={14} /> : <Copy size={14} />}
+                {copiedNumbers ? 'Números Copiados!' : 'Copiar Números'}
+              </button>
             </div>
+
             {currentIndex === -1 ? (
               <button 
                 onClick={handleSendAll}
@@ -118,6 +151,7 @@ const Notifications = ({ students }) => {
               </div>
             )}
           </div>
+
           {currentIndex !== -1 && (
             <div style={{ marginTop: '20px' }}>
               <div style={{ fontSize: '0.85rem', marginBottom: '8px', color: 'var(--accent-primary)' }}>
@@ -133,23 +167,31 @@ const Notifications = ({ students }) => {
               </div>
             </div>
           )}
-          <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '10px' }}>
-            * O modo sequencial evita que o WhatsApp Web trave ou que o navegador bloqueie as abas.
+          
+          <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '15px' }}>
+            * O modo sequencial evita que o navegador bloqueie as janelas e permite que você controle o tempo de envio.
           </p>
         </div>
 
         <div className="glass" style={{ padding: '24px' }}>
-          <h3 style={{ marginBottom: '16px', fontSize: '1.1rem' }}>Filtros</h3>
+          <h3 style={{ marginBottom: '16px', fontSize: '1.1rem' }}>Filtros de Pesquisa</h3>
           
-          <div className="form-group" style={{ marginBottom: '16px' }}>
+          <div style={{ marginBottom: '20px' }}>
             <div style={{ position: 'relative' }}>
               <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
               <input 
                 type="text" 
-                placeholder="Buscar aluno..." 
+                placeholder="Buscar por nome..." 
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                style={{ paddingLeft: '36px', width: '100%' }}
+                style={{ 
+                  padding: '10px 10px 10px 40px', 
+                  width: '100%',
+                  background: 'rgba(255,255,255,0.03)',
+                  border: '1px solid var(--card-border)',
+                  borderRadius: '8px',
+                  color: 'white'
+                }}
               />
             </div>
           </div>
@@ -175,7 +217,7 @@ const Notifications = ({ students }) => {
                 border: 'none', cursor: 'pointer'
               }}
             >
-              Alunos Ativos (Pagos)
+              Alunos Ativos (Em dia)
             </button>
             <button 
               onClick={() => setFilter('pending')}
@@ -186,18 +228,18 @@ const Notifications = ({ students }) => {
                 border: 'none', cursor: 'pointer'
               }}
             >
-              Alunos Pendentes/Vencidos
+              Pendentes / Vencidos
             </button>
             
-            <div style={{ marginTop: '10px' }}>
-              <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '5px', display: 'block' }}>Por Faixa</label>
+            <div style={{ marginTop: '15px' }}>
+              <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '8px', display: 'block' }}>Filtrar por Faixa</label>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                 {belts.map(belt => (
                   <button 
                     key={belt}
                     onClick={() => setFilter(belt)}
                     style={{ 
-                      padding: '8px', borderRadius: '6px', fontSize: '0.8rem',
+                      padding: '8px', borderRadius: '6px', fontSize: '0.75rem',
                       background: filter === belt ? 'rgba(255,215,0,0.1)' : 'rgba(255,255,255,0.05)',
                       color: filter === belt ? 'var(--accent-primary)' : 'white',
                       border: 'none', cursor: 'pointer'
@@ -213,44 +255,42 @@ const Notifications = ({ students }) => {
       </div>
 
       <div className="glass" style={{ marginTop: '24px', padding: '24px' }}>
-        <h3>Lista de Destinatários</h3>
-        <div className="table-container" style={{ marginTop: '16px', maxHeight: '400px', overflowY: 'auto' }}>
-          <table>
-            <thead>
+        <h3 style={{ marginBottom: '16px' }}>Alunos na Fila de Envio</h3>
+        <div className="table-container" style={{ maxHeight: '400px', overflowY: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead style={{ position: 'sticky', top: 0, background: '#1a1a1a', zIndex: 1 }}>
               <tr>
-                <th>Nome</th>
-                <th>Telefone</th>
-                <th>Status</th>
-                <th>Ação</th>
+                <th style={{ textAlign: 'left', padding: '12px' }}>Nome</th>
+                <th style={{ textAlign: 'left', padding: '12px' }}>WhatsApp</th>
+                <th style={{ textAlign: 'left', padding: '12px' }}>Status</th>
+                <th style={{ textAlign: 'center', padding: '12px' }}>Ação</th>
               </tr>
             </thead>
             <tbody>
               {filteredStudents.map(student => (
-                <tr key={student.id}>
-                  <td>{student.name}</td>
-                  <td>{student.phone}</td>
-                  <td>
+                <tr key={student.id} style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                  <td style={{ padding: '12px' }}>{student.name}</td>
+                  <td style={{ padding: '12px', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{student.phone}</td>
+                  <td style={{ padding: '12px' }}>
                     {sentIds.has(student.id) ? (
-                      <span style={{ color: '#10b981', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem' }}>
-                        <CheckCircle size={14} /> Enviado
+                      <span style={{ color: '#10b981', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', fontWeight: 'bold' }}>
+                        <CheckCircle size={14} /> ENVIADO
                       </span>
                     ) : (
                       <span style={{ 
-                        padding: '4px 8px', 
-                        borderRadius: '4px', 
-                        fontSize: '0.75rem',
+                        padding: '4px 8px', borderRadius: '4px', fontSize: '0.75rem',
                         background: student.status === 'pago' ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
                         color: student.status === 'pago' ? '#10b981' : '#ef4444'
                       }}>
-                        {student.status}
+                        {student.status.toUpperCase()}
                       </span>
                     )}
                   </td>
-                  <td>
+                  <td style={{ padding: '12px', textAlign: 'center' }}>
                     <button 
                       onClick={() => sendSingle(student)}
-                      style={{ background: 'none', border: 'none', color: 'var(--accent-secondary)', cursor: 'pointer' }}
-                      title="Enviar Individual"
+                      style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer', padding: '5px' }}
+                      title="Enviar Novamente"
                     >
                       <Send size={16} />
                     </button>
