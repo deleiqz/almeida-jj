@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { Send, CheckCircle } from 'lucide-react';
+import { Send, CheckCircle, Upload, Shield } from 'lucide-react';
 import logo from '../assets/logo.jpg';
 
 const RegistrationForm = () => {
@@ -9,14 +8,55 @@ const RegistrationForm = () => {
     phone: '',
     belt: 'Branca',
     plan: 'Mensal',
-    amount: '150'
+    amount: '150',
+    birthDate: '',
+    address: '',
+    cpf: '',
+    rg: '',
+    parentName: '',
+    parentCpf: '',
+    hasAuthorization: false
   });
+  const [documentFile, setDocumentFile] = useState(null);
+  const [isMinor, setIsMinor] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  const handleBirthDateChange = (e) => {
+    const date = e.target.value;
+    setFormData({ ...formData, birthDate: date });
+    
+    if (date) {
+      const birth = new Date(date);
+      const today = new Date();
+      let age = today.getFullYear() - birth.getFullYear();
+      const m = today.getMonth() - birth.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+      setIsMinor(age < 18);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+
+    let documentUrl = '';
+    if (documentFile) {
+      const fileExt = documentFile.name.split('.').pop();
+      const fileName = `${Math.random()}.${fileExt}`;
+      const filePath = `registration-docs/${fileName}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('documents')
+        .upload(filePath, documentFile);
+      
+      if (uploadError) {
+        console.error("Erro ao subir documento:", uploadError);
+      } else {
+        const { data: urlData } = supabase.storage.from('documents').getPublicUrl(filePath);
+        documentUrl = urlData.publicUrl;
+      }
+    }
     
     const { error } = await supabase
       .from('students')
@@ -26,6 +66,14 @@ const RegistrationForm = () => {
         belt: formData.belt,
         plan: formData.plan,
         payment_value: formData.amount,
+        birth_date: formData.birthDate,
+        address: formData.address,
+        cpf: formData.cpf,
+        rg: formData.rg,
+        parent_name: formData.parentName,
+        parent_cpf: formData.parentCpf,
+        has_authorization: formData.hasAuthorization,
+        document_url: documentUrl,
         status: 'pendente',
         created_at: new Date().toISOString()
       }]);
@@ -105,6 +153,66 @@ const RegistrationForm = () => {
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
             <div className="form-group">
+              <label>Data de Nascimento</label>
+              <input 
+                type="date" 
+                required 
+                value={formData.birthDate}
+                onChange={handleBirthDateChange}
+              />
+            </div>
+            <div className="form-group">
+              <label>CPF</label>
+              <input 
+                type="text" 
+                value={formData.cpf}
+                onChange={(e) => setFormData({...formData, cpf: e.target.value})}
+                placeholder="000.000.000-00"
+              />
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label>Endereço Completo</label>
+            <input 
+              type="text" 
+              value={formData.address}
+              onChange={(e) => setFormData({...formData, address: e.target.value})}
+              placeholder="Rua, Número, Bairro, Cidade"
+            />
+          </div>
+
+          {isMinor && (
+            <div className="glass" style={{ padding: '20px', borderRadius: '12px', border: '1px solid var(--accent-primary)', background: 'rgba(255, 215, 0, 0.05)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px', color: 'var(--accent-primary)' }}>
+                <Shield size={20} />
+                <h3 style={{ fontSize: '1rem', margin: 0 }}>Responsável (Aluno Menor)</h3>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                <div className="form-group">
+                  <label>Nome do Responsável</label>
+                  <input 
+                    type="text" 
+                    required={isMinor}
+                    value={formData.parentName}
+                    onChange={(e) => setFormData({...formData, parentName: e.target.value})}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>CPF do Responsável</label>
+                  <input 
+                    type="text" 
+                    required={isMinor}
+                    value={formData.parentCpf}
+                    onChange={(e) => setFormData({...formData, parentCpf: e.target.value})}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+            <div className="form-group">
               <label>Faixa Atual</label>
               <select 
                 value={formData.belt}
@@ -135,6 +243,43 @@ const RegistrationForm = () => {
                 <option value="Anual">Anual</option>
               </select>
             </div>
+          </div>
+
+          <div className="form-group">
+            <label>Documento de Identidade / Autorização (Foto)</label>
+            <div style={{ 
+              border: '2px dashed rgba(255,255,255,0.1)', 
+              borderRadius: '12px', 
+              padding: '20px', 
+              textAlign: 'center',
+              cursor: 'pointer',
+              background: documentFile ? 'rgba(16, 185, 129, 0.05)' : 'transparent'
+            }} onClick={() => document.getElementById('file-upload').click()}>
+              <input 
+                id="file-upload"
+                type="file" 
+                accept="image/*" 
+                onChange={(e) => setDocumentFile(e.target.files[0])}
+                style={{ display: 'none' }}
+              />
+              <Upload size={24} style={{ marginBottom: '8px', color: documentFile ? '#10b981' : 'var(--text-secondary)' }} />
+              <div style={{ fontSize: '0.9rem' }}>
+                {documentFile ? documentFile.name : 'Clique para anexar documento'}
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '10px' }}>
+            <input 
+              type="checkbox" 
+              required 
+              checked={formData.hasAuthorization}
+              onChange={(e) => setFormData({...formData, hasAuthorization: e.target.checked})}
+              id="auth-check"
+            />
+            <label htmlFor="auth-check" style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', cursor: 'pointer' }}>
+              Confirmo que as informações são verdadeiras e aceito os termos da academia.
+            </label>
           </div>
 
           <button 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Plus, Edit2 } from 'lucide-react';
+import { Search, Plus, Edit2, Share2, ClipboardCheck } from 'lucide-react';
 import Modal from './Modal';
 
 const StudentList = ({ students, classes, enrollments, addStudent, updateStudent }) => {
@@ -10,6 +10,14 @@ const StudentList = ({ students, classes, enrollments, addStudent, updateStudent
   const [newStudent, setNewStudent] = useState({ 
     name: '', status: 'pago', nextDue: '', amount: 150, belt: 'Branca', phone: '', plan: 'Mensal', classId: '', paymentMethod: 'Pix' 
   });
+  const [copied, setCopied] = useState(false);
+
+  const copyRegistrationLink = () => {
+    const link = `${window.location.origin}/?registro`;
+    navigator.clipboard.writeText(link);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -64,9 +72,19 @@ const StudentList = ({ students, classes, enrollments, addStudent, updateStudent
     <div className="student-list">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
         <h2 className="title-gradient">Gestão de Alunos</h2>
-        <button className="btn-primary" onClick={openAddModal} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Plus size={18} /> Novo Aluno
-        </button>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button 
+            className="btn-secondary" 
+            onClick={copyRegistrationLink}
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', background: copied ? 'rgba(16, 185, 129, 0.1)' : 'rgba(255,255,255,0.05)', color: copied ? '#10b981' : 'white' }}
+          >
+            {copied ? <ClipboardCheck size={18} /> : <Share2 size={18} />}
+            {copied ? 'Link Copiado!' : 'Link de Cadastro (Zap)'}
+          </button>
+          <button className="btn-primary" onClick={openAddModal} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Plus size={18} /> Novo Aluno
+          </button>
+        </div>
       </div>
 
       <div className="glass" style={{ padding: '20px' }}>

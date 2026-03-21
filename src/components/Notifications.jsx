@@ -5,6 +5,9 @@ const Notifications = ({ students }) => {
   const [message, setMessage] = useState('');
   const [filter, setFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [sendingQueue, setSendingQueue] = useState([]);
+  const [currentIndex, setCurrentIndex] = useState(-1);
+  const [sentIds, setSentIds] = useState(new Set());
 
   const filteredStudents = students.filter(s => {
     const matchesSearch = s.name.toLowerCase().includes(searchTerm.toLowerCase());
@@ -19,25 +22,37 @@ const Notifications = ({ students }) => {
   const handleSendAll = () => {
     if (!message) return alert("Digite uma mensagem!");
     
-    // In a real scenario, we'd use an API. 
-    // Here we'll open WhatsApp for the FIRST selected student as a demo, 
-    // or explain how to do bulk.
-    // For full bulk without an API, we can generate a list of links.
-    
-    const confirmSend = window.confirm(`Deseja abrir o WhatsApp para ${filteredStudents.length} alunos?`);
+    const confirmSend = window.confirm(`Deseja iniciar o disparo para ${filteredStudents.length} alunos?`);
     if (confirmSend) {
-      filteredStudents.forEach((student, index) => {
-        if (student.phone) {
-          const phone = student.phone.replace(/\D/g, '');
-          const url = `https://web.whatsapp.com/send?phone=55${phone}&text=${encodeURIComponent(message)}`;
-          // We can't open 100 tabs at once reliably. 
-          // Usually we'd open them one by one or use a broadcast tool.
-          setTimeout(() => {
-            window.open(url, '_blank');
-          }, index * 2000); // 2 second delay between tabs to avoid browser blocking
-        }
-      });
+      setSendingQueue(filteredStudents);
+      setCurrentIndex(0);
     }
+  };
+
+  const sendNext = () => {
+    if (currentIndex >= 0 && currentIndex < sendingQueue.length) {
+      const student = sendingQueue[currentIndex];
+      if (student.phone) {
+        const phone = student.phone.replace(/\D/g, '');
+        const url = `https://web.whatsapp.com/send?phone=55${phone}&text=${encodeURIComponent(message)}`;
+        window.open(url, '_blank');
+        
+        setSentIds(prev => new Set(prev).add(student.id));
+        
+        if (currentIndex + 1 < sendingQueue.length) {
+          setCurrentIndex(prev => prev + 1);
+        } else {
+          alert("Disparo concluído!");
+          setSendingQueue([]);
+          setCurrentIndex(-1);
+        }
+      }
+    }
+  };
+
+  const cancelQueue = () => {
+    setSendingQueue([]);
+    setCurrentIndex(-1);
   };
 
   const sendSingle = (student) => {
@@ -77,16 +92,49 @@ const Notifications = ({ students }) => {
             <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
               Selecionados: <strong>{filteredStudents.length}</strong> alunos
             </div>
-            <button 
-              onClick={handleSendAll}
-              className="btn-primary"
-              style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px' }}
-            >
-              <Send size={18} /> Enviar para Todos Selecionados
-            </button>
+            {currentIndex === -1 ? (
+              <button 
+                onClick={handleSendAll}
+                className="btn-primary"
+                style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px' }}
+              >
+                <Send size={18} /> Iniciar Disparo Sequencial
+              </button>
+            ) : (
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button 
+                  onClick={cancelQueue}
+                  style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: 'none', padding: '12px 20px', borderRadius: '12px', cursor: 'pointer' }}
+                >
+                  Cancelar
+                </button>
+                <button 
+                  onClick={sendNext}
+                  className="btn-primary"
+                  style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px' }}
+                >
+                  <Send size={18} /> Enviar Próximo ({currentIndex + 1}/{sendingQueue.length})
+                </button>
+              </div>
+            )}
           </div>
-          <p style={{ fontSize: '0.75rem', color: 'var(--warning)', marginTop: '10px' }}>
-            * Note: O navegador pode bloquear múltiplas abas. Recomendamos enviar em blocos pequenos.
+          {currentIndex !== -1 && (
+            <div style={{ marginTop: '20px' }}>
+              <div style={{ fontSize: '0.85rem', marginBottom: '8px', color: 'var(--accent-primary)' }}>
+                Enviando para: <strong>{sendingQueue[currentIndex]?.name}</strong>
+              </div>
+              <div style={{ width: '100%', height: '6px', background: 'rgba(255,255,255,0.05)', borderRadius: '3px', overflow: 'hidden' }}>
+                <div style={{ 
+                  width: `${((currentIndex + 1) / sendingQueue.length) * 100}%`, 
+                  height: '100%', 
+                  background: 'var(--accent-primary)',
+                  transition: 'width 0.3s ease'
+                }}></div>
+              </div>
+            </div>
+          )}
+          <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '10px' }}>
+            * O modo sequencial evita que o WhatsApp Web trave ou que o navegador bloqueie as abas.
           </p>
         </div>
 
@@ -182,15 +230,21 @@ const Notifications = ({ students }) => {
                   <td>{student.name}</td>
                   <td>{student.phone}</td>
                   <td>
-                    <span style={{ 
-                      padding: '4px 8px', 
-                      borderRadius: '4px', 
-                      fontSize: '0.75rem',
-                      background: student.status === 'pago' ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
-                      color: student.status === 'pago' ? '#10b981' : '#ef4444'
-                    }}>
-                      {student.status}
-                    </span>
+                    {sentIds.has(student.id) ? (
+                      <span style={{ color: '#10b981', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem' }}>
+                        <CheckCircle size={14} /> Enviado
+                      </span>
+                    ) : (
+                      <span style={{ 
+                        padding: '4px 8px', 
+                        borderRadius: '4px', 
+                        fontSize: '0.75rem',
+                        background: student.status === 'pago' ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
+                        color: student.status === 'pago' ? '#10b981' : '#ef4444'
+                      }}>
+                        {student.status}
+                      </span>
+                    )}
                   </td>
                   <td>
                     <button 

@@ -35,7 +35,14 @@ export const useStore = () => {
       lastPayment: s.last_payment,
       amount: s.payment_value,
       plan: s.plan || 'Mensal',
-      paymentMethod: s.payment_method || 'Pix'
+      paymentMethod: s.payment_method || 'Pix',
+      birthDate: s.birth_date,
+      address: s.address,
+      cpf: s.cpf,
+      rg: s.rg,
+      parentName: s.parent_name,
+      parentCpf: s.parent_cpf,
+      documentUrl: s.document_url
     })));
     
     if (exps) setExpenses(exps.map(e => ({
@@ -67,6 +74,13 @@ export const useStore = () => {
         phone: studentData.phone,
         plan: studentData.plan || 'Mensal',
         payment_method: studentData.paymentMethod || 'Pix',
+        birth_date: studentData.birthDate,
+        address: studentData.address,
+        cpf: studentData.cpf,
+        rg: studentData.rg,
+        parent_name: studentData.parentName,
+        parent_cpf: studentData.parentCpf,
+        document_url: studentData.documentUrl,
         last_payment: new Date().toISOString().split('T')[0]
       }])
       .select();
@@ -91,7 +105,14 @@ export const useStore = () => {
         payment_value: studentData.amount,
         phone: studentData.phone,
         plan: studentData.plan,
-        payment_method: studentData.paymentMethod
+        payment_method: studentData.paymentMethod,
+        birth_date: studentData.birthDate,
+        address: studentData.address,
+        cpf: studentData.cpf,
+        rg: studentData.rg,
+        parent_name: studentData.parentName,
+        parent_cpf: studentData.parentCpf,
+        document_url: studentData.documentUrl
       })
       .eq('id', id);
     
