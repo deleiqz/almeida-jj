@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Send, Users, CheckCircle, Search, Copy } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Send, UserCheck, MessageSquare, List, CheckCircle, Clock, Share2, Clipboard, Search, AlertCircle, Trash2, ExternalLink } from 'lucide-react';
 
 const Notifications = ({ students }) => {
   const [message, setMessage] = useState('');
