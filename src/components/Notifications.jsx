@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Send, UserCheck, MessageSquare, List, CheckCircle, Clock, Share2, Clipboard, Search, AlertCircle, Trash2, ExternalLink } from 'lucide-react';
+import { Send, UserCheck, MessageSquare, List, CheckCircle, Clock, Share2, Clipboard, Search, AlertCircle, Trash2, ExternalLink, Loader2 } from 'lucide-react';
 
 const Notifications = ({ students }) => {
   const [message, setMessage] = useState('');
@@ -346,14 +346,20 @@ const Notifications = ({ students }) => {
 
           {currentIndex !== -1 && (
             <div style={{ marginTop: '20px' }}>
-              <div style={{ fontSize: '0.85rem', marginBottom: '8px', color: 'var(--accent-primary)' }}>
-                Enviando para: <strong>{sendingQueue[currentIndex]?.name}</strong>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '8px' }}>
+                <div style={{ color: 'var(--accent-primary)' }}>
+                  Enviando para: <strong>{sendingQueue[currentIndex]?.name}</strong>
+                </div>
+                <div style={{ color: 'var(--text-secondary)' }}>
+                  {Math.round(((currentIndex + 1) / sendingQueue.length) * 100)}%
+                </div>
               </div>
-              <div style={{ width: '100%', height: '6px', background: 'rgba(255,255,255,0.05)', borderRadius: '3px', overflow: 'hidden' }}>
+              <div style={{ width: '100%', height: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', overflow: 'hidden' }}>
                 <div style={{ 
                   width: `${((currentIndex + 1) / sendingQueue.length) * 100}%`, 
                   height: '100%', 
                   background: 'var(--accent-primary)',
+                  boxShadow: '0 0 10px var(--accent-primary)',
                   transition: 'width 0.3s ease'
                 }}></div>
               </div>
@@ -463,10 +469,14 @@ const Notifications = ({ students }) => {
                 <tr key={student.id} style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                   <td style={{ padding: '12px' }}>{student.name}</td>
                   <td style={{ padding: '12px', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{student.phone}</td>
-                  <td style={{ padding: '12px' }}>
+                   <td style={{ padding: '12px' }}>
                     {sentIds.has(student.id) ? (
                       <span style={{ color: '#10b981', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', fontWeight: 'bold' }}>
                         <CheckCircle size={14} /> ENVIADO
+                      </span>
+                    ) : currentIndex !== -1 && sendingQueue[currentIndex]?.id === student.id ? (
+                      <span style={{ color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', fontWeight: 'bold' }}>
+                        <Loader2 size={14} className="spin" /> ENVIANDO...
                       </span>
                     ) : (
                       <span style={{ 
