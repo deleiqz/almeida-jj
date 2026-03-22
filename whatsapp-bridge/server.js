@@ -15,8 +15,16 @@ const client = new Client({
         clientId: "almeida-jj-session"
     }),
     puppeteer: {
-        args: ['--no-sandbox', '--disable-setuid-sandbox'],
-        headless: true
+        headless: true,
+        args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-accelerated-2d-canvas',
+            '--no-first-run',
+            '--no-zygote',
+            '--disable-gpu'
+        ]
     }
 });
 
@@ -61,11 +69,28 @@ app.post('/send-message', async (req, res) => {
         return res.status(503).json({ error: 'WhatsApp não está conectado ainda.' });
     }
 
-    if (!phone || !message) {
-        return res.status(400).json({ error: 'Telefone ou mensagem ausentes.' });
-    }
-
     try {
+        // Verifica se a conexão ainda está ativa antes de cada envio
+        let state;
+        try {
+            state = await client.getState();
+        } catch (e) {
+            isReady = false;
+            throw new Error('Conexão interna do WhatsApp falhou. Por favor, reinicie o terminal.');
+        }
+
+        if (state !== 'CONNECTED') {
+            isReady = false;
+            throw new Error('WhatsApp desconectado do celular.');
+        }
+
+        if (!phone || !message) {
+            return res.status(400).json({ error: 'Telefone ou mensagem ausentes.' });
+        }
+
+        // Pequena pausa de preparação
+        await delay(500);
+
         // Formata o número (garantindo que tenha @c.us)
         const chatId = phone.includes('@c.us') ? phone : `${phone}@c.us`;
         
