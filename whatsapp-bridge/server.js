@@ -1,13 +1,15 @@
 const express = require('express');
 const cors = require('cors');
 const { Client, LocalAuth } = require('whatsapp-web.js');
-const qrcode = require('qrcode-terminal');
+const qrcodeTerminal = require('qrcode-terminal');
+const imageQr = require('qrcode');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
 let isReady = false;
+let lastQr = '';
 
 // Configuração do Cliente WhatsApp
 const client = new Client({
@@ -25,12 +27,23 @@ const client = new Client({
             '--no-zygote',
             '--disable-gpu'
         ]
+    },
+    webVersionCache: {
+        type: 'remote',
+        remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.2412.54.html',
     }
 });
 
-client.on('qr', (qr) => {
+client.on('qr', async (qr) => {
     console.log('\n👇 ESCANEIE O QR CODE ABAIXO PARA CONECTAR:');
-    qrcode.generate(qr, { small: true });
+    qrcodeTerminal.generate(qr, { small: true });
+    
+    // Gera versão para web para facilitar na nuvem
+    try {
+        lastQr = await imageQr.toDataURL(qr);
+    } catch (err) {
+        console.error('Erro ao gerar QR para web:', err);
+    }
 });
 
 client.on('ready', () => {
@@ -59,6 +72,23 @@ const delay = ms => new Promise(res => setTimeout(res, ms));
 // Rota de Status
 app.get('/status', (req, res) => {
     res.json({ connected: isReady });
+});
+
+// Rota para ver o QR Code via Web
+app.get('/qr', (req, res) => {
+    if (isReady) {
+        return res.send('<h3>WhatsApp já está conectado!</h3>');
+    }
+    if (!lastQr) {
+        return res.send('<h3>Gerando QR Code... Aguarde alguns segundos e atualize a página.</h3>');
+    }
+    res.send(`
+        <div style="text-align:center; padding: 50px; font-family: sans-serif;">
+            <h2>Escaneie para Conectar</h2>
+            <img src="${lastQr}" style="border: 10px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.1)" />
+            <p>Após escanear, aguarde a confirmação no terminal ou atualize esta página.</p>
+        </div>
+    `);
 });
 
 // Rota de Envio de Mensagem Individual

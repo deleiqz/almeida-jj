@@ -258,6 +258,20 @@ const Notifications = ({ students }) => {
                   * Use <strong>localhost:3000</strong> se estiver no mesmo PC.
                 </div>
               </div>
+              <div style={{ marginTop: '10px' }}>
+                <a 
+                  href={`${apiConfig.localUrl}/qr`} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  style={{ 
+                    display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '0.8rem', 
+                    color: '#10b981', textDecoration: 'none', background: 'rgba(16,185,129,0.1)', 
+                    padding: '4px 10px', borderRadius: '4px' 
+                  }}
+                >
+                  <ExternalLink size={14} /> Abrir QR Code para Conectar
+                </a>
+              </div>
             </div>
           )}
 
