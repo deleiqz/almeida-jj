@@ -311,7 +311,7 @@ const Notifications = ({ students }) => {
                   cursor: 'pointer'
                 }}
               >
-                {copiedNumbers ? <CheckCircle size={14} /> : <Copy size={14} />}
+                {copiedNumbers ? <CheckCircle size={14} /> : <Clipboard size={14} />}
                 {copiedNumbers ? 'Números Copiados!' : 'Copiar Números'}
               </button>
             </div>
