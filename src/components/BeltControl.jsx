@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Award, Save, AlertTriangle } from 'lucide-react';
+import { Award, Save, AlertTriangle, Plus, Minus } from 'lucide-react';
 import { BELT_THRESHOLDS } from '../hooks/useStore';
 
-const BeltControl = ({ students, updateStudentBelt, getStudentAttendanceCount }) => {
+const BeltControl = ({ students, updateStudentBelt, getStudentAttendanceCount, markAttendance, removeAttendance }) => {
   const belts = [
     { name: 'Branca', color: '#ffffff' },
     { name: 'Cinza', color: '#808080' },
@@ -71,10 +71,28 @@ const BeltControl = ({ students, updateStudentBelt, getStudentAttendanceCount })
                         </span>
                       </td>
                       <td>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <div style={{ display: 'flex', gap: '4px' }}>
+                            <button 
+                              onClick={() => removeAttendance(student.id)}
+                              style={{ padding: '2px', background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: 'none', borderRadius: '4px', cursor: 'pointer', display: 'flex' }}
+                              title="Remover 1 Aula"
+                            >
+                              <Minus size={14} />
+                            </button>
+                            <button 
+                              onClick={() => markAttendance(student.id, null)}
+                              style={{ padding: '2px', background: 'rgba(16,185,129,0.1)', color: '#10b981', border: 'none', borderRadius: '4px', cursor: 'pointer', display: 'flex' }}
+                              title="Adicionar 1 Aula"
+                            >
+                              <Plus size={14} />
+                            </button>
+                          </div>
+                          
                           <span style={{ 
                             fontWeight: '600',
-                            color: canGraduate ? '#10b981' : isClose ? '#fbbf24' : 'inherit'
+                            color: canGraduate ? '#10b981' : isClose ? '#fbbf24' : 'inherit',
+                            minWidth: '40px'
                           }}>
                             {count}/{threshold > 0 ? threshold : '--'}
                           </span>

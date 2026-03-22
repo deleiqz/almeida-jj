@@ -184,6 +184,23 @@ export const useStore = () => {
     fetchDisplayData();
   };
 
+  const removeAttendance = async (studentId) => {
+    // Find the most recent attendance for this student
+    const { data: lastAttn } = await supabase
+      .from('attendance')
+      .select('id')
+      .eq('student_id', studentId)
+      .order('date', { ascending: false })
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    if (lastAttn && lastAttn.length > 0) {
+      const { error } = await supabase.from('attendance').delete().eq('id', lastAttn[0].id);
+      if (error) console.error(error);
+      fetchDisplayData();
+    }
+  };
+
   const getStudentAttendanceCount = (studentId, belt) => {
     const student = students.find(s => s.id === studentId);
     if (!student) return 0;
@@ -212,11 +229,21 @@ export const useStore = () => {
     fetchDisplayData();
   };
 
-  const getStats = () => {
+  const getStats = (selectedDate) => {
     const totalStudents = students.length;
     const paidStudents = students.filter(s => s.status === "pago").length;
     const pendingStudents = students.filter(s => s.status === "pendente" || s.status === "vencido").length;
     
+    // If selectedDate is provided, filter students who expired or were paid on that day
+    // This is a bit subjective, but we'll show "Recebimentos do Dia" and "Vencimentos do Dia"
+    const formattedDate = selectedDate || new Date().toISOString().split('T')[0];
+    
+    const receiptsOnDay = students
+      .filter(s => s.last_payment === formattedDate)
+      .reduce((sum, s) => sum + Number(s.amount), 0);
+      
+    const expiresOnDay = students.filter(s => s.nextDue === formattedDate).length;
+
     // Revenue by method
     const revenueByMethod = students.reduce((acc, s) => {
       if (s.status === "pago") {
@@ -229,6 +256,10 @@ export const useStore = () => {
     const totalRevenue = Object.values(revenueByMethod).reduce((sum, val) => sum + val, 0);
     const totalExpenses = expenses.reduce((acc, e) => acc + Number(e.amount), 0);
     
+    const expensesOnDay = expenses
+      .filter(e => e.due_date === formattedDate)
+      .reduce((sum, e) => sum + Number(e.amount), 0);
+
     return {
       totalStudents,
       paidStudents,
@@ -236,13 +267,16 @@ export const useStore = () => {
       totalRevenue,
       totalExpenses,
       revenueByMethod,
-      netProfit: totalRevenue - totalExpenses
+      netProfit: totalRevenue - totalExpenses,
+      receiptsOnDay,
+      expiresOnDay,
+      expensesOnDay
     };
   };
 
   return { 
     students, expenses, classes, attendance, enrollments,
-    addStudent, updateStudent, enrollStudent, updateStudentBelt, addClass, updateClass, deleteClass, markAttendance, addExpense, 
+    addStudent, updateStudent, enrollStudent, updateStudentBelt, addClass, updateClass, deleteClass, markAttendance, removeAttendance, addExpense, 
     getStats, getStudentAttendanceCount, loading 
   };
 };

@@ -1,8 +1,11 @@
-import { Users, DollarSign, TrendingUp, AlertCircle, Share2, ClipboardCheck } from 'lucide-react';
+import { Users, DollarSign, TrendingUp, AlertCircle, Share2, ClipboardCheck, Calendar } from 'lucide-react';
 import { useState } from 'react';
 
-const Dashboard = ({ stats, role }) => {
+const Dashboard = ({ getStats, role }) => {
   const [copied, setCopied] = useState(false);
+  const [dateFilter, setDateFilter] = useState(new Date().toISOString().split('T')[0]);
+
+  const stats = getStats(dateFilter);
 
   const cardData = [
     { title: "Total Alunos", value: stats.totalStudents, icon: <Users size={24} />, color: "var(--accent-primary)" },
@@ -20,8 +23,19 @@ const Dashboard = ({ stats, role }) => {
 
   return (
     <div className="dashboard-content">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-        <h2 style={{ fontWeight: '600', margin: 0 }} className="title-gradient">Visão Geral</h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '15px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+          <h2 style={{ fontWeight: '600', margin: 0 }} className="title-gradient">Visão Geral</h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.05)', padding: '4px 12px', borderRadius: '8px', border: '1px solid var(--card-border)' }}>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Filtrar Dia:</span>
+            <input 
+              type="date" 
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+              style={{ background: 'transparent', border: 'none', color: 'white', fontSize: '0.9rem', outline: 'none' }}
+            />
+          </div>
+        </div>
         <button 
           onClick={copyRegistrationLink}
           className="btn-primary"
@@ -29,6 +43,26 @@ const Dashboard = ({ stats, role }) => {
         >
           {copied ? <><ClipboardCheck size={18} /> Link Copiado!</> : <><Share2 size={18} /> Link de Cadastro (Zap)</>}
         </button>
+      </div>
+
+      <div className="glass" style={{ padding: '20px', marginBottom: '24px', background: 'rgba(255,215,0,0.03)', border: '1px dashed var(--accent-primary)' }}>
+         <h3 style={{ fontSize: '1rem', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Calendar size={18} color="var(--accent-primary)" /> Resumo do Dia: {new Date(dateFilter + 'T00:00:00').toLocaleDateString('pt-BR')}
+         </h3>
+         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
+            <div className="glass" style={{ padding: '15px', textAlign: 'center' }}>
+               <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Recebimentos</div>
+               <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#10b981' }}>R$ {stats.receiptsOnDay?.toLocaleString() || 0}</div>
+            </div>
+            <div className="glass" style={{ padding: '15px', textAlign: 'center' }}>
+               <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Vencimentos (Alunos)</div>
+               <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--warning)' }}>{stats.expiresOnDay || 0} alunos</div>
+            </div>
+            <div className="glass" style={{ padding: '15px', textAlign: 'center' }}>
+               <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Contas a Pagar</div>
+               <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--danger)' }}>R$ {stats.expensesOnDay?.toLocaleString() || 0}</div>
+            </div>
+         </div>
       </div>
       <div className="dashboard-grid">
         {cardData.map((card, i) => (

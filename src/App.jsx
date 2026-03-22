@@ -50,8 +50,16 @@ const App = () => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         setUser(session.user);
-        // If we have a session but no role/name in localStorage, we can't easily get it here 
-        // without another query, but since handleLogin sets them, they should be in localStorage.
+        // Fetch profile if role/name is missing
+        if (!role || !userName) {
+          supabase.from('profiles').select('role, full_name').eq('id', session.user.id).single()
+            .then(({ data: profile }) => {
+              if (profile) {
+                setRole(profile.role?.toLowerCase() || 'employee');
+                setUserName(profile.full_name || '');
+              }
+            });
+        }
       } else {
         handleLogout();
       }
@@ -69,7 +77,7 @@ const App = () => {
   }, []);
   const { 
     students, expenses, classes, attendance, enrollments,
-    addStudent, updateStudent, enrollStudent, updateStudentBelt, addClass, markAttendance, addExpense, 
+    addStudent, updateStudent, enrollStudent, updateStudentBelt, addClass, updateClass, deleteClass, markAttendance, removeAttendance, addExpense, 
     getStats, getStudentAttendanceCount, loading 
   } = useStore();
 
