@@ -1,0 +1,92 @@
+const express = require('express');
+const cors = require('cors');
+const { Client, LocalAuth } = require('whatsapp-web.js');
+const qrcode = require('qrcode-terminal');
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+let isReady = false;
+
+// Configuração do Cliente WhatsApp
+const client = new Client({
+    authStrategy: new LocalAuth({
+        clientId: "almeida-jj-session"
+    }),
+    puppeteer: {
+        args: ['--no-sandbox', '--disable-setuid-sandbox'],
+        headless: true
+    }
+});
+
+client.on('qr', (qr) => {
+    console.log('\n👇 ESCANEIE O QR CODE ABAIXO PARA CONECTAR:');
+    qrcode.generate(qr, { small: true });
+});
+
+client.on('ready', () => {
+    console.log('\n✅ WhatsApp CONECTADO e pronto para uso!');
+    isReady = true;
+});
+
+client.on('authenticated', () => {
+    console.log('\n👍 Autenticado com sucesso!');
+});
+
+client.on('auth_failure', msg => {
+    console.error('\n❌ Falha na autenticação:', msg);
+});
+
+client.on('disconnected', (reason) => {
+    console.log('\n🚪 WhatsApp desconectado:', reason);
+    isReady = false;
+});
+
+client.initialize();
+
+// Helper para delay
+const delay = ms => new Promise(res => setTimeout(res, ms));
+
+// Rota de Status
+app.get('/status', (req, res) => {
+    res.json({ connected: isReady });
+});
+
+// Rota de Envio de Mensagem Individual
+app.post('/send-message', async (req, res) => {
+    const { phone, message } = req.body;
+
+    if (!isReady) {
+        return res.status(503).json({ error: 'WhatsApp não está conectado ainda.' });
+    }
+
+    if (!phone || !message) {
+        return res.status(400).json({ error: 'Telefone ou mensagem ausentes.' });
+    }
+
+    try {
+        // Formata o número (garantindo que tenha @c.us)
+        const chatId = phone.includes('@c.us') ? phone : `${phone}@c.us`;
+        
+        await client.sendMessage(chatId, message);
+        console.log(`✔️ Mensagem enviada para: ${phone}`);
+        
+        // Delay solicitado pelo usuário: Mínimo 10 segundos
+        // Vamos usar 10 a 15 segundos aleatórios para maior segurança
+        const waitTime = Math.floor(Math.random() * (15000 - 10000 + 1) + 10000);
+        console.log(`⏳ Aguardando ${waitTime/1000} segundos para o próximo...`);
+        await delay(waitTime);
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error(`❌ Erro ao enviar para ${phone}:`, error.message);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+const PORT = 3000;
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`\n🖥️  Ponte WhatsApp rodando em http://localhost:${PORT}`);
+    console.log('--------------------------------------------------');
+});

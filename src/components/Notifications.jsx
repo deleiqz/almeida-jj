@@ -9,10 +9,10 @@ const Notifications = ({ students }) => {
   const [currentIndex, setCurrentIndex] = useState(-1);
   const [sentIds, setSentIds] = useState(new Set());
   const [copiedNumbers, setCopiedNumbers] = useState(false);
-  const [sendMode, setSendMode] = useState('manual'); // 'manual' or 'api'
+  const [sendMode, setSendMode] = useState('manual'); // 'manual', 'api', or 'local'
   const [apiConfig, setApiConfig] = useState(() => {
     const saved = localStorage.getItem('whatsapp_api_config');
-    return saved ? JSON.parse(saved) : { instance: '', token: '', clientToken: '' };
+    return saved ? JSON.parse(saved) : { instance: '', token: '', clientToken: '', localUrl: 'http://localhost:3000' };
   });
   const [isSendingAuto, setIsSendingAuto] = useState(false);
 
@@ -54,7 +54,7 @@ const Notifications = ({ students }) => {
         const url = `https://web.whatsapp.com/send?phone=${fullPhone}&text=${encodeURIComponent(message)}`;
         window.open(url, '_blank');
         updateProgress(student.id);
-      } else {
+      } else if (sendMode === 'api') {
         // Professional Mode (Z-API example)
         if (!apiConfig.instance || !apiConfig.token) {
           alert("Configure a Instância e o Token da Z-API primeiro!");
@@ -77,9 +77,8 @@ const Notifications = ({ students }) => {
 
           if (response.ok) {
             updateProgress(student.id);
-            // In API mode, we can auto-advance with a delay
             if (currentIndex + 1 < sendingQueue.length) {
-              setTimeout(() => sendNext(), 2000); // 2 seconds delay between messages
+              setTimeout(() => sendNext(), 2000); 
             } else {
               finishQueue();
             }
@@ -90,6 +89,36 @@ const Notifications = ({ students }) => {
           }
         } catch (error) {
           alert(`Erro de conexão: ${error.message}`);
+          setIsSendingAuto(false);
+        }
+      } else if (sendMode === 'local') {
+        const baseUrl = apiConfig.localUrl || 'http://localhost:3000';
+        setIsSendingAuto(true);
+        try {
+          const response = await fetch(`${baseUrl}/send-message`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              phone: fullPhone,
+              message: message
+            })
+          });
+
+          if (response.ok) {
+            updateProgress(student.id);
+            if (currentIndex + 1 < sendingQueue.length) {
+              // No need for frontend timeout here, server does the delay
+              sendNext();
+            } else {
+              finishQueue();
+            }
+          } else {
+            const err = await response.json();
+            alert(`Erro no Servidor Local: ${err.error || 'Verifique se o terminal está rodando'}`);
+            setIsSendingAuto(false);
+          }
+        } catch (error) {
+          alert(`Erro de conexão com o servidor local: ${error.message}. (O terminal no PC está aberto?)`);
           setIsSendingAuto(false);
         }
       }
@@ -175,7 +204,17 @@ const Notifications = ({ students }) => {
                 cursor: 'pointer', fontWeight: sendMode === 'api' ? 'bold' : 'normal'
               }}
             >
-              Modo Profissional (API Z-API)
+              Modo Profissional (Z-API)
+            </button>
+            <button 
+              onClick={() => setSendMode('local')}
+              style={{ 
+                background: 'none', border: 'none', color: sendMode === 'local' ? 'var(--accent-primary)' : 'var(--text-secondary)',
+                padding: '8px 0', borderBottom: sendMode === 'local' ? '2px solid var(--accent-primary)' : 'none',
+                cursor: 'pointer', fontWeight: sendMode === 'local' ? 'bold' : 'normal'
+              }}
+            >
+              Servidor Próprio (Grátis)
             </button>
           </div>
 
@@ -202,9 +241,23 @@ const Notifications = ({ students }) => {
                   style={{ padding: '8px', fontSize: '0.8rem', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '4px' }}
                 />
               </div>
-              <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '8px' }}>
-                * Suas chaves ficam salvas apenas neste navegador por segurança.
-              </p>
+            </div>
+          )}
+
+          {sendMode === 'local' && (
+            <div className="glass" style={{ padding: '15px', marginBottom: '20px', background: 'rgba(16,185,129,0.02)', border: '1px dashed #10b981' }}>
+              <h4 style={{ fontSize: '0.9rem', marginBottom: '10px', color: '#10b981' }}>Configuração Servidor Local</h4>
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                <input 
+                  type="text" placeholder="URL do Servidor (Ex: http://192.168.1.10:3000)" 
+                  value={apiConfig.localUrl}
+                  onChange={(e) => saveApiConfig({...apiConfig, localUrl: e.target.value})}
+                  style={{ flex: 1, padding: '8px', fontSize: '0.8rem', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '4px' }}
+                />
+                <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
+                  * Use <strong>localhost:3000</strong> se estiver no mesmo PC.
+                </div>
+              </div>
             </div>
           )}
 
