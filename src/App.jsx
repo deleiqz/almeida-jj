@@ -117,9 +117,15 @@ const App = () => {
     );
 
     switch (activeTab) {
-      case 'dashboard': return <Dashboard stats={getStats()} role={normalizedRole} />;
+      case 'dashboard':      return <Dashboard getStats={getStats} role={normalizedRole} />;
       case 'students': return <StudentList students={students} classes={classes} enrollments={enrollments} addStudent={addStudent} updateStudent={updateStudent} />;
-      case 'belts': return <BeltControl students={students} updateStudentBelt={updateStudentBelt} getStudentAttendanceCount={getStudentAttendanceCount} />;
+      case 'belts':          return <BeltControl 
+          students={students} 
+          updateStudentBelt={updateStudentBelt} 
+          getStudentAttendanceCount={getStudentAttendanceCount}
+          markAttendance={markAttendance}
+          removeAttendance={removeAttendance}
+        />;
       case 'attendance': return <Attendance students={students} classes={classes} attendance={attendance} enrollments={enrollments} markAttendance={markAttendance} />;
       case 'classes':        return <ClassList 
           classes={classes} 
