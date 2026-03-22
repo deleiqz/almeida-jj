@@ -39,13 +39,20 @@ const Notifications = ({ students }) => {
     if (confirmSend) {
       setSendingQueue(filteredStudents);
       setCurrentIndex(0);
+      if (sendMode !== 'manual') {
+        // For auto-modes, we call sendNext with index 0 immediately
+        sendNext(0, filteredStudents);
+      }
     }
   };
 
-  const sendNext = async () => {
-    if (currentIndex >= 0 && currentIndex < sendingQueue.length) {
-      const student = sendingQueue[currentIndex];
-      if (!student.phone) return skipNext();
+  const sendNext = async (indexOverride = null, queueOverride = null) => {
+    const idx = indexOverride !== null ? indexOverride : currentIndex;
+    const queue = queueOverride !== null ? queueOverride : sendingQueue;
+
+    if (idx >= 0 && idx < queue.length) {
+      const student = queue[idx];
+      if (!student.phone) return skipNext(idx, queue);
 
       const phone = student.phone.replace(/\D/g, '');
       const fullPhone = `55${phone}`;
@@ -53,9 +60,8 @@ const Notifications = ({ students }) => {
       if (sendMode === 'manual') {
         const url = `https://web.whatsapp.com/send?phone=${fullPhone}&text=${encodeURIComponent(message)}`;
         window.open(url, '_blank');
-        updateProgress(student.id);
+        updateProgress(student.id, idx, queue);
       } else if (sendMode === 'api') {
-        // Professional Mode (Z-API example)
         if (!apiConfig.instance || !apiConfig.token) {
           alert("Configure a Instância e o Token da Z-API primeiro!");
           return cancelQueue();
@@ -76,9 +82,9 @@ const Notifications = ({ students }) => {
           });
 
           if (response.ok) {
-            updateProgress(student.id);
-            if (currentIndex + 1 < sendingQueue.length) {
-              setTimeout(() => sendNext(), 2000); 
+            updateProgress(student.id, idx, queue);
+            if (idx + 1 < queue.length) {
+              setTimeout(() => sendNext(idx + 1, queue), 10000); // 10s delay
             } else {
               finishQueue();
             }
@@ -105,10 +111,10 @@ const Notifications = ({ students }) => {
           });
 
           if (response.ok) {
-            updateProgress(student.id);
-            if (currentIndex + 1 < sendingQueue.length) {
-              // No need for frontend timeout here, server does the delay
-              sendNext();
+            updateProgress(student.id, idx, queue);
+            if (idx + 1 < queue.length) {
+              // Local server has its own delay, but we'll add 2s here just for safety
+              setTimeout(() => sendNext(idx + 1, queue), 2000); 
             } else {
               finishQueue();
             }
@@ -125,22 +131,28 @@ const Notifications = ({ students }) => {
     }
   };
 
-  const updateProgress = (studentId) => {
+  const updateProgress = (studentId, currentIdx, queue) => {
     setSentIds(prev => new Set(prev).add(studentId));
     if (sendMode === 'manual') {
-      if (currentIndex + 1 < sendingQueue.length) {
-        setCurrentIndex(prev => prev + 1);
+      if (currentIdx + 1 < queue.length) {
+        setCurrentIndex(currentIdx + 1);
       } else {
         finishQueue();
       }
     } else {
-      setCurrentIndex(prev => prev + 1);
+      setCurrentIndex(currentIdx + 1);
     }
   };
 
-  const skipNext = () => {
-    if (currentIndex + 1 < sendingQueue.length) {
-      setCurrentIndex(prev => prev + 1);
+  const skipNext = (currentIdx, queue) => {
+    const q = queue || sendingQueue;
+    const idx = currentIdx !== null ? currentIdx : currentIndex;
+    
+    if (idx + 1 < q.length) {
+      setCurrentIndex(idx + 1);
+      if (sendMode !== 'manual' && isSendingAuto) {
+         sendNext(idx + 1, q);
+      }
     } else {
       finishQueue();
     }
