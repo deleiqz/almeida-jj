@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Search, Plus, Edit2, Share2, ClipboardCheck, Mail, MessageSquare, Phone } from 'lucide-react';
 import Modal from './Modal';
 
-const StudentList = ({ students, classes, enrollments, addStudent, updateStudent }) => {
+const StudentList = ({ students, classes, enrollments, addStudent, updateStudent, deleteStudent }) => {
   const [isModalOpen, setModalOpen] = useState(false);
   const [isEditMode, setEditMode] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -13,7 +13,7 @@ const StudentList = ({ students, classes, enrollments, addStudent, updateStudent
   const [copied, setCopied] = useState(false);
   const [isShareModalOpen, setShareModalOpen] = useState(false);
   const [shareData, setShareData] = useState({ phone: '', email: '' });
-  const registrationLink = "https://cadastrojj.netlify.app/";
+  const registrationLink = "https://almeida-jj.vercel.app/?registro";
 
   const copyRegistrationLink = () => {
     navigator.clipboard.writeText(registrationLink);
@@ -46,6 +46,13 @@ const StudentList = ({ students, classes, enrollments, addStudent, updateStudent
       addStudent({ ...newStudent, lastPayment: new Date().toISOString().split('T')[0] });
     }
     closeModal();
+  };
+
+  const handleDeleteStudent = () => {
+    if (window.confirm("Você tem certeza que deseja EXCLUIR permanentemente este aluno? Esta ação não pode ser desfeita.")) {
+      deleteStudent(editingId);
+      closeModal();
+    }
   };
 
   const openAddModal = () => {
@@ -295,9 +302,23 @@ const StudentList = ({ students, classes, enrollments, addStudent, updateStudent
             </div>
           </div>
 
-          <button type="submit" className="btn-primary" style={{ marginTop: '10px' }}>
-            {isEditMode ? "Salvar Alterações" : "Confirmar Cadastro"}
-          </button>
+          <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+            <button type="submit" className="btn-primary" style={{ flex: 1 }}>
+              {isEditMode ? "Salvar Alterações" : "Confirmar Cadastro"}
+            </button>
+            {isEditMode && (
+              <button 
+                type="button" 
+                onClick={handleDeleteStudent} 
+                style={{ 
+                  background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)', 
+                  padding: '12px 20px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' 
+                }}
+              >
+                Excluir
+              </button>
+            )}
+          </div>
         </form>
       </Modal>
 

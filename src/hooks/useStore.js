@@ -124,6 +124,12 @@ export const useStore = () => {
     fetchDisplayData();
   };
 
+  const deleteStudent = async (id) => {
+    const { error } = await supabase.from('students').delete().eq('id', id);
+    if (!error) fetchDisplayData();
+    else console.error("Error deleting student:", error);
+  };
+
   const enrollStudent = async (studentId, classId) => {
     if (!classId) return;
     
@@ -276,7 +282,7 @@ export const useStore = () => {
 
   return { 
     students, expenses, classes, attendance, enrollments,
-    addStudent, updateStudent, enrollStudent, updateStudentBelt, addClass, updateClass, deleteClass, markAttendance, removeAttendance, addExpense, 
+    addStudent, updateStudent, deleteStudent, enrollStudent, updateStudentBelt, addClass, updateClass, deleteClass, markAttendance, removeAttendance, addExpense, 
     getStats, getStudentAttendanceCount, loading 
   };
 };
