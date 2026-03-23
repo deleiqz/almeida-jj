@@ -87,7 +87,7 @@ const App = () => {
   }, []);
   const { 
     students, expenses, classes, attendance, enrollments,
-    addStudent, updateStudent, enrollStudent, updateStudentBelt, addClass, updateClass, deleteClass, markAttendance, removeAttendance, addExpense, 
+    addStudent, updateStudent, deleteStudent, enrollStudent, updateStudentBelt, addClass, updateClass, deleteClass, markAttendance, removeAttendance, addExpense, 
     getStats, getStudentAttendanceCount, loading 
   } = useStore();
 
