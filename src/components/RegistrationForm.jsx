@@ -2,6 +2,23 @@ import React, { useState, useRef, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import logo from '../assets/logo.jpg';
 
+// Validador oficial de CPF
+const validateCPF = (cpf) => {
+  cpf = cpf.replace(/[^\d]+/g, '');
+  if (cpf === '' || cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) return false;
+  let add = 0;
+  for (let i = 0; i < 9; i++) add += parseInt(cpf.charAt(i)) * (10 - i);
+  let rev = 11 - (add % 11);
+  if (rev === 10 || rev === 11) rev = 0;
+  if (rev !== parseInt(cpf.charAt(9))) return false;
+  add = 0;
+  for (let i = 0; i < 10; i++) add += parseInt(cpf.charAt(i)) * (11 - i);
+  rev = 11 - (add % 11);
+  if (rev === 10 || rev === 11) rev = 0;
+  if (rev !== parseInt(cpf.charAt(10))) return false;
+  return true;
+};
+
 // Extracted styles to keep JSX clean
 const inputStyle = {
   width: '100%',
@@ -133,6 +150,18 @@ const RegistrationForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validate CPF
+    if (!validateCPF(formData.cpf)) {
+      alert("O CPF do aluno é inválido. Por favor, digite um CPF real.");
+      return;
+    }
+    
+    if (isMinor && !validateCPF(formData.parentCpf)) {
+      alert("O CPF do responsável é inválido. Por favor, digite um CPF real.");
+      return;
+    }
+
     setLoading(true);
 
     let documentUrl = '';
