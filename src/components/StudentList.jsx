@@ -96,10 +96,11 @@ const StudentList = ({ students, classes, enrollments, addStudent, updateStudent
     if (student.plan === 'Trimestral') total = 3;
     if (student.plan === 'Anual') total = 12;
 
-    if (total === 1 || !student.createdAt) return null;
+    if (total === 1 || !student.createdAt || !student.nextDue) return null;
 
     const start = new Date(student.createdAt);
     const due = new Date(student.nextDue);
+    if (isNaN(start.getTime()) || isNaN(due.getTime())) return null;
     
     let paid = (due.getFullYear() - start.getFullYear()) * 12 + (due.getMonth() - start.getMonth());
     if (paid < 0) paid = 0;
