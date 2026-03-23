@@ -93,7 +93,7 @@ const App = () => {
   }, []);
   const { 
     students, expenses, classes, attendance, enrollments,
-    addStudent, updateStudent, deleteStudent, enrollStudent, updateStudentBelt, addClass, updateClass, deleteClass, markAttendance, removeAttendance, addExpense, 
+    addStudent, updateStudent, deleteStudent, enrollStudent, updateStudentBelt, addClass, updateClass, deleteClass, markAttendance, removeAttendance, addExpense, updateExpense, deleteExpense,
     getStats, getStudentAttendanceCount, loading 
   } = useStore(isPublicRegistration);
 

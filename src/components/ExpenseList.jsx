@@ -72,7 +72,7 @@ const ExpenseList = ({ expenses, addExpense, updateExpense, deleteExpense }) => 
               </div>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                 <span className={`badge badge-${expense.status === 'pago' || expense.status === 'paga' ? 'paid' : 'pending'}`}>
-                  {expense.status.toUpperCase()}
+                  {(expense.status || 'pendente').toUpperCase()}
                 </span>
                 <div style={{ display: 'flex', gap: '4px' }}>
                   <button onClick={() => openEditModal(expense)} style={{ background: 'transparent', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer', padding: '4px' }} title="Editar">
