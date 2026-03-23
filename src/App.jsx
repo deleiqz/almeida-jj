@@ -79,7 +79,13 @@ const App = () => {
       if (session) {
         setUser(session.user);
       } else {
-        handleLogout();
+        // Prevent infinite loop by manually clearing state instead of calling handleLogout()
+        setUser(null);
+        setRole(null);
+        setUserName('');
+        localStorage.removeItem('user');
+        localStorage.removeItem('role');
+        localStorage.removeItem('userName');
       }
     });
 
@@ -145,7 +151,7 @@ const App = () => {
           deleteClass={deleteClass}
         />; 
       case 'notifications': return <Notifications students={students} />;
-      case 'expenses': return ['admin', 'master'].includes(normalizedRole) ? <ExpenseList expenses={expenses} addExpense={addExpense} /> : <Dashboard getStats={getStats} role={normalizedRole} students={students} expenses={expenses} />;
+      case 'expenses': return ['admin', 'master'].includes(normalizedRole) ? <ExpenseList expenses={expenses} addExpense={addExpense} updateExpense={updateExpense} deleteExpense={deleteExpense} /> : <Dashboard getStats={getStats} role={normalizedRole} students={students} expenses={expenses} />;
       case 'maintenance': return ['admin', 'master'].includes(normalizedRole) ? <Maintenance /> : <Dashboard getStats={getStats} role={normalizedRole} students={students} expenses={expenses} />;
       default: return <Dashboard getStats={getStats} role={normalizedRole} students={students} expenses={expenses} />;
     }
