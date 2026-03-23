@@ -1,7 +1,7 @@
 import { Users, DollarSign, TrendingUp, AlertCircle, Share2, ClipboardCheck, Calendar, Clock, AlertTriangle } from 'lucide-react';
 import { useState } from 'react';
 
-const Dashboard = ({ getStats, role }) => {
+const Dashboard = ({ getStats, role, students = [], expenses = [] }) => {
   const [dateFilter, setDateFilter] = useState(new Date().toISOString().split('T')[0]);
 
   const stats = getStats(dateFilter);
