@@ -128,7 +128,7 @@ const Dashboard = ({ getStats, role }) => {
               {overdueStudents.map(s => (
                 <div key={`s-${s.id}`} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px', background: 'rgba(239, 68, 68, 0.05)', borderRadius: '8px' }}>
                   <span style={{ fontSize: '0.9rem', color: 'white' }}>{s.name} <span style={{ color: 'var(--danger)', fontSize: '0.75rem' }}>(Aluno)</span></span>
-                  <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Venceu: {s.nextDue?.split('-').reverse().join('/')}</span>
+                  <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Venceu: {s.nextDue ? s.nextDue.split('-').reverse().join('/') : '-'}</span>
                 </div>
               ))}
               {overdueExpenses.map(e => (
@@ -154,7 +154,7 @@ const Dashboard = ({ getStats, role }) => {
                 <div key={`s-${s.id}`} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px', background: 'rgba(16, 185, 129, 0.05)', borderRadius: '8px' }}>
                   <div style={{ display: 'flex', flexDirection: 'column' }}>
                     <span style={{ fontSize: '0.9rem', color: 'white' }}>{s.name}</span>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Dia: {s.nextDue?.split('-').reverse().join('/')}</span>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Dia: {s.nextDue ? s.nextDue.split('-').reverse().join('/') : '-'}</span>
                   </div>
                   <span style={{ fontSize: '0.9rem', color: '#10b981', fontWeight: 'bold' }}>R$ {Number(s.amount).toLocaleString()}</span>
                 </div>
@@ -177,7 +177,7 @@ const Dashboard = ({ getStats, role }) => {
                   <div key={`e-${e.id}`} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px', background: 'rgba(245, 158, 11, 0.05)', borderRadius: '8px' }}>
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                       <span style={{ fontSize: '0.9rem', color: 'white' }}>{e.description}</span>
-                      <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Vence: {e.dueDate?.split('-').reverse().join('/')}</span>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Vence: {e.dueDate ? e.dueDate.split('-').reverse().join('/') : '-'}</span>
                     </div>
                     <span style={{ fontSize: '0.9rem', color: 'var(--warning)', fontWeight: 'bold' }}>R$ {Number(e.amount).toLocaleString()}</span>
                   </div>
