@@ -306,20 +306,27 @@ const Notifications = ({ students }) => {
                   Testar
                 </button>
               </div>
-              <div style={{ marginTop: '10px' }}>
+              <div style={{ display: 'flex', gap: '15px', marginTop: '8px' }}>
                 <a 
                   href={`${apiConfig.localUrl}/qr`} 
                   target="_blank" 
-                  rel="noopener noreferrer"
-                  style={{ 
-                    display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '0.8rem', 
-                    color: '#10b981', textDecoration: 'none', background: 'rgba(16,185,129,0.1)', 
-                    padding: '4px 10px', borderRadius: '4px' 
-                  }}
+                  rel="noreferrer"
+                  style={{ fontSize: '0.75rem', color: 'var(--accent-primary)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}
                 >
-                  <ExternalLink size={14} /> Abrir QR Code para Conectar
+                  <ExternalLink size={12} /> Ver QR Code
+                </a>
+                <a 
+                  href={`${apiConfig.localUrl}/`} 
+                  target="_blank" 
+                  rel="noreferrer"
+                  style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}
+                >
+                  <ExternalLink size={12} /> Status do Servidor
                 </a>
               </div>
+              <p style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.3)', marginTop: '8px' }}>
+                * Link do <strong>ngrok</strong> ou <strong>IP:3000</strong>. Cada mensagem tem delay de 10-15s para sua segurança.
+              </p>
             </div>
           )}
 
