@@ -119,7 +119,7 @@ const App = () => {
     { id: 'classes', label: 'Turmas', icon: <LayoutDashboard size={20} /> },
     { id: 'notifications', label: 'Notificações', icon: <Send size={20} /> },
     { id: 'expenses', label: 'Financeiro', icon: <CreditCard size={20} />, restricted: true },
-    { id: 'maintenance', label: 'Manutenção', icon: <Settings size={20} />, restricted: true },
+    { id: 'maintenance', label: 'Manutenção', icon: <Settings size={20} /> },
   ];
 
   const normalizedRole = role?.toLowerCase();
@@ -152,7 +152,7 @@ const App = () => {
         />; 
       case 'notifications': return <Notifications students={students} />;
       case 'expenses': return ['admin', 'master'].includes(normalizedRole) ? <ExpenseList expenses={expenses} addExpense={addExpense} updateExpense={updateExpense} deleteExpense={deleteExpense} /> : <Dashboard getStats={getStats} role={normalizedRole} students={students} expenses={expenses} />;
-      case 'maintenance': return ['admin', 'master'].includes(normalizedRole) ? <Maintenance /> : <Dashboard getStats={getStats} role={normalizedRole} students={students} expenses={expenses} />;
+      case 'maintenance': return <Maintenance />;
       default: return <Dashboard getStats={getStats} role={normalizedRole} students={students} expenses={expenses} />;
     }
   };
