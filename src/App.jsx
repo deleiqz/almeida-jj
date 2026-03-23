@@ -126,12 +126,6 @@ const App = () => {
       </div>
     );
 
-    const suspenseFallback = (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh', color: 'var(--accent-primary)', fontSize: '1.1rem', fontWeight: '600' }}>
-        Carregando...
-      </div>
-    );
-
     switch (activeTab) {
       case 'dashboard':      return <Dashboard getStats={getStats} role={normalizedRole} students={students} expenses={expenses} />;
       case 'students': return <StudentList students={students} classes={classes} enrollments={enrollments} addStudent={addStudent} updateStudent={updateStudent} deleteStudent={deleteStudent} />;
@@ -164,6 +158,12 @@ const App = () => {
   if (!user) {
     return <Login onLogin={handleLogin} />;
   }
+
+  const suspenseFallback = (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh', color: 'var(--accent-primary)', fontSize: '1.1rem', fontWeight: '600' }}>
+      Carregando...
+    </div>
+  );
 
   return (
     <div className="app-container" style={{ 
