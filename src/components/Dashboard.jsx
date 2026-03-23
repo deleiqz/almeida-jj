@@ -133,7 +133,7 @@ const Dashboard = ({ getStats, role, students = [], expenses = [] }) => {
               ))}
               {overdueExpenses.map(e => (
                 <div key={`e-${e.id}`} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px', background: 'rgba(239, 68, 68, 0.05)', borderRadius: '8px' }}>
-                  <span style={{ fontSize: '0.9rem', color: 'white' }}>{e.description} <span style={{ color: 'var(--danger)', fontSize: '0.75rem' }}>(Despesa)</span></span>
+                  <span style={{ fontSize: '0.9rem', color: 'white' }}>{e.type} <span style={{ color: 'var(--danger)', fontSize: '0.75rem' }}>(Despesa)</span></span>
                   <span style={{ fontSize: '0.9rem', color: 'var(--danger)', fontWeight: 'bold' }}>R$ {Number(e.amount).toLocaleString()}</span>
                 </div>
               ))}
@@ -176,7 +176,7 @@ const Dashboard = ({ getStats, role, students = [], expenses = [] }) => {
                 {upcomingExpenses.map(e => (
                   <div key={`e-${e.id}`} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px', background: 'rgba(245, 158, 11, 0.05)', borderRadius: '8px' }}>
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      <span style={{ fontSize: '0.9rem', color: 'white' }}>{e.description}</span>
+                      <span style={{ fontSize: '0.9rem', color: 'white' }}>{e.type}</span>
                       <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Vence: {e.dueDate ? e.dueDate.split('-').reverse().join('/') : '-'}</span>
                     </div>
                     <span style={{ fontSize: '0.9rem', color: 'var(--warning)', fontWeight: 'bold' }}>R$ {Number(e.amount).toLocaleString()}</span>
