@@ -42,7 +42,8 @@ export const useStore = () => {
       rg: s.rg,
       parentName: s.parent_name,
       parentCpf: s.parent_cpf,
-      documentUrl: s.document_url
+      documentUrl: s.document_url,
+      createdAt: s.created_at
     })));
     
     if (exps) setExpenses(exps.map(e => ({

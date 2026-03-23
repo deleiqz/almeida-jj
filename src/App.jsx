@@ -117,8 +117,8 @@ const App = () => {
     );
 
     switch (activeTab) {
-      case 'dashboard':      return <Dashboard getStats={getStats} role={normalizedRole} />;
-      case 'students': return <StudentList students={students} classes={classes} enrollments={enrollments} addStudent={addStudent} updateStudent={updateStudent} />;
+      case 'dashboard':      return <Dashboard getStats={getStats} role={normalizedRole} students={students} expenses={expenses} />;
+      case 'students': return <StudentList students={students} classes={classes} enrollments={enrollments} addStudent={addStudent} updateStudent={updateStudent} deleteStudent={deleteStudent} />;
       case 'belts':          return <BeltControl 
           students={students} 
           updateStudentBelt={updateStudentBelt} 
@@ -135,9 +135,9 @@ const App = () => {
           deleteClass={deleteClass}
         />; 
       case 'notifications': return <Notifications students={students} />;
-      case 'expenses': return ['admin', 'master'].includes(normalizedRole) ? <ExpenseList expenses={expenses} addExpense={addExpense} /> : <Dashboard stats={getStats()} role={normalizedRole} />;
-      case 'maintenance': return ['admin', 'master'].includes(normalizedRole) ? <Maintenance /> : <Dashboard stats={getStats()} role={normalizedRole} />;
-      default: return <Dashboard stats={getStats()} role={normalizedRole} />;
+      case 'expenses': return ['admin', 'master'].includes(normalizedRole) ? <ExpenseList expenses={expenses} addExpense={addExpense} /> : <Dashboard getStats={getStats} role={normalizedRole} students={students} expenses={expenses} />;
+      case 'maintenance': return ['admin', 'master'].includes(normalizedRole) ? <Maintenance /> : <Dashboard getStats={getStats} role={normalizedRole} students={students} expenses={expenses} />;
+      default: return <Dashboard getStats={getStats} role={normalizedRole} students={students} expenses={expenses} />;
     }
   };
 

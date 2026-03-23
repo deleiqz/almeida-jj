@@ -1,4 +1,4 @@
-import { Users, DollarSign, TrendingUp, AlertCircle, Share2, ClipboardCheck, Calendar } from 'lucide-react';
+import { Users, DollarSign, TrendingUp, AlertCircle, Share2, ClipboardCheck, Calendar, Clock, AlertTriangle } from 'lucide-react';
 import { useState } from 'react';
 
 const Dashboard = ({ getStats, role }) => {
@@ -12,6 +12,29 @@ const Dashboard = ({ getStats, role }) => {
     { title: "Despesas", value: ['admin', 'master'].includes(role) ? `R$ ${stats.totalExpenses.toLocaleString()}` : '***', icon: <DollarSign size={24} />, color: "var(--danger)" },
     { title: "Pendentes/Atenção", value: stats.pendingStudents, icon: <AlertCircle size={24} />, color: "var(--warning)" },
   ];
+
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  
+  const sevenDaysFromNow = new Date(today);
+  sevenDaysFromNow.setDate(today.getDate() + 7);
+
+  const isDueSoon = (dateStr) => {
+    if (!dateStr) return false;
+    const d = new Date(dateStr + 'T00:00:00');
+    return d >= today && d <= sevenDaysFromNow;
+  };
+
+  const isOverdue = (dateStr) => {
+    if (!dateStr) return false;
+    const d = new Date(dateStr + 'T00:00:00');
+    return d < today;
+  };
+
+  const upcomingReceipts = students?.filter(s => s.status === 'pendente' && isDueSoon(s.nextDue)) || [];
+  const overdueStudents = students?.filter(s => s.status === 'vencido' || (s.status === 'pendente' && isOverdue(s.nextDue))) || [];
+  const upcomingExpenses = expenses?.filter(e => e.status !== 'pago' && isDueSoon(e.dueDate)) || [];
+  const overdueExpenses = expenses?.filter(e => e.status !== 'pago' && isOverdue(e.dueDate)) || [];
 
 
   return (
@@ -89,6 +112,81 @@ const Dashboard = ({ getStats, role }) => {
             </div>
           </div>
         )}
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px', marginTop: '20px' }}>
+        
+        {/* Ações Pendentes (Vencidos) */}
+        <div className="glass" style={{ padding: '20px', borderTop: '3px solid var(--danger)' }}>
+          <h3 style={{ fontSize: '1.1rem', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--danger)' }}>
+            <AlertTriangle size={20} /> Ações Pendentes
+          </h3>
+          {overdueStudents.length === 0 && overdueExpenses.length === 0 ? (
+            <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Nenhuma pendência crítica.</div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '300px', overflowY: 'auto' }}>
+              {overdueStudents.map(s => (
+                <div key={`s-${s.id}`} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px', background: 'rgba(239, 68, 68, 0.05)', borderRadius: '8px' }}>
+                  <span style={{ fontSize: '0.9rem', color: 'white' }}>{s.name} <span style={{ color: 'var(--danger)', fontSize: '0.75rem' }}>(Aluno)</span></span>
+                  <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Venceu: {s.nextDue?.split('-').reverse().join('/')}</span>
+                </div>
+              ))}
+              {overdueExpenses.map(e => (
+                <div key={`e-${e.id}`} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px', background: 'rgba(239, 68, 68, 0.05)', borderRadius: '8px' }}>
+                  <span style={{ fontSize: '0.9rem', color: 'white' }}>{e.description} <span style={{ color: 'var(--danger)', fontSize: '0.75rem' }}>(Despesa)</span></span>
+                  <span style={{ fontSize: '0.9rem', color: 'var(--danger)', fontWeight: 'bold' }}>R$ {Number(e.amount).toLocaleString()}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Próximos Recebimentos */}
+        <div className="glass" style={{ padding: '20px', borderTop: '3px solid #10b981' }}>
+          <h3 style={{ fontSize: '1.1rem', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '8px', color: '#10b981' }}>
+            <Clock size={20} /> Próximos Recebimentos (7 dias)
+          </h3>
+          {upcomingReceipts.length === 0 ? (
+            <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Nenhum recebimento próximo.</div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '300px', overflowY: 'auto' }}>
+              {upcomingReceipts.map(s => (
+                <div key={`s-${s.id}`} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px', background: 'rgba(16, 185, 129, 0.05)', borderRadius: '8px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <span style={{ fontSize: '0.9rem', color: 'white' }}>{s.name}</span>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Dia: {s.nextDue?.split('-').reverse().join('/')}</span>
+                  </div>
+                  <span style={{ fontSize: '0.9rem', color: '#10b981', fontWeight: 'bold' }}>R$ {Number(s.amount).toLocaleString()}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Próximas Contas */}
+        {['admin', 'master'].includes(role) && (
+          <div className="glass" style={{ padding: '20px', borderTop: '3px solid var(--warning)' }}>
+            <h3 style={{ fontSize: '1.1rem', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--warning)' }}>
+              <Calendar size={20} /> Contas a Pagar (7 dias)
+            </h3>
+            {upcomingExpenses.length === 0 ? (
+              <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Nenhuma conta próxima.</div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '300px', overflowY: 'auto' }}>
+                {upcomingExpenses.map(e => (
+                  <div key={`e-${e.id}`} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px', background: 'rgba(245, 158, 11, 0.05)', borderRadius: '8px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <span style={{ fontSize: '0.9rem', color: 'white' }}>{e.description}</span>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Vence: {e.dueDate?.split('-').reverse().join('/')}</span>
+                    </div>
+                    <span style={{ fontSize: '0.9rem', color: 'var(--warning)', fontWeight: 'bold' }}>R$ {Number(e.amount).toLocaleString()}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
       </div>
     </div>
   );

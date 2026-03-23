@@ -90,6 +90,28 @@ const StudentList = ({ students, classes, enrollments, addStudent, updateStudent
     return classes.find(c => c.id === enrollment.class_id)?.name || '-';
   };
 
+  const getInstallments = (student) => {
+    let total = 1;
+    if (student.plan === 'Semestral') total = 6;
+    if (student.plan === 'Trimestral') total = 3;
+    if (student.plan === 'Anual') total = 12;
+
+    if (total === 1 || !student.createdAt) return null;
+
+    const start = new Date(student.createdAt);
+    const due = new Date(student.nextDue);
+    
+    let paid = (due.getFullYear() - start.getFullYear()) * 12 + (due.getMonth() - start.getMonth());
+    if (paid < 0) paid = 0;
+    
+    let currentCyclePaid = paid % total;
+    if (paid > 0 && currentCyclePaid === 0 && due >= new Date()) {
+      currentCyclePaid = total; 
+    }
+
+    return { total, paid: currentCyclePaid, open: total - currentCyclePaid };
+  };
+
   const filteredStudents = students.filter(s => 
     s.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -158,6 +180,24 @@ const StudentList = ({ students, classes, enrollments, addStudent, updateStudent
                         {student.plan}
                       </span>
                       <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>{student.paymentMethod}</span>
+                      
+                      {(() => {
+                        const inst = getInstallments(student);
+                        if (!inst) return null;
+                        return (
+                          <div style={{ marginTop: '4px', width: '120px' }}>
+                            <div style={{ fontSize: '0.65rem', display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)', marginBottom: '3px' }}>
+                              <span>{inst.paid} pagas</span>
+                              <span>{inst.open} abertas</span>
+                            </div>
+                            <div style={{ display: 'flex', gap: '2px', height: '5px' }}>
+                              {Array.from({ length: inst.total }).map((_, i) => (
+                                <div key={i} style={{ flex: 1, backgroundColor: i < inst.paid ? '#10b981' : 'rgba(255,255,255,0.15)', borderRadius: '2px' }} />
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
                   </td>
                   <td>
