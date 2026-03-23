@@ -5,13 +5,16 @@ import logo from '../assets/logo.jpg';
 // Extracted styles to keep JSX clean
 const inputStyle = {
   width: '100%',
-  padding: '10px',
+  padding: '12px',
   border: '1px solid #ccc',
   borderRadius: '5px',
   boxSizing: 'border-box',
   fontSize: '16px',
   backgroundColor: '#fff',
-  color: '#333'
+  color: '#333',
+  WebkitAppearance: 'none',
+  appearance: 'none',
+  outline: 'none'
 };
 
 const RegistrationForm = () => {
@@ -34,6 +37,31 @@ const RegistrationForm = () => {
   
   const canvasRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
+
+  // Force light theme on body for WhatsApp in-app browser compatibility
+  useEffect(() => {
+    const originalBg = document.body.style.backgroundColor;
+    const originalColor = document.body.style.color;
+    const originalOverflow = document.body.style.overflowX;
+    document.body.style.backgroundColor = '#f4f7f6';
+    document.body.style.color = '#333';
+    document.body.style.overflowX = 'auto';
+    
+    // Ensure viewport meta is correct for mobile
+    let viewport = document.querySelector('meta[name="viewport"]');
+    if (viewport) {
+      viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+    }
+    
+    return () => {
+      document.body.style.backgroundColor = originalBg;
+      document.body.style.color = originalColor;
+      document.body.style.overflowX = originalOverflow;
+      if (viewport) {
+        viewport.setAttribute('content', 'width=device-width, initial-scale=1.0');
+      }
+    };
+  }, []);
 
   // Calculate age when birthDate changes
   useEffect(() => {
@@ -278,7 +306,7 @@ const RegistrationForm = () => {
           
           <canvas 
             ref={canvasRef}
-            width={540} 
+            width={340} 
             height={150} 
             onMouseDown={startDrawing}
             onMouseMove={draw}
@@ -291,6 +319,7 @@ const RegistrationForm = () => {
               border: '2px dashed #ccc',
               borderRadius: '5px',
               width: '100%',
+              maxWidth: '100%',
               height: '150px',
               backgroundColor: '#f9f9f9',
               cursor: 'crosshair',
