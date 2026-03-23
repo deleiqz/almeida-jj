@@ -1,20 +1,23 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { LayoutDashboard, Users, CreditCard, Settings, Dumbbell, CheckCircle, Send } from 'lucide-react';
 import logo from './assets/logo.jpg';
 import jjBg from './assets/jj-bg.png';
-import Dashboard from './components/Dashboard';
-import StudentList from './components/StudentList';
-import ExpenseList from './components/ExpenseList';
-import Maintenance from './components/Maintenance';
-import BeltControl from './components/BeltControl';
-import Attendance from './components/Attendance';
-import ClassList from './components/ClassList';
-import Notifications from './components/Notifications';
 import { useStore } from './hooks/useStore';
 import Login from './components/Login';
 import RegistrationForm from './components/RegistrationForm';
+import ErrorBoundary from './components/ErrorBoundary';
 import { supabase } from './lib/supabase';
 import { LogOut } from 'lucide-react';
+
+// Lazy-load heavy components for faster initial render
+const Dashboard = lazy(() => import('./components/Dashboard'));
+const StudentList = lazy(() => import('./components/StudentList'));
+const ExpenseList = lazy(() => import('./components/ExpenseList'));
+const Maintenance = lazy(() => import('./components/Maintenance'));
+const BeltControl = lazy(() => import('./components/BeltControl'));
+const Attendance = lazy(() => import('./components/Attendance'));
+const ClassList = lazy(() => import('./components/ClassList'));
+const Notifications = lazy(() => import('./components/Notifications'));
 
 const App = () => {
   const isPublicRegistration = window.location.search.includes('registro');
@@ -116,6 +119,12 @@ const App = () => {
       </div>
     );
 
+    const suspenseFallback = (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh', color: 'var(--accent-primary)', fontSize: '1.1rem', fontWeight: '600' }}>
+        Carregando...
+      </div>
+    );
+
     switch (activeTab) {
       case 'dashboard':      return <Dashboard getStats={getStats} role={normalizedRole} students={students} expenses={expenses} />;
       case 'students': return <StudentList students={students} classes={classes} enrollments={enrollments} addStudent={addStudent} updateStudent={updateStudent} deleteStudent={deleteStudent} />;
@@ -142,7 +151,7 @@ const App = () => {
   };
 
   if (isPublicRegistration) {
-    return <RegistrationForm />;
+    return <ErrorBoundary><RegistrationForm /></ErrorBoundary>;
   }
 
   if (!user) {
@@ -231,7 +240,11 @@ const App = () => {
 
       {/* Main Content */}
       <main style={{ marginLeft: '300px', padding: '40px 40px 40px 0', flex: 1, maxWidth: '1200px' }}>
-        {renderContent()}
+        <ErrorBoundary>
+          <Suspense fallback={suspenseFallback}>
+            {renderContent()}
+          </Suspense>
+        </ErrorBoundary>
       </main>
     </div>
   );

@@ -22,40 +22,52 @@ export const useStore = () => {
   const [loading, setLoading] = useState(true);
 
   const fetchDisplayData = async () => {
-    setLoading(true);
-    const { data: stds } = await supabase.from('students').select('*').order('name');
-    const { data: exps } = await supabase.from('expenses').select('*').order('due_date');
-    const { data: cls } = await supabase.from('classes').select('*').order('time');
-    const { data: attn } = await supabase.from('attendance').select('*').order('date', { ascending: false });
-    const { data: enrs } = await supabase.from('class_enrollments').select('*');
-    
-    if (stds) setStudents(stds.map(s => ({
-      ...s,
-      nextDue: s.next_due,
-      lastPayment: s.last_payment,
-      amount: s.payment_value,
-      plan: s.plan || 'Mensal',
-      paymentMethod: s.payment_method || 'Pix',
-      birthDate: s.birth_date,
-      address: s.address,
-      cpf: s.cpf,
-      rg: s.rg,
-      parentName: s.parent_name,
-      parentCpf: s.parent_cpf,
-      documentUrl: s.document_url,
-      createdAt: s.created_at
-    })));
-    
-    if (exps) setExpenses(exps.map(e => ({
-      ...e,
-      dueDate: e.due_date
-    })));
+    try {
+      setLoading(true);
+      const [stdsRes, expsRes, clsRes, attnRes, enrsRes] = await Promise.all([
+        supabase.from('students').select('*').order('name'),
+        supabase.from('expenses').select('*').order('due_date'),
+        supabase.from('classes').select('*').order('time'),
+        supabase.from('attendance').select('*').order('date', { ascending: false }),
+        supabase.from('class_enrollments').select('*')
+      ]);
 
-    if (cls) setClasses(cls);
-    if (attn) setAttendance(attn);
-    if (enrs) setEnrollments(enrs);
+      const stds = stdsRes.data;
+      const exps = expsRes.data;
+      const cls = clsRes.data;
+      const attn = attnRes.data;
+      const enrs = enrsRes.data;
     
-    setLoading(false);
+      if (stds) setStudents(stds.map(s => ({
+        ...s,
+        nextDue: s.next_due,
+        lastPayment: s.last_payment,
+        amount: s.payment_value,
+        plan: s.plan || 'Mensal',
+        paymentMethod: s.payment_method || 'Pix',
+        birthDate: s.birth_date,
+        address: s.address,
+        cpf: s.cpf,
+        rg: s.rg,
+        parentName: s.parent_name,
+        parentCpf: s.parent_cpf,
+        documentUrl: s.document_url,
+        createdAt: s.created_at
+      })));
+    
+      if (exps) setExpenses(exps.map(e => ({
+        ...e,
+        dueDate: e.due_date
+      })));
+
+      if (cls) setClasses(cls);
+      if (attn) setAttendance(attn);
+      if (enrs) setEnrollments(enrs);
+    } catch (err) {
+      console.error('Error fetching data:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
