@@ -24,7 +24,14 @@ const App = () => {
   
   // Persistence: initialize from localStorage
   const [activeTab, setActiveTab] = useState(() => localStorage.getItem('activeTab') || 'dashboard');
-  const [user, setUser] = useState(() => JSON.parse(localStorage.getItem('user')) || null);
+  const [user, setUser] = useState(() => {
+    try {
+      const stored = localStorage.getItem('user');
+      return stored && stored !== "undefined" ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  });
   const [role, setRole] = useState(() => localStorage.getItem('role') || null);
   const [userName, setUserName] = useState(() => localStorage.getItem('userName') || '');
 
