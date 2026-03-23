@@ -248,6 +248,23 @@ export const useStore = () => {
     fetchDisplayData();
   };
 
+  const updateExpense = async (id, expense) => {
+    const { error } = await supabase.from('expenses').update({ 
+        type: expense.type, 
+        amount: expense.amount, 
+        due_date: expense.dueDate, 
+        status: expense.status 
+      }).eq('id', id);
+    if (error) console.error(error);
+    fetchDisplayData();
+  };
+
+  const deleteExpense = async (id) => {
+    const { error } = await supabase.from('expenses').delete().eq('id', id);
+    if (error) console.error(error);
+    fetchDisplayData();
+  };
+
   const getStats = (selectedDate) => {
     const totalStudents = students.length;
     const paidStudents = students.filter(s => s.status === "pago").length;
@@ -295,7 +312,7 @@ export const useStore = () => {
 
   return { 
     students, expenses, classes, attendance, enrollments,
-    addStudent, updateStudent, deleteStudent, enrollStudent, updateStudentBelt, addClass, updateClass, deleteClass, markAttendance, removeAttendance, addExpense, 
+    addStudent, updateStudent, deleteStudent, enrollStudent, updateStudentBelt, addClass, updateClass, deleteClass, markAttendance, removeAttendance, addExpense, updateExpense, deleteExpense,
     getStats, getStudentAttendanceCount, loading 
   };
 };

@@ -87,7 +87,7 @@ const App = () => {
   }, []);
   const { 
     students, expenses, classes, attendance, enrollments,
-    addStudent, updateStudent, deleteStudent, enrollStudent, updateStudentBelt, addClass, updateClass, deleteClass, markAttendance, removeAttendance, addExpense, 
+    addStudent, updateStudent, deleteStudent, enrollStudent, updateStudentBelt, addClass, updateClass, deleteClass, markAttendance, removeAttendance, addExpense, updateExpense, deleteExpense,
     getStats, getStudentAttendanceCount, loading 
   } = useStore();
 
@@ -145,7 +145,7 @@ const App = () => {
           deleteClass={deleteClass}
         />; 
       case 'notifications': return <Notifications students={students} />;
-      case 'expenses': return ['admin', 'master'].includes(normalizedRole) ? <ExpenseList expenses={expenses} addExpense={addExpense} /> : <Dashboard getStats={getStats} role={normalizedRole} students={students} expenses={expenses} />;
+      case 'expenses': return ['admin', 'master'].includes(normalizedRole) ? <ExpenseList expenses={expenses} addExpense={addExpense} updateExpense={updateExpense} deleteExpense={deleteExpense} /> : <Dashboard getStats={getStats} role={normalizedRole} students={students} expenses={expenses} />;
       case 'maintenance': return ['admin', 'master'].includes(normalizedRole) ? <Maintenance /> : <Dashboard getStats={getStats} role={normalizedRole} students={students} expenses={expenses} />;
       default: return <Dashboard getStats={getStats} role={normalizedRole} students={students} expenses={expenses} />;
     }
