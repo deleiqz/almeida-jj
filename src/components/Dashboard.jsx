@@ -5,7 +5,8 @@ const Dashboard = ({ getStats, role, students = [], expenses = [] }) => {
   const [dateFilter, setDateFilter] = useState(new Date().toISOString().split('T')[0]);
 
   const stats = getStats(dateFilter);
-  const isAdmin = ['admin', 'master'].includes(role);
+  const normalizedRole = (role || '').toLowerCase().trim();
+  const isAdmin = normalizedRole.includes('admin') || normalizedRole.includes('master') || normalizedRole.includes('dono');
 
   const allCardData = [
     { title: "Total Alunos", value: stats.totalStudents, icon: <Users size={24} />, color: "var(--accent-primary)" },

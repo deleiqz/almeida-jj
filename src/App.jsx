@@ -122,8 +122,10 @@ const App = () => {
     { id: 'maintenance', label: 'Manutenção', icon: <Settings size={20} /> },
   ];
 
-  const normalizedRole = role?.toLowerCase();
-  const filteredNavItems = navItems.filter(item => !item.restricted || ['admin', 'master'].includes(normalizedRole));
+  const normalizedRole = (role || '').toLowerCase().trim();
+  const isAdmin = normalizedRole.includes('admin') || normalizedRole.includes('master') || normalizedRole.includes('dono');
+
+  const filteredNavItems = navItems.filter(item => !item.restricted || isAdmin);
 
   const renderContent = () => {
     if (loading) return (
@@ -151,7 +153,7 @@ const App = () => {
           deleteClass={deleteClass}
         />; 
       case 'notifications': return <Notifications students={students} />;
-      case 'expenses': return ['admin', 'master'].includes(normalizedRole) ? <ExpenseList expenses={expenses} addExpense={addExpense} updateExpense={updateExpense} deleteExpense={deleteExpense} /> : <Dashboard getStats={getStats} role={normalizedRole} students={students} expenses={expenses} />;
+      case 'expenses': return isAdmin ? <ExpenseList expenses={expenses} addExpense={addExpense} updateExpense={updateExpense} deleteExpense={deleteExpense} /> : <Dashboard getStats={getStats} role={normalizedRole} students={students} expenses={expenses} />;
       case 'maintenance': return <Maintenance />;
       default: return <Dashboard getStats={getStats} role={normalizedRole} students={students} expenses={expenses} />;
     }
