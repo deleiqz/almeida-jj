@@ -53,7 +53,8 @@ const RegistrationForm = () => {
   const [loading, setLoading] = useState(false);
   
   const canvasRef = useRef(null);
-  const rectRef = useRef(null);
+  const pointsRef = useRef([]);
+  const isDrawingRef = useRef(false);
   const [isDrawing, setIsDrawing] = useState(false);
 
   // Force light theme on body for WhatsApp in-app browser compatibility
@@ -65,7 +66,6 @@ const RegistrationForm = () => {
     document.body.style.color = '#333';
     document.body.style.overflowX = 'auto';
     
-    // Ensure viewport meta is correct for mobile
     let viewport = document.querySelector('meta[name="viewport"]');
     if (viewport) {
       viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
@@ -97,56 +97,113 @@ const RegistrationForm = () => {
     }
   }, [formData.birthDate]);
 
-  // Signature Pad Logic
-  const startDrawing = (e) => {
+  // Initialize high-DPI canvas
+  const setupCanvas = () => {
     const canvas = canvasRef.current;
+    if (!canvas) return;
+    const container = canvas.parentElement;
+    const dpr = window.devicePixelRatio || 1;
+    const displayWidth = container.clientWidth;
+    const displayHeight = 180;
+    
+    canvas.width = displayWidth * dpr;
+    canvas.height = displayHeight * dpr;
+    canvas.style.width = displayWidth + 'px';
+    canvas.style.height = displayHeight + 'px';
+    
     const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = '#000';
+    ctx.imageSmoothingEnabled = true;
+  };
+
+  useEffect(() => {
+    if (!submitted) {
+      // Small delay to let the DOM settle (especially on mobile)
+      const timer = setTimeout(setupCanvas, 100);
+      window.addEventListener('resize', setupCanvas);
+      return () => {
+        clearTimeout(timer);
+        window.removeEventListener('resize', setupCanvas);
+      };
+    }
+  }, [submitted]);
+
+  // Get coordinates relative to canvas (works for mouse + touch)
+  const getPos = (e) => {
+    const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
-    rectRef.current = rect;
-    
-    const x = (e.clientX || (e.touches && e.touches[0].clientX)) - rect.left;
-    const y = (e.clientY || (e.touches && e.touches[0].clientY)) - rect.top;
-    
-    ctx.beginPath();
-    ctx.moveTo(x, y);
+    const clientX = e.clientX ?? (e.touches && e.touches[0]?.clientX) ?? 0;
+    const clientY = e.clientY ?? (e.touches && e.touches[0]?.clientY) ?? 0;
+    return {
+      x: clientX - rect.left,
+      y: clientY - rect.top
+    };
+  };
+
+  const startDrawing = (e) => {
+    e.preventDefault();
+    const pos = getPos(e);
+    pointsRef.current = [pos];
+    isDrawingRef.current = true;
     setIsDrawing(true);
+
+    const ctx = canvasRef.current.getContext('2d');
+    ctx.beginPath();
+    ctx.moveTo(pos.x, pos.y);
+    // Draw a dot for single taps
+    ctx.fillStyle = '#000';
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, 1.2, 0, Math.PI * 2);
+    ctx.fill();
   };
 
   const draw = (e) => {
-    if (!isDrawing) return;
+    if (!isDrawingRef.current) return;
     e.preventDefault();
-    
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    const rect = rectRef.current;
-    if (!rect) return;
 
-    const x = (e.clientX || (e.touches && e.touches[0].clientX)) - rect.left;
-    const y = (e.clientY || (e.touches && e.touches[0].clientY)) - rect.top;
-    
-    ctx.lineTo(x, y);
-    ctx.stroke();
+    const pos = getPos(e);
+    const pts = pointsRef.current;
+    pts.push(pos);
+
+    const ctx = canvasRef.current.getContext('2d');
+
+    if (pts.length >= 3) {
+      // Smooth quadratic Bezier through last 3 points
+      const p0 = pts[pts.length - 3];
+      const p1 = pts[pts.length - 2];
+      const p2 = pts[pts.length - 1];
+      const midX = (p1.x + p2.x) / 2;
+      const midY = (p1.y + p2.y) / 2;
+
+      ctx.beginPath();
+      ctx.moveTo((p0.x + p1.x) / 2, (p0.y + p1.y) / 2);
+      ctx.quadraticCurveTo(p1.x, p1.y, midX, midY);
+      ctx.stroke();
+    } else if (pts.length === 2) {
+      ctx.beginPath();
+      ctx.moveTo(pts[0].x, pts[0].y);
+      ctx.lineTo(pts[1].x, pts[1].y);
+      ctx.stroke();
+    }
   };
 
   const stopDrawing = () => {
+    isDrawingRef.current = false;
     setIsDrawing(false);
+    pointsRef.current = [];
   };
 
   const clearSignature = () => {
     const canvas = canvasRef.current;
+    if (!canvas) return;
     const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const dpr = window.devicePixelRatio || 1;
+    ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
   };
-
-  useEffect(() => {
-    if (canvasRef.current && !submitted) {
-      const canvas = canvasRef.current;
-      const ctx = canvas.getContext('2d');
-      ctx.lineWidth = 3;
-      ctx.lineCap = "round";
-      ctx.strokeStyle = "#000";
-    }
-  }, [submitted]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -338,29 +395,27 @@ const RegistrationForm = () => {
           <h3 style={{ textAlign: 'center', color: '#2c3e50', marginTop: '30px', marginBottom: '15px' }}>Assinatura Digital</h3>
           <p style={{ fontSize: '14px', color: '#666', textAlign: 'center' }}>Assine no quadro abaixo usando o mouse ou o dedo.</p>
           
-          <canvas 
-            ref={canvasRef}
-            width={340} 
-            height={150} 
-            onMouseDown={startDrawing}
-            onMouseMove={draw}
-            onMouseUp={stopDrawing}
-            onMouseOut={stopDrawing}
-            onTouchStart={startDrawing}
-            onTouchMove={draw}
-            onTouchEnd={stopDrawing}
-            style={{
-              border: '2px dashed #ccc',
-              borderRadius: '5px',
-              width: '100%',
-              maxWidth: '100%',
-              height: '150px',
-              backgroundColor: '#f9f9f9',
-              cursor: 'crosshair',
-              touchAction: 'none',
-              display: 'block'
-            }}
-          />
+          <div style={{ width: '100%' }}>
+            <canvas 
+              ref={canvasRef}
+              onMouseDown={startDrawing}
+              onMouseMove={draw}
+              onMouseUp={stopDrawing}
+              onMouseOut={stopDrawing}
+              onTouchStart={startDrawing}
+              onTouchMove={draw}
+              onTouchEnd={stopDrawing}
+              style={{
+                border: '2px dashed #999',
+                borderRadius: '8px',
+                backgroundColor: '#f9f9f9',
+                cursor: 'crosshair',
+                touchAction: 'none',
+                display: 'block',
+                width: '100%'
+              }}
+            />
+          </div>
           <button type="button" onClick={clearSignature} style={{
             backgroundColor: '#e74c3c', color: 'white', padding: '8px 15px', border: 'none', borderRadius: '3px', cursor: 'pointer', marginTop: '10px', fontSize: '14px'
           }}>
