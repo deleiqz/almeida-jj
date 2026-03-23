@@ -28,7 +28,11 @@ const Notifications = ({ students }) => {
     setConnectionStatus(prev => ({ ...prev, loading: true }));
     try {
       const baseUrl = apiConfig.localUrl || 'http://localhost:3000';
-      const response = await fetch(`${baseUrl}/status`);
+      const response = await fetch(`${baseUrl}/status`, {
+        headers: {
+          'ngrok-skip-browser-warning': 'true' // Ignora tela de aviso do ngrok grátis
+        }
+      });
       if (response.ok) {
         const data = await response.json();
         setConnectionStatus({ online: true, connected: data.connected, loading: false });
@@ -129,7 +133,10 @@ const Notifications = ({ students }) => {
         try {
           const response = await fetch(`${baseUrl}/send-message`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+              'Content-Type': 'application/json',
+              'ngrok-skip-browser-warning': 'true' // Ignora aviso do ngrok
+            },
             body: JSON.stringify({
               phone: fullPhone,
               message: message
