@@ -10,6 +10,7 @@ app.use(express.json());
 
 let isReady = false;
 let lastQr = '';
+let messageCount = 0;
 
 // Configuração do Cliente WhatsApp
 const client = new Client({
@@ -71,9 +72,27 @@ client.initialize();
 // Helper para delay
 const delay = ms => new Promise(res => setTimeout(res, ms));
 
-// Rota de Status
+// Rota de Boas-vindas / Raiz
+app.get('/', (req, res) => {
+    res.send(`
+        <div style="text-align:center; padding: 50px; font-family: sans-serif; background: #111; color: white; min-height: 100vh;">
+            <h1 style="color: #25D366;">🟢 Ponte Almeida JJ Online</h1>
+            <p>Conexão WhatsApp: <strong>${isReady ? 'CONECTADO ✅' : 'DESCONECTADO ❌'}</strong></p>
+            <p>Mensagens enviadas nesta sessão: <strong>${messageCount}</strong></p>
+            <hr style="border: 1px solid #333; width: 300px; margin: 20px auto;" />
+            ${!isReady ? '<a href="/qr" style="color: #25D366; text-decoration: none; font-weight: bold;">Ver QR Code para Conectar</a>' : '<p style="color: #888;">Tudo pronto para os disparos!</p>'}
+        </div>
+    `);
+});
+
+// Rota de Status (API)
 app.get('/status', (req, res) => {
-    res.json({ connected: isReady });
+    res.json({ 
+        connected: isReady,
+        messageCount: messageCount,
+        platform: process.platform,
+        uptime: process.uptime()
+    });
 });
 
 // Rota para ver o QR Code via Web
@@ -127,7 +146,8 @@ app.post('/send-message', async (req, res) => {
         const chatId = phone.includes('@c.us') ? phone : `${phone}@c.us`;
         
         await client.sendMessage(chatId, message);
-        console.log(`✔️ Mensagem enviada para: ${phone}`);
+        messageCount++;
+        console.log(`✔️ [${messageCount}] Mensagem enviada para: ${phone}`);
         
         // Delay solicitado pelo usuário: Mínimo 10 segundos
         // Vamos usar 10 a 15 segundos aleatórios para maior segurança
