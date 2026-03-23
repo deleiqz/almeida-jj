@@ -1,45 +1,16 @@
 import React, { useState } from 'react';
-import { PlusCircle, FileText, Edit2, Trash2 } from 'lucide-react';
+import { PlusCircle, FileText } from 'lucide-react';
 import Modal from './Modal';
 
-const ExpenseList = ({ expenses, addExpense, updateExpense, deleteExpense }) => {
+const ExpenseList = ({ expenses, addExpense }) => {
   const [isModalOpen, setModalOpen] = useState(false);
-  const [editingId, setEditingId] = useState(null);
   const [newExpense, setNewExpense] = useState({ type: '', amount: '', dueDate: '', status: 'pendente' });
-
-  const openAddModal = () => {
-    setEditingId(null);
-    setNewExpense({ type: '', amount: '', dueDate: '', status: 'pendente' });
-    setModalOpen(true);
-  };
-
-  const openEditModal = (expense) => {
-    setEditingId(expense.id);
-    setNewExpense({
-      type: expense.type || '',
-      amount: expense.amount || '',
-      dueDate: expense.dueDate || '',
-      status: expense.status || 'pendente'
-    });
-    setModalOpen(true);
-  };
-
-  const handleDelete = (id) => {
-    if (window.confirm("Tem certeza que deseja excluir esta despesa?")) {
-      deleteExpense(id);
-    }
-  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (editingId) {
-      updateExpense(editingId, newExpense);
-    } else {
-      addExpense(newExpense);
-    }
+    addExpense(newExpense);
     setModalOpen(false);
     setNewExpense({ type: '', amount: '', dueDate: '', status: 'pendente' });
-    setEditingId(null);
   };
 
   return (
@@ -48,7 +19,7 @@ const ExpenseList = ({ expenses, addExpense, updateExpense, deleteExpense }) => 
         <h2 className="title-gradient">Contas e Despesas</h2>
         <button 
           className="btn-primary" 
-          onClick={openAddModal}
+          onClick={() => setModalOpen(true)}
           style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--danger)' }}
         >
           <PlusCircle size={18} /> Registrar Conta
@@ -57,39 +28,23 @@ const ExpenseList = ({ expenses, addExpense, updateExpense, deleteExpense }) => 
 
       <div className="dashboard-grid">
         {expenses.map(expense => (
-          <div key={expense.id} className="glass" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px', position: 'relative' }}>
+          <div key={expense.id} className="glass" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ background: 'rgba(255,255,255,0.05)', padding: '8px', borderRadius: '8px', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ background: 'rgba(255,255,255,0.05)', pading: '8px', borderRadius: '8px', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <FileText size={20} color="var(--accent-primary)" />
               </div>
-              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                <button 
-                  onClick={() => openEditModal(expense)}
-                  style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '4px' }}
-                  title="Editar Conta"
-                >
-                  <Edit2 size={16} />
-                </button>
-                <button 
-                  onClick={() => handleDelete(expense.id)}
-                  style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', padding: '4px' }}
-                  title="Excluir Conta"
-                >
-                  <Trash2 size={16} />
-                </button>
-                <span className={`badge badge-${expense.status === 'pago' || expense.status === 'paga' ? 'paid' : 'pending'}`}>
-                  {expense.status.toUpperCase()}
-                </span>
-              </div>
+              <span className={`badge badge-${expense.status === 'pago' || expense.status === 'paga' ? 'paid' : 'pending'}`}>
+                {expense.status.toUpperCase()}
+              </span>
             </div>
-            <h3 style={{ fontSize: '1.2rem', marginTop: '5px' }}>{expense.type}</h3>
+            <h3 style={{ fontSize: '1.2rem' }}>{expense.type}</h3>
             <div style={{ fontSize: '1.5rem', fontWeight: '700' }}>R$ {Number(expense.amount).toLocaleString()}</div>
-            <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>Vencimento: {expense.dueDate ? expense.dueDate.split('-').reverse().join('/') : '-'}</div>
+            <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>Vencimento: {expense.dueDate}</div>
           </div>
         ))}
       </div>
 
-      <Modal title={editingId ? "Editar Conta" : "Registrar Nova Despesa"} isOpen={isModalOpen} onClose={() => setModalOpen(false)}>
+      <Modal title="Registrar Nova Despesa" isOpen={isModalOpen} onClose={() => setModalOpen(false)}>
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div>
             <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Tipo de Despesa (ex: Água, Internet)</label>
@@ -135,9 +90,7 @@ const ExpenseList = ({ expenses, addExpense, updateExpense, deleteExpense }) => 
               style={{ width: '100%', padding: '12px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--card-border)', color: 'white' }}
             />
           </div>
-          <button type="submit" className="btn-primary" style={{ marginTop: '10px', background: 'var(--danger)' }}>
-            {editingId ? "Atualizar Conta" : "Registrar Conta"}
-          </button>
+          <button type="submit" className="btn-primary" style={{ marginTop: '10px', background: 'var(--danger)' }}>Registrar Conta</button>
         </form>
       </Modal>
     </div>

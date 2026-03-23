@@ -13,7 +13,7 @@ export const BELT_THRESHOLDS = {
   'Preta': 300
 };
 
-export const useStore = () => {
+export const useStore = (skipFetch = false) => {
   const [students, setStudents] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [classes, setClasses] = useState([]);
@@ -71,8 +71,10 @@ export const useStore = () => {
   };
 
   useEffect(() => {
-    fetchDisplayData();
-  }, []);
+    if (!skipFetch) {
+      fetchDisplayData();
+    }
+  }, [skipFetch]);
 
   const addStudent = async (student) => {
     const { classId, ...studentData } = student;
@@ -248,23 +250,6 @@ export const useStore = () => {
     fetchDisplayData();
   };
 
-  const updateExpense = async (id, expense) => {
-    const { error } = await supabase.from('expenses').update({ 
-        type: expense.type, 
-        amount: expense.amount, 
-        due_date: expense.dueDate, 
-        status: expense.status 
-      }).eq('id', id);
-    if (error) console.error(error);
-    fetchDisplayData();
-  };
-
-  const deleteExpense = async (id) => {
-    const { error } = await supabase.from('expenses').delete().eq('id', id);
-    if (error) console.error(error);
-    fetchDisplayData();
-  };
-
   const getStats = (selectedDate) => {
     const totalStudents = students.length;
     const paidStudents = students.filter(s => s.status === "pago").length;
@@ -312,7 +297,7 @@ export const useStore = () => {
 
   return { 
     students, expenses, classes, attendance, enrollments,
-    addStudent, updateStudent, deleteStudent, enrollStudent, updateStudentBelt, addClass, updateClass, deleteClass, markAttendance, removeAttendance, addExpense, updateExpense, deleteExpense,
+    addStudent, updateStudent, deleteStudent, enrollStudent, updateStudentBelt, addClass, updateClass, deleteClass, markAttendance, removeAttendance, addExpense, 
     getStats, getStudentAttendanceCount, loading 
   };
 };
