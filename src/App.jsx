@@ -4,7 +4,7 @@ import logo from './assets/logo.jpg';
 import jjBg from './assets/jj-bg.png';
 import { useStore } from './hooks/useStore';
 import Login from './components/Login';
-import RegistrationForm from './components/RegistrationForm';
+// import RegistrationForm from './components/RegistrationForm';
 import ErrorBoundary from './components/ErrorBoundary';
 import { supabase } from './lib/supabase';
 import { LogOut } from 'lucide-react';
@@ -18,6 +18,7 @@ const BeltControl = lazy(() => import('./components/BeltControl'));
 const Attendance = lazy(() => import('./components/Attendance'));
 const ClassList = lazy(() => import('./components/ClassList'));
 const Notifications = lazy(() => import('./components/Notifications'));
+const RegistrationForm = lazy(() => import('./components/RegistrationForm'));
 
 const App = () => {
   const isPublicRegistration = window.location.search.includes('registro');
@@ -152,7 +153,13 @@ const App = () => {
   };
 
   if (isPublicRegistration) {
-    return <ErrorBoundary><RegistrationForm /></ErrorBoundary>;
+    return (
+      <ErrorBoundary>
+        <Suspense fallback={suspenseFallback}>
+          <RegistrationForm />
+        </Suspense>
+      </ErrorBoundary>
+    );
   }
 
   if (!user) {

@@ -36,6 +36,7 @@ const RegistrationForm = () => {
   const [loading, setLoading] = useState(false);
   
   const canvasRef = useRef(null);
+  const rectRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
 
   // Force light theme on body for WhatsApp in-app browser compatibility
@@ -84,6 +85,8 @@ const RegistrationForm = () => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     const rect = canvas.getBoundingClientRect();
+    rectRef.current = rect;
+    
     const x = (e.clientX || (e.touches && e.touches[0].clientX)) - rect.left;
     const y = (e.clientY || (e.touches && e.touches[0].clientY)) - rect.top;
     
@@ -94,11 +97,13 @@ const RegistrationForm = () => {
 
   const draw = (e) => {
     if (!isDrawing) return;
-    e.preventDefault(); // Prevent scrolling on touch devices
+    e.preventDefault();
     
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
-    const rect = canvas.getBoundingClientRect();
+    const rect = rectRef.current;
+    if (!rect) return;
+
     const x = (e.clientX || (e.touches && e.touches[0].clientX)) - rect.left;
     const y = (e.clientY || (e.touches && e.touches[0].clientY)) - rect.top;
     
