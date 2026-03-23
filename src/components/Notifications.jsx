@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Send, UserCheck, MessageSquare, List, CheckCircle, Clock, Share2, Clipboard, Search, AlertCircle, Trash2, ExternalLink, Loader2 } from 'lucide-react';
+import { Send, UserCheck, MessageSquare, List, CheckCircle, Clock, Share2, Clipboard, Search, AlertCircle, Trash2, ExternalLink, Loader2, ShieldCheck, ShieldAlert, RefreshCw } from 'lucide-react';
 
 const Notifications = ({ students }) => {
   const [message, setMessage] = useState('');
@@ -15,12 +15,38 @@ const Notifications = ({ students }) => {
     return saved ? JSON.parse(saved) : { instance: '', token: '', clientToken: '', localUrl: 'http://localhost:3000' };
   });
   const [isSendingAuto, setIsSendingAuto] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState({ online: false, connected: false, loading: false });
 
   // Save API config to localStorage
   const saveApiConfig = (newConfig) => {
     setApiConfig(newConfig);
     localStorage.setItem('whatsapp_api_config', JSON.stringify(newConfig));
   };
+
+  const checkConnection = async () => {
+    if (sendMode !== 'local') return;
+    setConnectionStatus(prev => ({ ...prev, loading: true }));
+    try {
+      const baseUrl = apiConfig.localUrl || 'http://localhost:3000';
+      const response = await fetch(`${baseUrl}/status`);
+      if (response.ok) {
+        const data = await response.json();
+        setConnectionStatus({ online: true, connected: data.connected, loading: false });
+      } else {
+        setConnectionStatus({ online: false, connected: false, loading: false });
+      }
+    } catch (error) {
+      setConnectionStatus({ online: false, connected: false, loading: false });
+    }
+  };
+
+  useEffect(() => {
+    if (sendMode === 'local') {
+      checkConnection();
+      const interval = setInterval(checkConnection, 10000); // Check every 10s
+      return () => clearInterval(interval);
+    }
+  }, [sendMode, apiConfig.localUrl]);
 
   const filteredStudents = students.filter(s => {
     const matchesSearch = (s.name || '').toLowerCase().includes(searchTerm.toLowerCase());
@@ -223,10 +249,15 @@ const Notifications = ({ students }) => {
               style={{ 
                 background: 'none', border: 'none', color: sendMode === 'local' ? 'var(--accent-primary)' : 'var(--text-secondary)',
                 padding: '8px 0', borderBottom: sendMode === 'local' ? '2px solid var(--accent-primary)' : 'none',
-                cursor: 'pointer', fontWeight: sendMode === 'local' ? 'bold' : 'normal'
+                cursor: 'pointer', fontWeight: sendMode === 'local' ? 'bold' : 'normal',
+                display: 'flex', alignItems: 'center', gap: '8px'
               }}
             >
               Servidor Próprio (Grátis)
+              {sendMode === 'local' && (
+                connectionStatus.loading ? <RefreshCw size={12} className="spin" /> : 
+                connectionStatus.connected ? <ShieldCheck size={14} color="#10b981" /> : <ShieldAlert size={14} color="#ef4444" />
+              )}
             </button>
           </div>
 
@@ -266,9 +297,14 @@ const Notifications = ({ students }) => {
                   onChange={(e) => saveApiConfig({...apiConfig, localUrl: e.target.value})}
                   style={{ flex: 1, padding: '8px', fontSize: '0.8rem', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '4px' }}
                 />
-                <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
-                  * Use <strong>localhost:3000</strong> se estiver no mesmo PC.
-                </div>
+                <button 
+                  onClick={checkConnection}
+                  disabled={connectionStatus.loading}
+                  style={{ padding: '8px 12px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '5px' }}
+                >
+                  <RefreshCw size={14} className={connectionStatus.loading ? 'spin' : ''} />
+                  Testar
+                </button>
               </div>
               <div style={{ marginTop: '10px' }}>
                 <a 

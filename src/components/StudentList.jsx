@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Plus, Edit2, Share2, ClipboardCheck } from 'lucide-react';
+import { Search, Plus, Edit2, Share2, ClipboardCheck, Mail, MessageSquare, Phone } from 'lucide-react';
 import Modal from './Modal';
 
 const StudentList = ({ students, classes, enrollments, addStudent, updateStudent }) => {
@@ -11,12 +11,31 @@ const StudentList = ({ students, classes, enrollments, addStudent, updateStudent
     name: '', status: 'pago', nextDue: '', amount: 150, belt: 'Branca', phone: '', plan: 'Mensal', classId: '', paymentMethod: 'Pix' 
   });
   const [copied, setCopied] = useState(false);
+  const [isShareModalOpen, setShareModalOpen] = useState(false);
+  const [shareData, setShareData] = useState({ phone: '', email: '' });
+  const registrationLink = "https://cadastrojj.netlify.app/";
 
   const copyRegistrationLink = () => {
-    const link = `${window.location.origin}/?registro`;
-    navigator.clipboard.writeText(link);
+    navigator.clipboard.writeText(registrationLink);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleShare = (method) => {
+    const msg = `Olá! Segue o link para seu cadastro na Almeida JJ: ${registrationLink}`;
+    let url = '';
+
+    if (method === 'whatsapp') {
+      const phone = shareData.phone.replace(/\D/g, '');
+      url = `https://wa.me/55${phone}?text=${encodeURIComponent(msg)}`;
+    } else if (method === 'sms') {
+      const phone = shareData.phone.replace(/\D/g, '');
+      url = `sms:55${phone}?body=${encodeURIComponent(msg)}`;
+    } else if (method === 'email') {
+      url = `mailto:${shareData.email}?subject=Link de Cadastro Almeida JJ&body=${encodeURIComponent(msg)}`;
+    }
+
+    if (url) window.open(url, '_blank');
   };
 
   const handleSubmit = (e) => {
@@ -75,11 +94,11 @@ const StudentList = ({ students, classes, enrollments, addStudent, updateStudent
         <div style={{ display: 'flex', gap: '10px' }}>
           <button 
             className="btn-secondary" 
-            onClick={copyRegistrationLink}
-            style={{ display: 'flex', alignItems: 'center', gap: '8px', background: copied ? 'rgba(16, 185, 129, 0.1)' : 'rgba(255,255,255,0.05)', color: copied ? '#10b981' : 'white' }}
+            onClick={() => setShareModalOpen(true)}
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.05)', color: 'white' }}
           >
-            {copied ? <ClipboardCheck size={18} /> : <Share2 size={18} />}
-            {copied ? 'Link Copiado!' : 'Link de Cadastro (Zap)'}
+            <Share2 size={18} />
+            Compartilhar Cadastro
           </button>
           <button className="btn-primary" onClick={openAddModal} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Plus size={18} /> Novo Aluno
@@ -280,6 +299,74 @@ const StudentList = ({ students, classes, enrollments, addStudent, updateStudent
             {isEditMode ? "Salvar Alterações" : "Confirmar Cadastro"}
           </button>
         </form>
+      </Modal>
+
+      <Modal title="Compartilhar Link de Cadastro" isOpen={isShareModalOpen} onClose={() => setShareModalOpen(false)}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+            Envie o link de cadastro direto para o aluno ou copie para a área de transferência.
+          </p>
+          
+          <div className="glass" style={{ padding: '12px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <code style={{ color: 'var(--accent-primary)', fontSize: '0.85rem' }}>{registrationLink}</code>
+            <button 
+              onClick={copyRegistrationLink}
+              style={{ background: 'transparent', border: 'none', color: copied ? '#10b981' : 'white', cursor: 'pointer' }}
+            >
+              {copied ? <ClipboardCheck size={20} /> : <Share2 size={20} />}
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <label style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Telefone (Para WhatsApp ou SMS)</label>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <input 
+                type="text" 
+                placeholder="(11) 99999-9999"
+                value={shareData.phone}
+                onChange={(e) => setShareData({...shareData, phone: e.target.value})}
+                style={{ flex: 1, padding: '12px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--card-border)', color: 'white' }}
+              />
+              <button 
+                className="btn-primary" 
+                onClick={() => handleShare('whatsapp')}
+                style={{ background: '#25D366', borderColor: '#25D366', padding: '10px' }}
+                title="Enviar por WhatsApp"
+              >
+                <MessageSquare size={20} />
+              </button>
+              <button 
+                className="btn-primary" 
+                onClick={() => handleShare('sms')}
+                style={{ background: '#3b82f6', borderColor: '#3b82f6', padding: '10px' }}
+                title="Enviar por SMS"
+              >
+                <Phone size={20} />
+              </button>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <label style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>E-mail (Para envio por e-mail)</label>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <input 
+                type="email" 
+                placeholder="aluno@email.com"
+                value={shareData.email}
+                onChange={(e) => setShareData({...shareData, email: e.target.value})}
+                style={{ flex: 1, padding: '12px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--card-border)', color: 'white' }}
+              />
+              <button 
+                className="btn-primary" 
+                onClick={() => handleShare('email')}
+                style={{ background: '#ea4335', borderColor: '#ea4335', padding: '10px' }}
+                title="Enviar por E-mail"
+              >
+                <Mail size={20} />
+              </button>
+            </div>
+          </div>
+        </div>
       </Modal>
     </div>
   );
