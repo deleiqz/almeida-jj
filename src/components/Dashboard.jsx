@@ -2,7 +2,6 @@ import { Users, DollarSign, TrendingUp, AlertCircle, Share2, ClipboardCheck, Cal
 import { useState } from 'react';
 
 const Dashboard = ({ getStats, role }) => {
-  const [copied, setCopied] = useState(false);
   const [dateFilter, setDateFilter] = useState(new Date().toISOString().split('T')[0]);
 
   const stats = getStats(dateFilter);
@@ -14,12 +13,6 @@ const Dashboard = ({ getStats, role }) => {
     { title: "Pendentes/Atenção", value: stats.pendingStudents, icon: <AlertCircle size={24} />, color: "var(--warning)" },
   ];
 
-  const copyRegistrationLink = () => {
-    const url = window.location.origin + window.location.pathname + '?registro';
-    navigator.clipboard.writeText(url);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
 
   return (
     <div className="dashboard-content">
@@ -36,13 +29,6 @@ const Dashboard = ({ getStats, role }) => {
             />
           </div>
         </div>
-        <button 
-          onClick={copyRegistrationLink}
-          className="btn-primary"
-          style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', fontSize: '0.9rem', background: copied ? 'var(--accent-secondary)' : '' }}
-        >
-          {copied ? <><ClipboardCheck size={18} /> Link Copiado!</> : <><Share2 size={18} /> Link de Cadastro (Zap)</>}
-        </button>
       </div>
 
       <div className="glass" style={{ padding: '20px', marginBottom: '24px', background: 'rgba(255,215,0,0.03)', border: '1px dashed var(--accent-primary)' }}>
