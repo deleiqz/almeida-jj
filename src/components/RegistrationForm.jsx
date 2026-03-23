@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import logo from '../assets/logo.jpg';
+import jjBg from '../assets/jj-bg.png';
 
 // Validador oficial de CPF
 const validateCPF = (cpf) => {
@@ -19,19 +20,40 @@ const validateCPF = (cpf) => {
   return true;
 };
 
-// Extracted styles to keep JSX clean
+// Dark theme input style matching the main app
 const inputStyle = {
   width: '100%',
-  padding: '12px',
-  border: '1px solid #ccc',
-  borderRadius: '5px',
+  padding: '12px 14px',
+  border: '1px solid rgba(255, 215, 0, 0.15)',
+  borderRadius: '10px',
   boxSizing: 'border-box',
   fontSize: '16px',
-  backgroundColor: '#fff',
-  color: '#333',
+  backgroundColor: 'rgba(255, 255, 255, 0.05)',
+  color: '#fff',
   WebkitAppearance: 'none',
   appearance: 'none',
-  outline: 'none'
+  outline: 'none',
+  transition: 'border-color 0.2s ease',
+  fontFamily: "'Outfit', sans-serif"
+};
+
+const labelStyle = {
+  display: 'block',
+  marginBottom: '6px',
+  fontWeight: '500',
+  color: '#a1a1aa',
+  fontSize: '0.9rem'
+};
+
+const sectionTitleStyle = {
+  textAlign: 'center',
+  color: '#ffd700',
+  marginTop: '30px',
+  marginBottom: '15px',
+  fontSize: '1.1rem',
+  fontWeight: '600',
+  textTransform: 'uppercase',
+  letterSpacing: '1px'
 };
 
 const RegistrationForm = () => {
@@ -57,13 +79,13 @@ const RegistrationForm = () => {
   const isDrawingRef = useRef(false);
   const [isDrawing, setIsDrawing] = useState(false);
 
-  // Force light theme on body for WhatsApp in-app browser compatibility
+  // Force dark theme on body
   useEffect(() => {
     const originalBg = document.body.style.backgroundColor;
     const originalColor = document.body.style.color;
     const originalOverflow = document.body.style.overflowX;
-    document.body.style.backgroundColor = '#f4f7f6';
-    document.body.style.color = '#333';
+    document.body.style.backgroundColor = '#000';
+    document.body.style.color = '#fff';
     document.body.style.overflowX = 'auto';
     
     let viewport = document.querySelector('meta[name="viewport"]');
@@ -116,13 +138,12 @@ const RegistrationForm = () => {
     ctx.lineWidth = 2.5;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
-    ctx.strokeStyle = '#000';
+    ctx.strokeStyle = '#ffd700';
     ctx.imageSmoothingEnabled = true;
   };
 
   useEffect(() => {
     if (!submitted) {
-      // Small delay to let the DOM settle (especially on mobile)
       const timer = setTimeout(setupCanvas, 100);
       window.addEventListener('resize', setupCanvas);
       return () => {
@@ -132,16 +153,12 @@ const RegistrationForm = () => {
     }
   }, [submitted]);
 
-  // Get coordinates relative to canvas (works for mouse + touch)
   const getPos = (e) => {
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
     const clientX = e.clientX ?? (e.touches && e.touches[0]?.clientX) ?? 0;
     const clientY = e.clientY ?? (e.touches && e.touches[0]?.clientY) ?? 0;
-    return {
-      x: clientX - rect.left,
-      y: clientY - rect.top
-    };
+    return { x: clientX - rect.left, y: clientY - rect.top };
   };
 
   const startDrawing = (e) => {
@@ -152,10 +169,7 @@ const RegistrationForm = () => {
     setIsDrawing(true);
 
     const ctx = canvasRef.current.getContext('2d');
-    ctx.beginPath();
-    ctx.moveTo(pos.x, pos.y);
-    // Draw a dot for single taps
-    ctx.fillStyle = '#000';
+    ctx.fillStyle = '#ffd700';
     ctx.beginPath();
     ctx.arc(pos.x, pos.y, 1.2, 0, Math.PI * 2);
     ctx.fill();
@@ -172,7 +186,6 @@ const RegistrationForm = () => {
     const ctx = canvasRef.current.getContext('2d');
 
     if (pts.length >= 3) {
-      // Smooth quadratic Bezier through last 3 points
       const p0 = pts[pts.length - 3];
       const p1 = pts[pts.length - 2];
       const p2 = pts[pts.length - 1];
@@ -208,7 +221,6 @@ const RegistrationForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Validate CPF
     if (!validateCPF(formData.cpf)) {
       alert("O CPF do aluno é inválido. Por favor, digite um CPF real.");
       return;
@@ -220,10 +232,8 @@ const RegistrationForm = () => {
     }
 
     setLoading(true);
-
     let documentUrl = '';
     
-    // Convert signature to blob and upload
     const canvas = canvasRef.current;
     if (canvas) {
       const blank = document.createElement('canvas');
@@ -250,14 +260,7 @@ const RegistrationForm = () => {
       }
     }
 
-    // Determine payment value based on plan selection (mimicking standard prices)
-    const planValues = {
-      'mensal': '120',
-      'trimestral': '320',
-      'anual': '1100'
-    };
-
-    // Insert to database (we append restriction info to address text since we don't have a specific column yet)
+    const planValues = { 'mensal': '120', 'trimestral': '320', 'anual': '1100' };
     let medicalInfo = formData.hasRestriction === 'sim' ? `Restrição Médica: ${formData.restrictionDesc}` : '';
 
     const { error } = await supabase
@@ -265,16 +268,16 @@ const RegistrationForm = () => {
       .insert([{ 
         name: formData.name, 
         phone: formData.phone,
-        belt: 'Branca', // Default value
+        belt: 'Branca',
         plan: formData.plan.charAt(0).toUpperCase() + formData.plan.slice(1),
         payment_value: planValues[formData.plan] || '120',
         birth_date: formData.birthDate,
         cpf: formData.cpf,
         parent_name: isMinor ? formData.parentName : '',
         parent_cpf: isMinor ? formData.parentCpf : '',
-        address: medicalInfo, // Storing medical info here temporarily
+        address: medicalInfo,
         has_authorization: true,
-        document_url: documentUrl, // Signature image URL!
+        document_url: documentUrl,
         status: 'pendente',
         created_at: new Date().toISOString()
       }]);
@@ -288,88 +291,129 @@ const RegistrationForm = () => {
     setLoading(false);
   };
 
+  // ── PAGE WRAPPER STYLE ──
+  const pageStyle = {
+    minHeight: '100vh',
+    backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0.85)), url(${jjBg})`,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    backgroundAttachment: 'fixed',
+    padding: '30px 15px',
+    fontFamily: "'Outfit', sans-serif",
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'flex-start'
+  };
+
+  // ── GLASS CARD STYLE ──
+  const cardStyle = {
+    maxWidth: '560px',
+    width: '100%',
+    background: 'rgba(18, 18, 18, 0.75)',
+    backdropFilter: 'blur(16px)',
+    WebkitBackdropFilter: 'blur(16px)',
+    border: '1px solid rgba(255, 215, 0, 0.12)',
+    borderRadius: '20px',
+    padding: '35px 30px',
+    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)'
+  };
+
   if (submitted) {
     return (
-      <div style={{ backgroundColor: '#f4f7f6', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ background: '#fff', padding: '40px', borderRadius: '10px', textAlign: 'center', boxShadow: '0 4px 10px rgba(0,0,0,0.1)', maxWidth: '500px' }}>
-          <h2 style={{ color: '#27ae60', marginBottom: '20px' }}>Matrícula enviada com sucesso!</h2>
-          <p style={{ color: '#555', fontSize: '16px' }}>Os seus dados foram recebidos pela Almeida JJ. Entraremos em contato em breve para finalizar o processo.</p>
+      <div style={{ ...pageStyle, alignItems: 'center' }}>
+        <div style={{ ...cardStyle, textAlign: 'center', padding: '50px 30px' }}>
+          <div style={{ width: '70px', height: '70px', borderRadius: '50%', background: 'rgba(16, 185, 129, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+            <span style={{ fontSize: '2rem' }}>✅</span>
+          </div>
+          <h2 style={{ color: '#10b981', marginBottom: '15px', fontSize: '1.6rem' }}>Matrícula Enviada!</h2>
+          <p style={{ color: '#a1a1aa', fontSize: '1rem', lineHeight: '1.6' }}>
+            Os seus dados foram recebidos pela <span style={{ color: '#ffd700', fontWeight: '700' }}>Almeida JJ</span>. Entraremos em contato em breve para finalizar o processo.
+          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div style={{ backgroundColor: '#f4f7f6', minHeight: '100vh', padding: '20px', fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif" }}>
-      <div style={{ maxWidth: '600px', margin: '0 auto', background: '#fff', padding: '30px', borderRadius: '10px', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>
+    <div style={pageStyle}>
+      <div style={cardStyle}>
         
-        <div style={{ textAlign: 'center', marginBottom: '10px' }}>
-          <img src={logo} alt="Almeida JJ" style={{ width: '150px', height: '150px', objectFit: 'cover', borderRadius: '15px' }} />
+        {/* Header */}
+        <div style={{ textAlign: 'center', marginBottom: '8px' }}>
+          <img src={logo} alt="Almeida JJ" style={{ width: '90px', height: '90px', objectFit: 'cover', borderRadius: '16px', border: '2px solid #ffd700', boxShadow: '0 0 20px rgba(255, 215, 0, 0.15)' }} />
         </div>
-        <h2 style={{ textAlign: 'center', color: '#2c3e50', marginTop: '10px', marginBottom: '5px' }}>Ficha de Matrícula</h2>
-        <p style={{ textAlign: 'center', color: '#555', fontSize: '15px', marginBottom: '20px' }}>Bem-vindo à Almeida JJ Brazilian Jiu Jitsu</p>
+        <h1 style={{ textAlign: 'center', fontSize: '1.6rem', marginTop: '12px', marginBottom: '4px', fontWeight: 800, textTransform: 'uppercase', color: '#fff' }}>
+          Almeida<span style={{ color: '#ffd700' }}>JJ</span>
+        </h1>
+        <p style={{ textAlign: 'center', color: '#a1a1aa', fontSize: '0.9rem', marginBottom: '25px' }}>Ficha de Matrícula • Brazilian Jiu Jitsu</p>
+        
+        <div style={{ height: '1px', background: 'linear-gradient(90deg, transparent, rgba(255,215,0,0.3), transparent)', marginBottom: '25px' }}></div>
 
         <form onSubmit={handleSubmit}>
           {/* Dados Pessoais */}
-          <h3 style={{ textAlign: 'center', color: '#2c3e50', marginTop: '30px', marginBottom: '15px' }}>Dados Pessoais</h3>
+          <h3 style={sectionTitleStyle}>Dados Pessoais</h3>
           
-          <div style={{ marginBottom: '15px' }}>
-            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', color: '#333' }}>Nome Completo</label>
-            <input type="text" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} style={inputStyle} />
+          <div style={{ marginBottom: '16px' }}>
+            <label style={labelStyle}>Nome Completo</label>
+            <input type="text" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} style={inputStyle} placeholder="Ex: João da Silva" />
           </div>
           
-          <div style={{ marginBottom: '15px' }}>
-            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', color: '#333' }}>Data de Nascimento</label>
-            <input type="date" required value={formData.birthDate} onChange={e => setFormData({...formData, birthDate: e.target.value})} style={inputStyle} />
+          <div style={{ marginBottom: '16px' }}>
+            <label style={labelStyle}>Data de Nascimento</label>
+            <input type="date" required value={formData.birthDate} onChange={e => setFormData({...formData, birthDate: e.target.value})} style={{...inputStyle, colorScheme: 'dark'}} />
           </div>
           
-          <div style={{ marginBottom: '15px' }}>
-            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', color: '#333' }}>CPF</label>
+          <div style={{ marginBottom: '16px' }}>
+            <label style={labelStyle}>CPF</label>
             <input type="text" required placeholder="000.000.000-00" value={formData.cpf} onChange={e => setFormData({...formData, cpf: e.target.value})} style={inputStyle} />
           </div>
           
-          <div style={{ marginBottom: '15px' }}>
-            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', color: '#333' }}>Telefone / WhatsApp</label>
-            <input type="tel" required value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} style={inputStyle} />
+          <div style={{ marginBottom: '16px' }}>
+            <label style={labelStyle}>Telefone / WhatsApp</label>
+            <input type="tel" required placeholder="(11) 99999-9999" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} style={inputStyle} />
           </div>
 
           {/* Dados Médicos */}
-          <h3 style={{ textAlign: 'center', color: '#2c3e50', marginTop: '30px', marginBottom: '15px' }}>Dados Médicos</h3>
+          <h3 style={sectionTitleStyle}>Dados Médicos</h3>
           
-          <div style={{ marginBottom: '15px' }}>
-            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', color: '#333' }}>Possui alguma restrição médica?</label>
-            <div style={{ display: 'flex', gap: '15px', marginTop: '5px' }}>
-              <label style={{ color: '#333' }}><input type="radio" name="restricao" value="sim" checked={formData.hasRestriction === 'sim'} onChange={e => setFormData({...formData, hasRestriction: e.target.value})} /> Sim</label>
-              <label style={{ color: '#333' }}><input type="radio" name="restricao" value="nao" checked={formData.hasRestriction === 'nao'} onChange={e => setFormData({...formData, hasRestriction: e.target.value})} /> Não</label>
+          <div style={{ marginBottom: '16px' }}>
+            <label style={labelStyle}>Possui alguma restrição médica?</label>
+            <div style={{ display: 'flex', gap: '20px', marginTop: '8px' }}>
+              <label style={{ color: '#fff', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+                <input type="radio" name="restricao" value="sim" checked={formData.hasRestriction === 'sim'} onChange={e => setFormData({...formData, hasRestriction: e.target.value})} style={{ accentColor: '#ffd700' }} /> Sim
+              </label>
+              <label style={{ color: '#fff', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+                <input type="radio" name="restricao" value="nao" checked={formData.hasRestriction === 'nao'} onChange={e => setFormData({...formData, hasRestriction: e.target.value})} style={{ accentColor: '#ffd700' }} /> Não
+              </label>
             </div>
           </div>
           
           {formData.hasRestriction === 'sim' && (
-            <div style={{ marginBottom: '15px' }}>
-              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', color: '#333' }}>Qual?</label>
+            <div style={{ marginBottom: '16px' }}>
+              <label style={labelStyle}>Qual?</label>
               <input type="text" placeholder="Descreva brevemente" value={formData.restrictionDesc} onChange={e => setFormData({...formData, restrictionDesc: e.target.value})} style={inputStyle} />
             </div>
           )}
 
           {/* Autorização do Responsável */}
           {isMinor && (
-            <div style={{ backgroundColor: '#fff3cd', padding: '15px', borderLeft: '5px solid #ffc107', borderRadius: '5px', marginTop: '20px', marginBottom: '20px' }}>
-              <h3 style={{ color: '#d35400', marginTop: '0', textAlign: 'left' }}>Autorização do Responsável</h3>
-              <p style={{ color: '#555', fontSize: '14px' }}><strong>Aviso:</strong> O aluno é menor de 18 anos. É obrigatório o preenchimento dos dados do responsável legal.</p>
+            <div style={{ background: 'rgba(255, 215, 0, 0.05)', padding: '20px', borderLeft: '3px solid #ffd700', borderRadius: '10px', marginTop: '20px', marginBottom: '20px' }}>
+              <h3 style={{ color: '#ffd700', marginTop: '0', textAlign: 'left', fontSize: '1rem', marginBottom: '10px' }}>⚠️ Autorização do Responsável</h3>
+              <p style={{ color: '#a1a1aa', fontSize: '0.85rem', marginBottom: '15px' }}>O aluno é <strong style={{ color: '#fbbf24' }}>menor de 18 anos</strong>. É obrigatório o preenchimento dos dados do responsável legal.</p>
               
               <div style={{ marginBottom: '15px' }}>
-                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', color: '#333' }}>Nome do Responsável Legal</label>
+                <label style={labelStyle}>Nome do Responsável Legal</label>
                 <input type="text" required={isMinor} value={formData.parentName} onChange={e => setFormData({...formData, parentName: e.target.value})} style={inputStyle} />
               </div>
               
               <div style={{ marginBottom: '15px' }}>
-                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', color: '#333' }}>CPF do Responsável</label>
+                <label style={labelStyle}>CPF do Responsável</label>
                 <input type="text" required={isMinor} value={formData.parentCpf} onChange={e => setFormData({...formData, parentCpf: e.target.value})} style={inputStyle} />
               </div>
 
-              <div style={{ marginBottom: '15px' }}>
-                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', color: '#333' }}>Grau de Parentesco</label>
-                <select required={isMinor} value={formData.kinship} onChange={e => setFormData({...formData, kinship: e.target.value})} style={inputStyle}>
+              <div style={{ marginBottom: '5px' }}>
+                <label style={labelStyle}>Grau de Parentesco</label>
+                <select required={isMinor} value={formData.kinship} onChange={e => setFormData({...formData, kinship: e.target.value})} style={{...inputStyle, colorScheme: 'dark'}}>
                   <option value="">Selecione...</option>
                   <option value="pai">Pai</option>
                   <option value="mae">Mãe</option>
@@ -381,19 +425,38 @@ const RegistrationForm = () => {
           )}
 
           {/* Escolha do Plano */}
-          <h3 style={{ textAlign: 'center', color: '#2c3e50', marginTop: '30px', marginBottom: '15px' }}>Escolha do Plano</h3>
-          <div style={{ marginBottom: '15px' }}>
-            <select required value={formData.plan} onChange={e => setFormData({...formData, plan: e.target.value})} style={inputStyle}>
-              <option value="">Selecione seu plano...</option>
-              <option value="mensal">Mensal - R$ 120,00</option>
-              <option value="trimestral">Trimestral - R$ 320,00</option>
-              <option value="anual">Anual - R$ 1.100,00</option>
-            </select>
+          <h3 style={sectionTitleStyle}>Escolha do Plano</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', marginBottom: '20px' }}>
+            {[
+              { value: 'mensal', label: 'Mensal', price: 'R$ 120' },
+              { value: 'trimestral', label: 'Trimestral', price: 'R$ 320' },
+              { value: 'anual', label: 'Anual', price: 'R$ 1.100' }
+            ].map(plan => (
+              <button
+                key={plan.value}
+                type="button"
+                onClick={() => setFormData({...formData, plan: plan.value})}
+                style={{
+                  padding: '16px 8px',
+                  borderRadius: '12px',
+                  border: formData.plan === plan.value ? '2px solid #ffd700' : '1px solid rgba(255,255,255,0.1)',
+                  background: formData.plan === plan.value ? 'rgba(255, 215, 0, 0.1)' : 'rgba(255, 255, 255, 0.03)',
+                  color: formData.plan === plan.value ? '#ffd700' : '#a1a1aa',
+                  cursor: 'pointer',
+                  textAlign: 'center',
+                  transition: 'all 0.2s ease',
+                  fontFamily: "'Outfit', sans-serif"
+                }}
+              >
+                <div style={{ fontWeight: '700', fontSize: '0.95rem', marginBottom: '4px' }}>{plan.label}</div>
+                <div style={{ fontSize: '0.8rem', opacity: 0.8 }}>{plan.price}</div>
+              </button>
+            ))}
           </div>
 
           {/* Assinatura */}
-          <h3 style={{ textAlign: 'center', color: '#2c3e50', marginTop: '30px', marginBottom: '15px' }}>Assinatura Digital</h3>
-          <p style={{ fontSize: '14px', color: '#666', textAlign: 'center' }}>Assine no quadro abaixo usando o mouse ou o dedo.</p>
+          <h3 style={sectionTitleStyle}>Assinatura Digital</h3>
+          <p style={{ fontSize: '0.85rem', color: '#a1a1aa', textAlign: 'center', marginBottom: '12px' }}>Assine no quadro abaixo usando o mouse ou o dedo.</p>
           
           <div style={{ width: '100%' }}>
             <canvas 
@@ -406,9 +469,9 @@ const RegistrationForm = () => {
               onTouchMove={draw}
               onTouchEnd={stopDrawing}
               style={{
-                border: '2px dashed #999',
-                borderRadius: '8px',
-                backgroundColor: '#f9f9f9',
+                border: '2px dashed rgba(255, 215, 0, 0.25)',
+                borderRadius: '12px',
+                backgroundColor: 'rgba(0, 0, 0, 0.3)',
                 cursor: 'crosshair',
                 touchAction: 'none',
                 display: 'block',
@@ -417,23 +480,39 @@ const RegistrationForm = () => {
             />
           </div>
           <button type="button" onClick={clearSignature} style={{
-            backgroundColor: '#e74c3c', color: 'white', padding: '8px 15px', border: 'none', borderRadius: '3px', cursor: 'pointer', marginTop: '10px', fontSize: '14px'
+            background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '8px 16px', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '8px', cursor: 'pointer', marginTop: '10px', fontSize: '0.85rem', fontFamily: "'Outfit', sans-serif"
           }}>
             Limpar Assinatura
           </button>
 
           {/* Submit */}
           <button type="submit" disabled={loading} style={{
-            backgroundColor: '#27ae60', color: 'white', padding: '15px', border: 'none', width: '100%', fontSize: '18px', fontWeight: 'bold', borderRadius: '5px', cursor: 'pointer', marginTop: '30px', opacity: loading ? 0.7 : 1
+            background: loading ? 'rgba(255, 215, 0, 0.5)' : 'linear-gradient(135deg, #ffd700, #fbbf24)',
+            color: '#000',
+            padding: '16px',
+            border: 'none',
+            width: '100%',
+            fontSize: '1.1rem',
+            fontWeight: '800',
+            borderRadius: '12px',
+            cursor: loading ? 'wait' : 'pointer',
+            marginTop: '30px',
+            textTransform: 'uppercase',
+            letterSpacing: '1px',
+            boxShadow: '0 4px 15px rgba(255, 215, 0, 0.2)',
+            transition: 'all 0.2s ease',
+            fontFamily: "'Outfit', sans-serif"
           }}>
-            {loading ? 'ENVIANDO...' : 'FINALIZAR MATRÍCULA'}
+            {loading ? 'ENVIANDO...' : '🥋 FINALIZAR MATRÍCULA'}
           </button>
+          
+          <p style={{ textAlign: 'center', fontSize: '0.75rem', color: 'rgba(255,255,255,0.25)', marginTop: '15px' }}>
+            © {new Date().getFullYear()} Almeida JJ • Sistema de Gestão
+          </p>
         </form>
       </div>
     </div>
   );
 };
-
-// Removed extracted styles from bottom to avoid hoisting issues
 
 export default RegistrationForm;
