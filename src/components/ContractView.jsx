@@ -52,6 +52,7 @@ const ContractView = ({ studentId, onBack }) => {
       parent_cpf: data.parent_cpf || 'N/A',
       phone: data.phone,
       image_auth: data.has_authorization ? "AUTORIZADO" : "NÃO AUTORIZADO",
+      medicalInfo: data.medical_info || 'Nenhuma informada',
       dueDate: "24" // Fixed as per request
     };
 
