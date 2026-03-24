@@ -514,11 +514,25 @@ const RegistrationForm = () => {
 
           <div style={{ marginBottom: '20px' }}>
             <label style={labelStyle}>Forma de Pagamento</label>
-            <select value={formData.paymentMethod} onChange={e => setFormData({...formData, paymentMethod: e.target.value})} style={{...inputStyle, colorScheme: 'dark'}}>
-              <option value="pix">Pix</option>
-              <option value="debito">Débito</option>
-              <option value="credito">Crédito</option>
-              <option value="dinheiro">Dinheiro</option>
+            <select 
+              value={formData.paymentMethod} 
+              onChange={e => setFormData({...formData, paymentMethod: e.target.value})} 
+              style={{
+                ...inputStyle,
+                background: '#1a1a1a',
+                color: '#fff',
+                cursor: 'pointer',
+                appearance: 'none',
+                backgroundImage: 'url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'24\' height=\'24\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23ffd700\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpolyline points=\'6 9 12 15 18 9\'%3E%3C/polyline%3E%3C/svg%3E")',
+                backgroundRepeat: 'no-repeat',
+                backgroundPosition: 'right 12px center',
+                backgroundSize: '16px'
+              }}
+            >
+              <option value="pix" style={{ background: '#1a1a1a', color: '#fff' }}>Pix</option>
+              <option value="debito" style={{ background: '#1a1a1a', color: '#fff' }}>Débito</option>
+              <option value="credito" style={{ background: '#1a1a1a', color: '#fff' }}>Crédito</option>
+              <option value="dinheiro" style={{ background: '#1a1a1a', color: '#fff' }}>Dinheiro</option>
             </select>
           </div>
 
