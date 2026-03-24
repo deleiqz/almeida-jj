@@ -73,6 +73,7 @@ const RegistrationForm = () => {
   const [isMinor, setIsMinor] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [newStudentId, setNewStudentId] = useState(null);
   
   const canvasRef = useRef(null);
   const pointsRef = useRef([]);
@@ -263,7 +264,7 @@ const RegistrationForm = () => {
     const planValues = { 'mensal': '120', 'trimestral': '320', 'anual': '1100' };
     let medicalInfo = formData.hasRestriction === 'sim' ? `Restrição Médica: ${formData.restrictionDesc}` : '';
 
-    const { error } = await supabase
+    const { data: insertedData, error } = await supabase
       .from('students')
       .insert([{ 
         name: formData.name, 
@@ -280,12 +281,15 @@ const RegistrationForm = () => {
         document_url: documentUrl,
         status: 'pendente',
         created_at: new Date().toISOString()
-      }]);
+      }])
+      .select('id')
+      .single();
 
     if (error) {
       alert(`Erro ao enviar cadastro: ${error.message}`);
       console.error(error);
     } else {
+      setNewStudentId(insertedData.id);
       setSubmitted(true);
     }
     setLoading(false);
@@ -319,6 +323,10 @@ const RegistrationForm = () => {
   };
 
   if (submitted) {
+    const contractUrl = `${window.location.origin}/?contrato=${newStudentId}`;
+    const whatsappMsg = encodeURIComponent(`Olá! Seu cadastro na Almeida JJ foi concluído com sucesso. 🥋\n\nVocê pode visualizar e baixar seu contrato assinado aqui: ${contractUrl}`);
+    const whatsappLink = `https://wa.me/${formData.phone.replace(/\D/g, '')}?text=${whatsappMsg}`;
+
     return (
       <div style={{ ...pageStyle, alignItems: 'center' }}>
         <div style={{ ...cardStyle, textAlign: 'center', padding: '50px 30px' }}>
@@ -326,9 +334,22 @@ const RegistrationForm = () => {
             <span style={{ fontSize: '2rem' }}>✅</span>
           </div>
           <h2 style={{ color: '#10b981', marginBottom: '15px', fontSize: '1.6rem' }}>Matrícula Enviada!</h2>
-          <p style={{ color: '#a1a1aa', fontSize: '1rem', lineHeight: '1.6' }}>
-            Os seus dados foram recebidos pela <span style={{ color: '#ffd700', fontWeight: '700' }}>Almeida JJ</span>. Entraremos em contato em breve para finalizar o processo.
+          <p style={{ color: '#a1a1aa', fontSize: '1rem', lineHeight: '1.6', marginBottom: '30px' }}>
+            Os seus dados foram recebidos pela <span style={{ color: '#ffd700', fontWeight: '700' }}>Almeida JJ</span>. Seja bem-vindo!
           </p>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <a href={contractUrl} target="_blank" rel="noreferrer" style={{
+              background: 'rgba(255, 215, 0, 0.1)', color: '#ffd700', padding: '14px', border: '1px solid #ffd700', borderRadius: '12px', textDecoration: 'none', fontWeight: '700'
+            }}>
+              📄 Ver Meu Contrato Assinado
+            </a>
+            <a href={whatsappLink} target="_blank" rel="noreferrer" style={{
+              background: '#25d366', color: '#fff', padding: '14px', border: 'none', borderRadius: '12px', textDecoration: 'none', fontWeight: '700'
+            }}>
+              💬 Receber Cópia no WhatsApp
+            </a>
+          </div>
         </div>
       </div>
     );

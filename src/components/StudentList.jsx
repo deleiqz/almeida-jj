@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Plus, Edit2, Share2, ClipboardCheck, Mail, MessageSquare, Phone } from 'lucide-react';
+import { Search, Plus, Edit2, Share2, ClipboardCheck, Mail, MessageSquare, Phone, FileText } from 'lucide-react';
 import Modal from './Modal';
 
 const StudentList = ({ students, classes, enrollments, addStudent, updateStudent, deleteStudent }) => {
@@ -208,12 +208,35 @@ const StudentList = ({ students, classes, enrollments, addStudent, updateStudent
                   </td>
                   <td>{student.nextDue}</td>
                   <td>
-                    <button 
-                      onClick={() => openEditModal(student)}
-                      style={{ background: 'transparent', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer', padding: '5px' }}
-                    >
-                      <Edit2 size={16} />
-                    </button>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button 
+                        onClick={() => openEditModal(student)}
+                        style={{ background: 'transparent', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer', padding: '5px' }}
+                        title="Editar"
+                      >
+                        <Edit2 size={16} />
+                      </button>
+                      <a 
+                        href={`${window.location.origin}/?contrato=${student.id}`} 
+                        target="_blank" 
+                        rel="noreferrer"
+                        style={{ color: 'var(--text-secondary)', cursor: 'pointer', padding: '5px', display: 'flex', alignItems: 'center' }}
+                        title="Ver Contrato"
+                      >
+                        <FileText size={16} />
+                      </a>
+                      <button 
+                        onClick={() => {
+                          const url = `${window.location.origin}/?contrato=${student.id}`;
+                          const msg = encodeURIComponent(`Olá ${student.name.split(' ')[0]}! Segue o link do seu contrato assinado na Almeida JJ: ${url}`);
+                          window.open(`https://wa.me/${student.phone?.replace(/\D/g, '')}?text=${msg}`, '_blank');
+                        }}
+                        style={{ background: 'transparent', border: 'none', color: '#25D366', cursor: 'pointer', padding: '5px' }}
+                        title="Enviar Contrato via WhatsApp"
+                      >
+                        <MessageSquare size={16} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

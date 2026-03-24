@@ -8,6 +8,7 @@ import RegistrationForm from './components/RegistrationForm';
 import ErrorBoundary from './components/ErrorBoundary';
 import { supabase } from './lib/supabase';
 import { LogOut } from 'lucide-react';
+import ContractView from './components/ContractView';
 
 // Lazy-load heavy components for faster initial render
 const Dashboard = lazy(() => import('./components/Dashboard'));
@@ -20,7 +21,13 @@ const ClassList = lazy(() => import('./components/ClassList'));
 const Notifications = lazy(() => import('./components/Notifications'));
 
 const App = () => {
-  const isPublicRegistration = window.location.search.includes('registro');
+  const queryParams = new URLSearchParams(window.location.search);
+  const isPublicRegistration = queryParams.get('registro') !== null;
+  const contractId = queryParams.get('contrato');
+  
+  if (contractId) {
+    return <ContractView studentId={contractId} onBack={() => window.location.href = '/'} />;
+  }
   
   // Persistence: initialize from localStorage
   const [activeTab, setActiveTab] = useState(() => localStorage.getItem('activeTab') || 'dashboard');
