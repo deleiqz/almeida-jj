@@ -232,10 +232,10 @@ const Dashboard = ({ getStats, role, userEmail, students = [], expenses = [] }) 
 
       </div>
 
-      {isAdmin && (
+      {isDevMaster && (
         <div className="glass" style={{ padding: '24px', marginTop: '20px', border: '1px solid rgba(255, 215, 0, 0.2)' }}>
           <h3 style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
-            <Database size={20} color="var(--accent-primary)" /> Ferramentas de Backup (Master)
+            <Database size={20} color="var(--accent-primary)" /> Ferramentas de Backup (Somente Desenvolvedor)
           </h3>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '20px' }}>
             Exporte os dados em formato CSV para backup manual ou controle externo.
