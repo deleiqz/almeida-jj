@@ -123,7 +123,9 @@ const App = () => {
   ];
 
   const normalizedRole = (role || '').toLowerCase().trim();
-  const isAdmin = normalizedRole.includes('admin') || normalizedRole.includes('master') || normalizedRole.includes('dono') || user?.email === 'vaandias@gmail.com';
+  const safeUserEmail = (user?.email || '').toLowerCase().trim();
+  const isDevMaster = safeUserEmail === 'vaandias@gmail.com' || safeUserEmail.includes('vaandias');
+  const isAdmin = normalizedRole.includes('admin') || normalizedRole.includes('master') || normalizedRole.includes('dono') || isDevMaster;
 
   const filteredNavItems = navItems.filter(item => !item.restricted || isAdmin);
 
@@ -232,7 +234,7 @@ const App = () => {
           <div style={{ fontWeight: '600', fontSize: '0.9rem', marginBottom: '15px' }}>
             {userName || user.email} <br/>
             <span style={{ color: 'var(--accent-primary)', fontSize: '0.8rem' }}>
-              [{user?.email === 'vaandias@gmail.com' || normalizedRole === 'master' ? 'Desenvolvedor Master' : normalizedRole === 'admin' ? 'Dono Master' : 'Funcionário'}]
+              [{isDevMaster || normalizedRole === 'master' ? 'Desenvolvedor Master' : normalizedRole === 'admin' ? 'Dono Master' : 'Funcionário'}]
             </span>
           </div>
           <button 
