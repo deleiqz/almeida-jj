@@ -1,4 +1,4 @@
-import { Users, DollarSign, TrendingUp, AlertCircle, Share2, ClipboardCheck, Calendar, Clock, AlertTriangle } from 'lucide-react';
+import { Users, DollarSign, TrendingUp, AlertCircle, Share2, ClipboardCheck, Calendar, Clock, AlertTriangle, Download, Database } from 'lucide-react';
 import { useState } from 'react';
 
 const Dashboard = ({ getStats, role, userEmail, students = [], expenses = [] }) => {
@@ -41,6 +41,38 @@ const Dashboard = ({ getStats, role, userEmail, students = [], expenses = [] }) 
   const upcomingExpenses = isAdmin ? (expenses?.filter(e => e.status !== 'pago' && isDueSoon(e.dueDate)) || []) : [];
   const overdueExpenses = isAdmin ? (expenses?.filter(e => e.status !== 'pago' && isOverdue(e.dueDate)) || []) : [];
 
+  const exportToCSV = (type) => {
+    let csvContent = "data:text/csv;charset=utf-8,";
+    
+    if (type === 'students') {
+      const headers = ["Nome", "Telefone", "Faixa", "Status", "Vencimento", "Valor", "Plano", "Metodo", "CPF", "Endereco", "Data Nasc"];
+      csvContent += headers.join(",") + "\n";
+      
+      students.forEach(s => {
+        const row = [
+          s.name, s.phone, s.belt, s.status, s.nextDue, s.amount, 
+          s.plan, s.paymentMethod, s.cpf, s.address, s.birthDate
+        ].map(val => `"${val || ''}"`);
+        csvContent += row.join(",") + "\n";
+      });
+    } else {
+      const headers = ["Tipo", "Valor", "Vencimento", "Status"];
+      csvContent += headers.join(",") + "\n";
+      
+      expenses.forEach(e => {
+        const row = [e.type, e.amount, e.dueDate, e.status].map(val => `"${val || ''}"`);
+        csvContent += row.join(",") + "\n";
+      });
+    }
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `backup_${type}_almeidajj_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
     <div className="dashboard-content">
@@ -199,6 +231,33 @@ const Dashboard = ({ getStats, role, userEmail, students = [], expenses = [] }) 
         )}
 
       </div>
+
+      {isAdmin && (
+        <div className="glass" style={{ padding: '24px', marginTop: '20px', border: '1px solid rgba(255, 215, 0, 0.2)' }}>
+          <h3 style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
+            <Database size={20} color="var(--accent-primary)" /> Ferramentas de Backup (Master)
+          </h3>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '20px' }}>
+            Exporte os dados em formato CSV para backup manual ou controle externo.
+          </p>
+          <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+            <button 
+              onClick={() => exportToCSV('students')}
+              className="glass" 
+              style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px', color: 'var(--accent-primary)', border: '1px solid var(--accent-primary)', cursor: 'pointer' }}
+            >
+              <Download size={18} /> Exportar Alunos (.CSV)
+            </button>
+            <button 
+              onClick={() => exportToCSV('expenses')}
+              className="glass" 
+              style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px', color: 'var(--danger)', border: '1px solid var(--danger)', cursor: 'pointer' }}
+            >
+              <Download size={18} /> Exportar Financeiro (.CSV)
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
