@@ -123,7 +123,7 @@ const App = () => {
   ];
 
   const normalizedRole = (role || '').toLowerCase().trim();
-  const isAdmin = normalizedRole.includes('admin') || normalizedRole.includes('master') || normalizedRole.includes('dono');
+  const isAdmin = normalizedRole.includes('admin') || normalizedRole.includes('master') || normalizedRole.includes('dono') || user?.email === 'vaandias@gmail.com';
 
   const filteredNavItems = navItems.filter(item => !item.restricted || isAdmin);
 
@@ -135,7 +135,7 @@ const App = () => {
     );
 
     switch (activeTab) {
-      case 'dashboard':      return <Dashboard getStats={getStats} role={normalizedRole} students={students} expenses={expenses} />;
+      case 'dashboard':      return <Dashboard getStats={getStats} role={normalizedRole} students={students} expenses={expenses} userEmail={user?.email} />;
       case 'students': return <StudentList students={students} classes={classes} enrollments={enrollments} addStudent={addStudent} updateStudent={updateStudent} deleteStudent={deleteStudent} />;
       case 'belts':          return <BeltControl 
           students={students} 
@@ -153,9 +153,9 @@ const App = () => {
           deleteClass={deleteClass}
         />; 
       case 'notifications': return <Notifications students={students} />;
-      case 'expenses': return isAdmin ? <ExpenseList expenses={expenses} addExpense={addExpense} updateExpense={updateExpense} deleteExpense={deleteExpense} /> : <Dashboard getStats={getStats} role={normalizedRole} students={students} expenses={expenses} />;
+      case 'expenses': return isAdmin ? <ExpenseList expenses={expenses} addExpense={addExpense} updateExpense={updateExpense} deleteExpense={deleteExpense} /> : <Dashboard getStats={getStats} role={normalizedRole} students={students} expenses={expenses} userEmail={user?.email} />;
       case 'maintenance': return <Maintenance />;
-      default: return <Dashboard getStats={getStats} role={normalizedRole} students={students} expenses={expenses} />;
+      default: return <Dashboard getStats={getStats} role={normalizedRole} students={students} expenses={expenses} userEmail={user?.email} />;
     }
   };
 
@@ -232,7 +232,7 @@ const App = () => {
           <div style={{ fontWeight: '600', fontSize: '0.9rem', marginBottom: '15px' }}>
             {userName || user.email} <br/>
             <span style={{ color: 'var(--accent-primary)', fontSize: '0.8rem' }}>
-              [{normalizedRole === 'master' ? 'Desenvolvedor Master' : normalizedRole === 'admin' ? 'Dono Master' : 'Funcionário'}]
+              [{user?.email === 'vaandias@gmail.com' || normalizedRole === 'master' ? 'Desenvolvedor Master' : normalizedRole === 'admin' ? 'Dono Master' : 'Funcionário'}]
             </span>
           </div>
           <button 
