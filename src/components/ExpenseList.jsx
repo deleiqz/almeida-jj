@@ -8,14 +8,19 @@ const ExpenseList = ({ expenses, addExpense, updateExpense, deleteExpense }) => 
   const [editingId, setEditingId] = useState(null);
   const [newExpense, setNewExpense] = useState({ type: '', amount: '', dueDate: '', status: 'pendente' });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (isEditMode) {
-      updateExpense(editingId, newExpense);
-    } else {
-      addExpense(newExpense);
+    try {
+      if (isEditMode) {
+        await updateExpense(editingId, newExpense);
+      } else {
+        await addExpense(newExpense);
+      }
+      closeModal();
+    } catch (err) {
+      console.error("Erro ao salvar despesa:", err);
+      alert("Erro ao salvar despesa. Verifique os dados e tente novamente.");
     }
-    closeModal();
   };
 
   const openAddModal = () => {

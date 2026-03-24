@@ -241,11 +241,37 @@ export const useStore = (skipFetch = false) => {
     const { error } = await supabase.from('expenses').insert([
       { 
         type: expense.type, 
-        amount: expense.amount, 
+        amount: Number(expense.amount) || 0, 
         due_date: expense.dueDate, 
         status: expense.status 
       }
     ]);
+    if (error) {
+      console.error(error);
+      throw error;
+    }
+    fetchDisplayData();
+  };
+
+  const updateExpense = async (id, updates) => {
+    const { error } = await supabase
+      .from('expenses')
+      .update({ 
+        type: updates.type, 
+        amount: Number(updates.amount) || 0, 
+        due_date: updates.dueDate, 
+        status: updates.status 
+      })
+      .eq('id', id);
+    if (error) {
+      console.error(error);
+      throw error;
+    }
+    fetchDisplayData();
+  };
+
+  const deleteExpense = async (id) => {
+    const { error } = await supabase.from('expenses').delete().eq('id', id);
     if (error) console.error(error);
     fetchDisplayData();
   };
@@ -297,7 +323,7 @@ export const useStore = (skipFetch = false) => {
 
   return { 
     students, expenses, classes, attendance, enrollments,
-    addStudent, updateStudent, deleteStudent, enrollStudent, updateStudentBelt, addClass, updateClass, deleteClass, markAttendance, removeAttendance, addExpense, 
+    addStudent, updateStudent, deleteStudent, enrollStudent, updateStudentBelt, addClass, updateClass, deleteClass, markAttendance, removeAttendance, addExpense, updateExpense, deleteExpense,
     getStats, getStudentAttendanceCount, loading 
   };
 };
