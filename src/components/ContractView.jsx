@@ -41,14 +41,18 @@ const ContractView = ({ studentId, onBack }) => {
     const placeholders = {
       name: data.name,
       cpf: data.cpf,
+      email: data.email || 'Não informado',
       birthDate: new Date(data.birth_date).toLocaleDateString('pt-BR'),
       address: data.address || 'Não informado',
       plan: data.plan,
+      sub_plan: data.sub_plan?.toUpperCase() || 'EVOLUÇÃO',
       payment_value: data.payment_value,
+      paymentMethod: (data.payment_method || 'Pix').toUpperCase(),
       parent_name: data.parent_name || 'N/A',
       parent_cpf: data.parent_cpf || 'N/A',
       phone: data.phone,
-      dueDate: new Date(data.created_at).getDate() // Vencimento padrão no dia do cadastro
+      image_auth: data.has_authorization ? "AUTORIZADO" : "NÃO AUTORIZADO",
+      dueDate: "24" // Fixed as per request
     };
 
     Object.keys(placeholders).forEach(key => {

@@ -62,12 +62,18 @@ const RegistrationForm = () => {
     birthDate: '',
     cpf: '',
     phone: '',
+    email: '',
+    address: '',
     hasRestriction: 'nao',
     restrictionDesc: '',
     parentName: '',
     parentCpf: '',
     kinship: '',
     plan: 'mensal',
+    subPlan: 'evolucao',
+    paymentMethod: 'pix',
+    imageAuth: true,
+    marketingAuth: true
   });
   
   const [isMinor, setIsMinor] = useState(false);
@@ -269,15 +275,20 @@ const RegistrationForm = () => {
       .insert([{ 
         name: formData.name, 
         phone: formData.phone,
+        email: formData.email,
+        address: formData.address,
         belt: 'Branca',
         plan: formData.plan.charAt(0).toUpperCase() + formData.plan.slice(1),
+        sub_plan: formData.subPlan,
         payment_value: planValues[formData.plan] || '120',
+        payment_method: formData.paymentMethod,
         birth_date: formData.birthDate,
         cpf: formData.cpf,
         parent_name: isMinor ? formData.parentName : '',
         parent_cpf: isMinor ? formData.parentCpf : '',
-        address: medicalInfo,
-        has_authorization: true,
+        medical_info: medicalInfo,
+        has_authorization: formData.imageAuth,
+        marketing_auth: formData.marketingAuth,
         document_url: documentUrl,
         status: 'pendente',
         created_at: new Date().toISOString()
@@ -392,6 +403,20 @@ const RegistrationForm = () => {
           <div style={{ marginBottom: '16px' }}>
             <label style={labelStyle}>Telefone / WhatsApp</label>
             <input type="tel" required placeholder="(11) 99999-9999" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} style={inputStyle} />
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#a1a1aa', fontSize: '0.8rem', marginTop: '8px', cursor: 'pointer' }}>
+              <input type="checkbox" checked={formData.marketingAuth} onChange={e => setFormData({...formData, marketingAuth: e.target.checked})} style={{ accentColor: '#ffd700' }} />
+              Autorizo receber mensagens e promoções da academia.
+            </label>
+          </div>
+
+          <div style={{ marginBottom: '16px' }}>
+            <label style={labelStyle}>E-mail</label>
+            <input type="email" required placeholder="seu@email.com" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} style={inputStyle} />
+          </div>
+
+          <div style={{ marginBottom: '16px' }}>
+            <label style={labelStyle}>Endereço Completo</label>
+            <input type="text" required placeholder="Rua, Número, Bairro, Cidade" value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} style={inputStyle} />
           </div>
 
           {/* Dados Médicos */}
@@ -473,6 +498,43 @@ const RegistrationForm = () => {
                 <div style={{ fontSize: '0.8rem', opacity: 0.8 }}>{plan.price}</div>
               </button>
             ))}
+          </div>
+
+          <div style={{ marginBottom: '20px' }}>
+            <label style={labelStyle}>Plano de Treino</label>
+            <div style={{ display: 'flex', gap: '15px', marginTop: '8px' }}>
+              <label style={{ color: '#fff', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                <input type="radio" value="evolucao" checked={formData.subPlan === 'evolucao'} onChange={e => setFormData({...formData, subPlan: e.target.value})} style={{ accentColor: '#ffd700' }} /> Plano Evolução
+              </label>
+              <label style={{ color: '#fff', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                <input type="radio" value="performance" checked={formData.subPlan === 'performance'} onChange={e => setFormData({...formData, subPlan: e.target.value})} style={{ accentColor: '#ffd700' }} /> Plano Performance
+              </label>
+            </div>
+          </div>
+
+          <div style={{ marginBottom: '20px' }}>
+            <label style={labelStyle}>Forma de Pagamento</label>
+            <select value={formData.paymentMethod} onChange={e => setFormData({...formData, paymentMethod: e.target.value})} style={{...inputStyle, colorScheme: 'dark'}}>
+              <option value="pix">Pix</option>
+              <option value="debito">Débito</option>
+              <option value="credito">Crédito</option>
+              <option value="dinheiro">Dinheiro</option>
+            </select>
+          </div>
+
+          <div style={{ marginBottom: '20px', background: 'rgba(255,255,255,0.03)', padding: '15px', borderRadius: '10px' }}>
+            <label style={{...labelStyle, color: '#ffd700'}}>DIREITO DE IMAGEM</label>
+            <div style={{ display: 'flex', gap: '20px', marginTop: '8px' }}>
+              <label style={{ color: '#fff', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                <input type="radio" checked={formData.imageAuth === true} onChange={() => setFormData({...formData, imageAuth: true})} style={{ accentColor: '#ffd700' }} /> Autorizo
+              </label>
+              <label style={{ color: '#fff', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                <input type="radio" checked={formData.imageAuth === false} onChange={() => setFormData({...formData, imageAuth: false})} style={{ accentColor: '#ffd700' }} /> Não autorizo
+              </label>
+            </div>
+            <p style={{ fontSize: '0.7rem', color: '#a1a1aa', marginTop: '10px' }}>
+              Autorizo o uso de minha imagem em fotos e vídeos para fins de divulgação da academia.
+            </p>
           </div>
 
           {/* Assinatura */}
