@@ -161,7 +161,7 @@ const App = () => {
           updateClass={updateClass}
           deleteClass={deleteClass}
         />; 
-      case 'notifications': return <Notifications students={students} />;
+      case 'notifications': return <Notifications students={students} isDevMaster={isDevMaster} />;
       case 'expenses': return isAdmin ? <ExpenseList expenses={expenses} addExpense={addExpense} updateExpense={updateExpense} deleteExpense={deleteExpense} /> : <Dashboard getStats={getStats} role={normalizedRole} students={students} expenses={expenses} userEmail={user?.email} />;
       case 'maintenance': return <Maintenance />;
       default: return <Dashboard getStats={getStats} role={normalizedRole} students={students} expenses={expenses} userEmail={user?.email} />;
@@ -263,6 +263,16 @@ const App = () => {
           >
             <LogOut size={16} /> Sair
           </button>
+
+          {/* Elegant Creator Brand */}
+          <div style={{ marginTop: '25px', padding: '10px', textAlign: 'center', borderTop: '1px solid rgba(255, 215, 0, 0.05)' }}>
+            <p style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.15)', letterSpacing: '2px', textTransform: 'uppercase', margin: 0 }}>
+              Desenvolvido por
+            </p>
+            <p style={{ fontSize: '0.85rem', color: '#ffd700', fontWeight: '700', margin: '4px 0 0', fontFamily: "'Outfit', sans-serif", opacity: 0.5 }}>
+               VANDERLEI DIAS
+            </p>
+          </div>
         </div>
       </nav>
 

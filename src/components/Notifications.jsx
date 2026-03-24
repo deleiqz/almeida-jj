@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Send, UserCheck, MessageSquare, List, CheckCircle, Clock, Share2, Clipboard, Search, AlertCircle, Trash2, ExternalLink, Loader2, ShieldCheck, ShieldAlert, RefreshCw } from 'lucide-react';
 
-const Notifications = ({ students }) => {
+const Notifications = ({ students, isDevMaster }) => {
   const [message, setMessage] = useState('');
   const [filter, setFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
@@ -9,7 +9,7 @@ const Notifications = ({ students }) => {
   const [currentIndex, setCurrentIndex] = useState(-1);
   const [sentIds, setSentIds] = useState(new Set());
   const [copiedNumbers, setCopiedNumbers] = useState(false);
-  const [sendMode, setSendMode] = useState('manual'); // 'manual', 'api', or 'local'
+  const [sendMode, setSendMode] = useState('local'); // Default to local for everyone
   const [apiConfig, setApiConfig] = useState(() => {
     const saved = localStorage.getItem('whatsapp_api_config');
     return saved ? JSON.parse(saved) : { instance: '', token: '', clientToken: '', localUrl: 'http://localhost:3000' };
@@ -231,26 +231,30 @@ const Notifications = ({ students }) => {
       <div className="dashboard-grid" style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '24px' }}>
         <div className="glass" style={{ padding: '24px' }}>
           <div style={{ display: 'flex', gap: '20px', marginBottom: '20px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '15px' }}>
-            <button 
-              onClick={() => setSendMode('manual')}
-              style={{ 
-                background: 'none', border: 'none', color: sendMode === 'manual' ? 'var(--accent-primary)' : 'var(--text-secondary)',
-                padding: '8px 0', borderBottom: sendMode === 'manual' ? '2px solid var(--accent-primary)' : 'none',
-                cursor: 'pointer', fontWeight: sendMode === 'manual' ? 'bold' : 'normal'
-              }}
-            >
-              Modo Manual (Abas)
-            </button>
-            <button 
-              onClick={() => setSendMode('api')}
-              style={{ 
-                background: 'none', border: 'none', color: sendMode === 'api' ? 'var(--accent-primary)' : 'var(--text-secondary)',
-                padding: '8px 0', borderBottom: sendMode === 'api' ? '2px solid var(--accent-primary)' : 'none',
-                cursor: 'pointer', fontWeight: sendMode === 'api' ? 'bold' : 'normal'
-              }}
-            >
-              Modo Profissional (Z-API)
-            </button>
+            {isDevMaster && (
+              <>
+                <button 
+                  onClick={() => setSendMode('manual')}
+                  style={{ 
+                    background: 'none', border: 'none', color: sendMode === 'manual' ? 'var(--accent-primary)' : 'var(--text-secondary)',
+                    padding: '8px 0', borderBottom: sendMode === 'manual' ? '2px solid var(--accent-primary)' : 'none',
+                    cursor: 'pointer', fontWeight: sendMode === 'manual' ? 'bold' : 'normal'
+                  }}
+                >
+                  Modo Manual (Abas)
+                </button>
+                <button 
+                  onClick={() => setSendMode('api')}
+                  style={{ 
+                    background: 'none', border: 'none', color: sendMode === 'api' ? 'var(--accent-primary)' : 'var(--text-secondary)',
+                    padding: '8px 0', borderBottom: sendMode === 'api' ? '2px solid var(--accent-primary)' : 'none',
+                    cursor: 'pointer', fontWeight: sendMode === 'api' ? 'bold' : 'normal'
+                  }}
+                >
+                  Modo Profissional (Z-API)
+                </button>
+              </>
+            )}
             <button 
               onClick={() => setSendMode('local')}
               style={{ 
@@ -260,7 +264,7 @@ const Notifications = ({ students }) => {
                 display: 'flex', alignItems: 'center', gap: '8px'
               }}
             >
-              Servidor Próprio (Grátis)
+              WhatsApp
               {sendMode === 'local' && (
                 connectionStatus.loading ? <RefreshCw size={12} className="spin" /> : 
                 connectionStatus.connected ? <ShieldCheck size={14} color="#10b981" /> : <ShieldAlert size={14} color="#ef4444" />
@@ -294,7 +298,7 @@ const Notifications = ({ students }) => {
             </div>
           )}
 
-          {sendMode === 'local' && (
+          {sendMode === 'local' && isDevMaster && (
             <div className="glass" style={{ padding: '15px', marginBottom: '20px', background: 'rgba(16,185,129,0.02)', border: '1px dashed #10b981' }}>
               <h4 style={{ fontSize: '0.9rem', marginBottom: '10px', color: '#10b981' }}>Configuração Servidor Local</h4>
               <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
