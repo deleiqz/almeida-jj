@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import logo from '../assets/logo.jpg';
 import jjBg from '../assets/jj-bg.png';
+import { responsibilityTerm } from '../lib/contractTemplates';
 
 // Validador oficial de CPF
 const validateCPF = (cpf) => {
@@ -69,6 +70,7 @@ const RegistrationForm = () => {
     parentName: '',
     parentCpf: '',
     kinship: '',
+    agreedToTerms: false,
     plan: 'mensal',
     subPlan: 'evolucao',
     paymentMethod: 'pix',
@@ -228,6 +230,11 @@ const RegistrationForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    if (!formData.agreedToTerms) {
+      alert("Você precisa ler e aceitar o Termo de Responsabilidade.");
+      return;
+    }
+
     if (!validateCPF(formData.cpf)) {
       alert("O CPF do aluno é inválido. Por favor, digite um CPF real.");
       return;
@@ -502,13 +509,31 @@ const RegistrationForm = () => {
 
           <div style={{ marginBottom: '20px' }}>
             <label style={labelStyle}>Plano de Treino</label>
-            <div style={{ display: 'flex', gap: '15px', marginTop: '8px' }}>
-              <label style={{ color: '#fff', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                <input type="radio" value="evolucao" checked={formData.subPlan === 'evolucao'} onChange={e => setFormData({...formData, subPlan: e.target.value})} style={{ accentColor: '#ffd700' }} /> Plano Evolução
-              </label>
-              <label style={{ color: '#fff', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                <input type="radio" value="performance" checked={formData.subPlan === 'performance'} onChange={e => setFormData({...formData, subPlan: e.target.value})} style={{ accentColor: '#ffd700' }} /> Plano Performance
-              </label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '8px' }}>
+              <button 
+                type="button" 
+                onClick={() => setFormData({...formData, subPlan: 'evolucao'})}
+                style={{
+                  padding: '12px', borderRadius: '10px', border: formData.subPlan === 'evolucao' ? '2px solid #ffd700' : '1px solid rgba(255,255,255,0.1)',
+                  background: formData.subPlan === 'evolucao' ? 'rgba(255, 215, 0, 0.1)' : 'rgba(255, 255, 255, 0.03)',
+                  color: formData.subPlan === 'evolucao' ? '#ffd700' : '#a1a1aa',
+                  fontWeight: '700', cursor: 'pointer', fontFamily: "'Outfit', sans-serif"
+                }}
+              >
+                🏁 Plano Evolução
+              </button>
+              <button 
+                type="button" 
+                onClick={() => setFormData({...formData, subPlan: 'performance'})}
+                style={{
+                  padding: '12px', borderRadius: '10px', border: formData.subPlan === 'performance' ? '2px solid #ffd700' : '1px solid rgba(255,255,255,0.1)',
+                  background: formData.subPlan === 'performance' ? 'rgba(255, 215, 0, 0.1)' : 'rgba(255, 255, 255, 0.03)',
+                  color: formData.subPlan === 'performance' ? '#ffd700' : '#a1a1aa',
+                  fontWeight: '700', cursor: 'pointer', fontFamily: "'Outfit', sans-serif"
+                }}
+              >
+                ⚡ Plano Performance
+              </button>
             </div>
           </div>
 
@@ -549,6 +574,30 @@ const RegistrationForm = () => {
             <p style={{ fontSize: '0.7rem', color: '#a1a1aa', marginTop: '10px' }}>
               Autorizo o uso de minha imagem em fotos e vídeos para fins de divulgação da academia.
             </p>
+          </div>
+          {/* Termo de Responsabilidade */}
+          <div style={{ marginBottom: '30px', background: 'rgba(0,0,0,0.3)', padding: '20px', borderRadius: '15px', border: '1px solid rgba(255,215,0,0.1)' }}>
+            <h3 style={{ ...sectionTitleStyle, color: '#ffd700', marginTop: '0', fontSize: '1rem', marginBottom: '15px' }}>📜 Termo de Responsabilidade</h3>
+            <div style={{ 
+              maxHeight: '150px', overflowY: 'auto', paddingRight: '10px', fontSize: '0.8rem', color: '#a1a1aa', lineHeight: '1.5',
+              textAlign: 'justify', marginBottom: '15px'
+            }}>
+              {responsibilityTerm
+                .replace(/{{name}}/g, formData.name || 'o aluno')
+                .replace(/{{phone}}/g, formData.phone || 'não informado')
+                .replace(/{{medicalInfo}}/g, formData.hasRestriction === 'sim' ? formData.restrictionDesc : 'Nenhuma restrição informada')
+                .split('\n').map((line, i) => <p key={i} style={{ marginBottom: '8px' }}>{line.replace(/#/g, '').replace(/\*\*/g, '')}</p>)
+              }
+            </div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#fff', cursor: 'pointer', fontSize: '0.9rem', fontWeight: '600' }}>
+              <input 
+                type="checkbox" 
+                checked={formData.agreedToTerms} 
+                onChange={e => setFormData({...formData, agreedToTerms: e.target.checked})} 
+                style={{ width: '20px', height: '20px', accentColor: '#ffd700' }} 
+              />
+              Li e Aceito o Termo de Responsabilidade
+            </label>
           </div>
 
           {/* Assinatura */}
