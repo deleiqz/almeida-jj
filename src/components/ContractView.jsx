@@ -38,6 +38,9 @@ const ContractView = ({ studentId, onBack }) => {
   // Simple template replacement
   const replacePlaceholders = (text, data) => {
     let result = text;
+    const createdDate = new Date(data.created_at);
+    const months = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+
     const placeholders = {
       name: data.name,
       cpf: data.cpf,
@@ -50,14 +53,18 @@ const ContractView = ({ studentId, onBack }) => {
       paymentMethod: (data.payment_method || 'Pix').toUpperCase(),
       parent_name: data.parent_name || 'N/A',
       parent_cpf: data.parent_cpf || 'N/A',
+      parent_name_or_self: data.parent_name || data.name,
+      parent_cpf_or_self: data.parent_cpf || data.cpf,
       phone: data.phone,
       image_auth: data.has_authorization ? "AUTORIZADO" : "NÃO AUTORIZADO",
       medicalInfo: data.medical_info || 'Nenhuma informada',
-      dueDate: "24" // Fixed as per request
+      dueDate: "24",
+      day: createdDate.getDate(),
+      month: months[createdDate.getMonth()]
     };
 
     Object.keys(placeholders).forEach(key => {
-      result = result.replace(new RegExp(`{{${key}}}`, 'g'), placeholders[key]);
+      result = result.replace(new RegExp(`{{${key}}}`, 'g'), String(placeholders[key]));
     });
     return result;
   };

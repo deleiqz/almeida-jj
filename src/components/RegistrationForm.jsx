@@ -582,12 +582,34 @@ const RegistrationForm = () => {
               maxHeight: '150px', overflowY: 'auto', paddingRight: '10px', fontSize: '0.8rem', color: '#a1a1aa', lineHeight: '1.5',
               textAlign: 'justify', marginBottom: '15px'
             }}>
-              {responsibilityTerm
-                .replace(/{{name}}/g, formData.name || 'o aluno')
-                .replace(/{{phone}}/g, formData.phone || 'não informado')
-                .replace(/{{medicalInfo}}/g, formData.hasRestriction === 'sim' ? formData.restrictionDesc : 'Nenhuma restrição informada')
-                .split('\n').map((line, i) => <p key={i} style={{ marginBottom: '8px' }}>{line.replace(/#/g, '').replace(/\*\*/g, '')}</p>)
-              }
+              {(() => {
+                const now = new Date();
+                const months = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+                const isMinorVal = isMinor; // assuming isMinor is available from state/effect
+                
+                let text = responsibilityTerm;
+                const replacements = {
+                  name: formData.name || '________________',
+                  birthDate: formData.birthDate ? new Date(formData.birthDate).toLocaleDateString('pt-BR') : '________________',
+                  phone: formData.phone || '________________',
+                  email: formData.email || '________________',
+                  address: formData.address || '________________',
+                  parent_name_or_self: isMinorVal ? (formData.parentName || '________________') : (formData.name || '________________'),
+                  parent_cpf_or_self: isMinorVal ? (formData.parentCpf || '________________') : (formData.cpf || '________________'),
+                  day: now.getDate(),
+                  month: months[now.getMonth()]
+                };
+
+                Object.keys(replacements).forEach(key => {
+                   text = text.replace(new RegExp(`{{${key}}}`, 'g'), String(replacements[key]));
+                });
+
+                return text.split('\n').map((line, i) => (
+                  <p key={i} style={{ marginBottom: '8px' }}>
+                    {line.replace(/#/g, '').replace(/\*\*/g, '')}
+                  </p>
+                ));
+              })()}
             </div>
             <label style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#fff', cursor: 'pointer', fontSize: '0.9rem', fontWeight: '600' }}>
               <input 

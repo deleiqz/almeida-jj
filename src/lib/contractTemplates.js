@@ -43,16 +43,36 @@ O RESPONSÁVEL compromete-se a zelar pela conduta do menor. O uso de imagem foi 
 `;
 
 export const responsibilityTerm = `
-# TERMO DE RESPONSABILIDADE E DECLARAÇÃO DE SAÚDE
+# TERMO DE RESPONSABILIDADE PARA PRÁTICA DE JIU-JITSU
+**ACADEMIA DE JIU-JITSU ALMEIDA JJ**
 
-Eu, **{{name}}**, declaro para os devidos fins que:
+**CONTRATADA:** Academia de Jiu-Jitsu Almeida JJ
+**Endereço:** Av: Campanella, nº 1015 - Cidade AE Carvalho - São Paulo - SP
 
-1. Estou em plenas condições de saúde física e mental para a prática de Brazilian Jiu-Jitsu.
-2. Não possuo restrições médicas conhecidas que me impeçam de realizar atividades de alta intensidade.
-3. Em caso de qualquer incidente, autorizo a equipe da ALMEIDA JJ a prestar os primeiros socorros ou encaminhar para o pronto-atendimento médico.
+**CONTRATANTE RESPONSÁVEL LEGAL:**
+**Nome:** {{parent_name_or_self}}
+**CPF:** {{parent_cpf_or_self}}
+**Endereço:** {{address}}
+**Telefone:** {{phone}}
+**E-mail:** {{email}}
 
-**Informações Médicas Adicionais:**
-{{medicalInfo}}
+**ALUNO:**
+**Nome:** {{name}}
+**Data de Nascimento:** {{birthDate}}
+**Telefone:** {{phone}}
 
-**CONTATO DE EMERGÊNCIA:** {{phone}}
+**DECLARAÇÕES DO PARTICIPANTE / RESPONSÁVEL**
+Declaro, para os devidos fins, que:
+
+1. Estou ciente de que o jiu-jitsu é uma atividade física de contato, que envolve riscos inerentes, tais como quedas, torções, contusões, luxações e outras lesões corporais.
+2. Declaro que o participante encontra-se apto para a prática de atividade física, não possuindo restrições médicas que impeçam sua participação, ou, caso possua, assumo integral responsabilidade pela sua prática.
+3. Comprometo-me a informar previamente à academia qualquer condição de saúde, lesão, limitação física ou uso de medicamentos que possam interferir na prática esportiva.
+4. Estou ciente de que a prática do jiu-jitsu exige disciplina, atenção e respeito às orientações do professor, sendo minha responsabilidade seguir todas as instruções.
+5. Reconheço que a academia e seus instrutores não se responsabilizam por lesões decorrentes da prática esportiva regular, desde que não haja dolo ou negligência comprovada.
+6. Declaro estar ciente de que devo interromper imediatamente a atividade caso sinta dor, desconforto ou qualquer sinal anormal, comunicando o professor.
+
+Autorizo, em caso de necessidade, a adoção de medidas de primeiros socorros pela equipe da academia.
+O presente termo é firmado de forma livre e consciente, assumindo total responsabilidade pelas informações prestadas e pela participação na atividade.
+
+São Paulo, {{day}} de {{month}} de 2026
 `;
