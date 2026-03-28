@@ -12,6 +12,25 @@ let isReady = false;
 let lastQr = '';
 let messageCount = 0;
 
+// Helper para encontrar o Chrome no Windows automaticamente
+const findChromeOnWindows = () => {
+    const fs = require('fs');
+    if (process.platform !== 'win32') return null;
+    
+    const paths = [
+        'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+        'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+        process.env.LOCALAPPDATA + '\\Google\\Chrome\\Application\\chrome.exe'
+    ];
+
+    for (const path of paths) {
+        if (fs.existsSync(path)) return path;
+    }
+    return null;
+};
+
+const chromePath = process.env.PUPPETEER_EXECUTABLE_PATH || findChromeOnWindows();
+
 // Configuração do Cliente WhatsApp
 const client = new Client({
     authStrategy: new LocalAuth({
@@ -19,7 +38,7 @@ const client = new Client({
     }),
     puppeteer: {
         headless: true,
-        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || null,
+        executablePath: chromePath,
         args: [
             '--no-sandbox',
             '--disable-setuid-sandbox',
