@@ -37,7 +37,7 @@ const client = new Client({
         clientId: "almeida-jj-session"
     }),
     puppeteer: {
-        headless: true,
+        headless: true, // Use true ou "new" para versões recentes
         executablePath: chromePath,
         args: [
             '--no-sandbox',
@@ -47,7 +47,12 @@ const client = new Client({
             '--no-first-run',
             '--no-zygote',
             '--disable-gpu',
-            '--single-process'
+            '--hide-scrollbars',
+            '--disable-notifications',
+            '--disable-extensions',
+            '--disable-background-networking',
+            '--disable-default-apps',
+            '--mute-audio'
         ]
     },
     webVersionCache: {
