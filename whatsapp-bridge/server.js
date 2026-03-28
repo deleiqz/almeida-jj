@@ -31,13 +31,13 @@ const findChromeOnWindows = () => {
 
 const chromePath = process.env.PUPPETEER_EXECUTABLE_PATH || findChromeOnWindows();
 
-// Configuração do Cliente WhatsApp
+// Configuração do Cliente WhatsApp - MODO DE SEGURANÇA ATIVADO
 const client = new Client({
     authStrategy: new LocalAuth({
         clientId: "almeida-jj-session"
     }),
     puppeteer: {
-        headless: true, 
+        headless: true,
         executablePath: chromePath,
         args: [
             '--no-sandbox',
@@ -53,10 +53,15 @@ const client = new Client({
             '--disable-background-networking',
             '--disable-default-apps',
             '--mute-audio',
-            '--no-default-browser-check'
+            '--no-default-browser-check',
+            '--no-pings',
+            '--disable-client-side-phishing-detection'
         ]
+    },
+    // Desativando cache remoto problemático para evitar o erro "Execution context was destroyed"
+    webVersionCache: {
+        type: 'local'
     }
-    // Removendo o webVersionCache para deixar a biblioteca usar o padrão interno estável
 });
 
 client.on('qr', async (qr) => {
