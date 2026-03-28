@@ -37,7 +37,7 @@ const client = new Client({
         clientId: "almeida-jj-session"
     }),
     puppeteer: {
-        headless: true, // Use true ou "new" para versões recentes
+        headless: true, 
         executablePath: chromePath,
         args: [
             '--no-sandbox',
@@ -52,13 +52,11 @@ const client = new Client({
             '--disable-extensions',
             '--disable-background-networking',
             '--disable-default-apps',
-            '--mute-audio'
+            '--mute-audio',
+            '--no-default-browser-check'
         ]
-    },
-    webVersionCache: {
-        type: 'remote',
-        remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.2412.54.html',
     }
+    // Removendo o webVersionCache para deixar a biblioteca usar o padrão interno estável
 });
 
 client.on('qr', async (qr) => {
