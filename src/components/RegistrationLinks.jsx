@@ -13,22 +13,44 @@ const RegistrationLinks = ({ user, isAdmin }) => {
 
   const fetchLinks = async () => {
     setLoading(true);
-    // Join with profiles to get the sender's name if admin
-    let query = supabase
+    
+    // Fetch all links first (RLS restricts what employees vs admins can see)
+    const { data: linksData, error: linksError } = await supabase
       .from('registration_links')
-      .select(`
-        *,
-        profiles:sender_id (full_name)
-      `)
+      .select('*')
       .order('created_at', { ascending: false });
 
-    const { data, error } = await query;
-
-    if (error) {
-      console.error("Erro ao carregar links:", error);
-    } else {
-      setLinks(data || []);
+    if (linksError) {
+      console.error("Erro ao carregar links:", linksError);
+      setLoading(false);
+      return;
     }
+
+    let enrichedLinks = linksData || [];
+
+    // If admin, fetch profiles to resolve sender names manually
+    if (isAdmin && enrichedLinks.length > 0) {
+      const senderIds = [...new Set(enrichedLinks.map(l => l.sender_id).filter(Boolean))];
+      
+      if (senderIds.length > 0) {
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, full_name')
+          .in('id', senderIds);
+          
+        if (!profilesError && profilesData) {
+          const profilesMap = {};
+          profilesData.forEach(p => { profilesMap[p.id] = p.full_name; });
+          
+          enrichedLinks = enrichedLinks.map(link => ({
+            ...link,
+            profiles: { full_name: profilesMap[link.sender_id] || 'Desconhecido' }
+          }));
+        }
+      }
+    }
+
+    setLinks(enrichedLinks);
     setLoading(false);
   };
 
