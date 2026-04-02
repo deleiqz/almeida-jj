@@ -71,6 +71,7 @@ const RegistrationForm = () => {
     parentCpf: '',
     kinship: '',
     agreedToTerms: false,
+    planType: 'individual', // 'individual' or 'familia'
     plan: 'mensal',
     subPlan: 'evolucao',
     paymentMethod: 'pix',
@@ -88,8 +89,14 @@ const RegistrationForm = () => {
   const isDrawingRef = useRef(false);
   const [isDrawing, setIsDrawing] = useState(false);
 
-  // Force dark theme on body
+  const [refId, setRefId] = useState(null);
+
+  // Force dark theme on body and read URL params
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get('ref');
+    if (ref) setRefId(ref);
+
     const originalBg = document.body.style.backgroundColor;
     const originalColor = document.body.style.color;
     const originalOverflow = document.body.style.overflowX;
@@ -274,7 +281,18 @@ const RegistrationForm = () => {
       }
     }
 
-    const planValues = { 'mensal': '120', 'trimestral': '320', 'anual': '1100' };
+    const PRICES = {
+      individual: {
+        evolucao: { mensal: 189, trimestral: 537, semestral: 1014, anual: 1919 },
+        performance: { mensal: 229, trimestral: 651, semestral: 1230, anual: 2316 }
+      },
+      familia: {
+        evolucao: { mensal: 340, trimestral: 966, semestral: 1825, anual: 3454 },
+        performance: { mensal: 412, trimestral: 1171, semestral: 2214, anual: 4168 }
+      }
+    };
+
+    const paymentValue = PRICES[formData.planType][formData.subPlan][formData.plan].toString();
     let medicalInfo = formData.hasRestriction === 'sim' ? `Restrição Médica: ${formData.restrictionDesc}` : '';
 
     const { data: insertedData, error } = await supabase
@@ -286,8 +304,8 @@ const RegistrationForm = () => {
         address: formData.address,
         belt: 'Branca',
         plan: formData.plan.charAt(0).toUpperCase() + formData.plan.slice(1),
-        sub_plan: formData.subPlan,
-        payment_value: planValues[formData.plan] || '120',
+        sub_plan: `${formData.planType === 'familia' ? 'Família - ' : ''}${formData.subPlan.charAt(0).toUpperCase() + formData.subPlan.slice(1)}`,
+        payment_value: paymentValue,
         payment_method: formData.paymentMethod,
         birth_date: formData.birthDate,
         cpf: formData.cpf,
@@ -307,6 +325,17 @@ const RegistrationForm = () => {
       alert(`Erro ao enviar cadastro: ${error.message}`);
       console.error(error);
     } else {
+      // Mark link as finalized if it came from a reference
+      if (refId) {
+        await supabase
+          .from('registration_links')
+          .update({ 
+            status: 'finalizado', 
+            completed_at: new Date().toISOString(),
+            student_id: insertedData.id 
+          })
+          .eq('id', refId);
+      }
       setNewStudentId(insertedData.id);
       setSubmitted(true);
     }
@@ -479,61 +508,125 @@ const RegistrationForm = () => {
 
           {/* Escolha do Plano */}
           <h3 style={sectionTitleStyle}>Escolha do Plano</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', marginBottom: '20px' }}>
-            {[
-              { value: 'mensal', label: 'Mensal', price: 'R$ 120' },
-              { value: 'trimestral', label: 'Trimestral', price: 'R$ 320' },
-              { value: 'anual', label: 'Anual', price: 'R$ 1.100' }
-            ].map(plan => (
-              <button
-                key={plan.value}
-                type="button"
-                onClick={() => setFormData({...formData, plan: plan.value})}
-                style={{
-                  padding: '16px 8px',
-                  borderRadius: '12px',
-                  border: formData.plan === plan.value ? '2px solid #ffd700' : '1px solid rgba(255,255,255,0.1)',
-                  background: formData.plan === plan.value ? 'rgba(255, 215, 0, 0.1)' : 'rgba(255, 255, 255, 0.03)',
-                  color: formData.plan === plan.value ? '#ffd700' : '#a1a1aa',
-                  cursor: 'pointer',
-                  textAlign: 'center',
-                  transition: 'all 0.2s ease',
-                  fontFamily: "'Outfit', sans-serif"
-                }}
-              >
-                <div style={{ fontWeight: '700', fontSize: '0.95rem', marginBottom: '4px' }}>{plan.label}</div>
-                <div style={{ fontSize: '0.8rem', opacity: 0.8 }}>{plan.price}</div>
-              </button>
-            ))}
+          
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '20px' }}>
+            <button 
+              type="button" 
+              onClick={() => setFormData({...formData, planType: 'individual'})}
+              style={{
+                padding: '16px', borderRadius: '12px', border: formData.planType === 'individual' ? '2px solid #ffd700' : '1px solid rgba(255,255,255,0.1)',
+                background: formData.planType === 'individual' ? 'rgba(255, 215, 0, 0.1)' : 'rgba(255, 255, 255, 0.03)',
+                color: formData.planType === 'individual' ? '#ffd700' : '#a1a1aa',
+                fontWeight: '700', cursor: 'pointer', fontFamily: "'Outfit', sans-serif"
+              }}
+            >
+              👤 Individual
+            </button>
+            <button 
+              type="button" 
+              onClick={() => setFormData({...formData, planType: 'familia'})}
+              style={{
+                padding: '16px', borderRadius: '12px', border: formData.planType === 'familia' ? '2px solid #ffd700' : '1px solid rgba(255,255,255,0.1)',
+                background: formData.planType === 'familia' ? 'rgba(255, 215, 0, 0.1)' : 'rgba(255, 255, 255, 0.03)',
+                color: formData.planType === 'familia' ? '#ffd700' : '#a1a1aa',
+                fontWeight: '700', cursor: 'pointer', fontFamily: "'Outfit', sans-serif"
+              }}
+            >
+              👨‍👩‍👧‍👦 Família (2 pessoas)
+            </button>
           </div>
 
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '20px' }}>
+            <button 
+              type="button" 
+              onClick={() => setFormData({...formData, subPlan: 'evolucao'})}
+              style={{
+                padding: '16px', borderRadius: '12px', border: formData.subPlan === 'evolucao' ? '3px solid #ffd700' : '1px solid rgba(255,255,255,0.1)',
+                background: formData.subPlan === 'evolucao' ? 'rgba(255, 215, 0, 0.1)' : 'rgba(255, 255, 255, 0.03)',
+                color: formData.subPlan === 'evolucao' ? '#ffd700' : '#a1a1aa',
+                fontWeight: '700', cursor: 'pointer', fontFamily: "'Outfit', sans-serif",
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px'
+              }}
+            >
+              <span style={{ fontSize: '1.1rem' }}>🏁</span>
+              Evolução
+              <span style={{ fontSize: '0.65rem', fontWeight: '400', opacity: 0.7 }}>Período: Manhã/Tarde ou Tarde/Noite</span>
+            </button>
+            <button 
+              type="button" 
+              onClick={() => setFormData({...formData, subPlan: 'performance'})}
+              style={{
+                padding: '16px', borderRadius: '12px', border: formData.subPlan === 'performance' ? '3px solid #ffd700' : '1px solid rgba(255,255,255,0.1)',
+                background: formData.subPlan === 'performance' ? 'rgba(255, 215, 0, 0.1)' : 'rgba(255, 255, 255, 0.03)',
+                color: formData.subPlan === 'performance' ? '#ffd700' : '#a1a1aa',
+                fontWeight: '700', cursor: 'pointer', fontFamily: "'Outfit', sans-serif",
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px'
+              }}
+            >
+              <span style={{ fontSize: '1.1rem' }}>⚡</span>
+              Performance
+              <span style={{ fontSize: '0.65rem', fontWeight: '400', opacity: 0.7 }}>Treino livre em todos os horários</span>
+            </button>
+          </div>
+
+          {/* Duração do Plano */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
+            {(() => {
+              const PRICES = {
+                individual: {
+                  evolucao: { mensal: 189, trimestral: 537, semestral: 1014, anual: 1919 },
+                  performance: { mensal: 229, trimestral: 651, semestral: 1230, anual: 2316 }
+                },
+                familia: {
+                  evolucao: { mensal: 340, trimestral: 966, semestral: 1825, anual: 3454 },
+                  performance: { mensal: 412, trimestral: 1171, semestral: 2214, anual: 4168 }
+                }
+              };
+              const currentPrices = PRICES[formData.planType][formData.subPlan];
+              const durations = [
+                { id: 'mensal', label: 'Mensal', price: currentPrices.mensal },
+                { id: 'trimestral', label: 'Trimestral', price: currentPrices.trimestral },
+                { id: 'semestral', label: 'Semestral', price: currentPrices.semestral },
+                { id: 'anual', label: 'Anual', price: currentPrices.anual, promo: true }
+              ];
+
+              return durations.map(d => (
+                <button
+                  key={d.id}
+                  type="button"
+                  onClick={() => setFormData({...formData, plan: d.id})}
+                  style={{
+                    padding: '16px 12px', borderRadius: '12px', border: formData.plan === d.id ? '2px solid #ffd700' : '1px solid rgba(255,255,255,0.1)',
+                    background: formData.plan === d.id ? 'rgba(255, 215, 0, 0.1)' : 'rgba(255, 255, 255, 0.03)',
+                    color: formData.plan === d.id ? '#ffd700' : '#fff',
+                    cursor: 'pointer', textAlign: 'left', position: 'relative', overflow: 'hidden'
+                  }}
+                >
+                  <div style={{ fontSize: '0.9rem', fontWeight: '700' }}>{d.label}</div>
+                  <div style={{ fontSize: '1rem', color: '#ffd700', fontWeight: '800', marginTop: '4px' }}>R$ {d.price}</div>
+                  {d.promo && (
+                    <div style={{ 
+                      position: 'absolute', top: '0', right: '0', background: '#ffd700', color: '#000', 
+                      fontSize: '0.6rem', fontWeight: '900', padding: '2px 8px', borderRadius: '0 0 0 8px'
+                    }}>BRINDE KIMONO</div>
+                  )}
+                </button>
+              ));
+            })()}
+          </div>
+
+          {formData.plan === 'anual' && (
+            <div style={{ background: 'rgba(255, 215, 0, 0.08)', padding: '12px', borderRadius: '10px', marginBottom: '20px', border: '1px solid rgba(255,215,0,0.2)' }}>
+              <p style={{ margin: 0, fontSize: '0.75rem', color: '#ffd700', lineHeight: '1.4' }}>
+                ⭐ <strong>Benefícios Anual:</strong> Isenção de matrícula + {formData.planType === 'familia' ? '02 Kimonos Profissionais + 2 Faixas' : '01 Kimono Profissional + Faixa + 01 Aula Particular (45 min)'} + Bioimpedância a cada 2 meses.
+              </p>
+            </div>
+          )}
+          
           <div style={{ marginBottom: '20px' }}>
-            <label style={labelStyle}>Plano de Treino</label>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '8px' }}>
-              <button 
-                type="button" 
-                onClick={() => setFormData({...formData, subPlan: 'evolucao'})}
-                style={{
-                  padding: '12px', borderRadius: '10px', border: formData.subPlan === 'evolucao' ? '2px solid #ffd700' : '1px solid rgba(255,255,255,0.1)',
-                  background: formData.subPlan === 'evolucao' ? 'rgba(255, 215, 0, 0.1)' : 'rgba(255, 255, 255, 0.03)',
-                  color: formData.subPlan === 'evolucao' ? '#ffd700' : '#a1a1aa',
-                  fontWeight: '700', cursor: 'pointer', fontFamily: "'Outfit', sans-serif"
-                }}
-              >
-                🏁 Plano Evolução
-              </button>
-              <button 
-                type="button" 
-                onClick={() => setFormData({...formData, subPlan: 'performance'})}
-                style={{
-                  padding: '12px', borderRadius: '10px', border: formData.subPlan === 'performance' ? '2px solid #ffd700' : '1px solid rgba(255,255,255,0.1)',
-                  background: formData.subPlan === 'performance' ? 'rgba(255, 215, 0, 0.1)' : 'rgba(255, 255, 255, 0.03)',
-                  color: formData.subPlan === 'performance' ? '#ffd700' : '#a1a1aa',
-                  fontWeight: '700', cursor: 'pointer', fontFamily: "'Outfit', sans-serif"
-                }}
-              >
-                ⚡ Plano Performance
-              </button>
+            <label style={labelStyle}>Matrícula</label>
+            <div style={{ color: formData.plan === 'anual' ? '#10b981' : '#fff', fontWeight: '700', fontSize: '1.1rem' }}>
+              {formData.plan === 'anual' ? 'ISENTA 🎁' : 'R$ 150,00'}
             </div>
           </div>
 
@@ -558,6 +651,7 @@ const RegistrationForm = () => {
               <option value="debito" style={{ background: '#1a1a1a', color: '#fff' }}>Débito</option>
               <option value="credito" style={{ background: '#1a1a1a', color: '#fff' }}>Crédito</option>
               <option value="dinheiro" style={{ background: '#1a1a1a', color: '#fff' }}>Dinheiro</option>
+              <option value="gympass" style={{ background: '#1a1a1a', color: '#fff' }}>Gympass</option>
             </select>
           </div>
 

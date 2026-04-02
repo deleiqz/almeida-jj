@@ -19,6 +19,7 @@ const BeltControl = lazy(() => import('./components/BeltControl'));
 const Attendance = lazy(() => import('./components/Attendance'));
 const ClassList = lazy(() => import('./components/ClassList'));
 const Notifications = lazy(() => import('./components/Notifications'));
+const RegistrationLinks = lazy(() => import('./components/RegistrationLinks'));
 
 const App = () => {
   const queryParams = new URLSearchParams(window.location.search);
@@ -124,6 +125,7 @@ const App = () => {
     { id: 'belts', label: 'Faixas', icon: <Dumbbell size={20} /> },
     { id: 'attendance', label: 'Chamada', icon: <CheckCircle size={20} /> },
     { id: 'classes', label: 'Turmas', icon: <LayoutDashboard size={20} /> },
+    { id: 'links', label: 'Links Enviados', icon: <Send size={20} /> },
     { id: 'notifications', label: 'Notificações', icon: <Send size={20} /> },
     { id: 'expenses', label: 'Financeiro', icon: <CreditCard size={20} />, restricted: true },
     { id: 'maintenance', label: 'Manutenção', icon: <Settings size={20} /> },
@@ -145,7 +147,7 @@ const App = () => {
 
     switch (activeTab) {
       case 'dashboard':      return <Dashboard getStats={getStats} role={normalizedRole} students={students} expenses={expenses} userEmail={user?.email} />;
-      case 'students': return <StudentList students={students} classes={classes} enrollments={enrollments} addStudent={addStudent} updateStudent={updateStudent} deleteStudent={deleteStudent} />;
+      case 'students': return <StudentList students={students} classes={classes} enrollments={enrollments} addStudent={addStudent} updateStudent={updateStudent} deleteStudent={deleteStudent} user={user} />;
       case 'belts':          return <BeltControl 
           students={students} 
           updateStudentBelt={updateStudentBelt} 
@@ -161,7 +163,8 @@ const App = () => {
           updateClass={updateClass}
           deleteClass={deleteClass}
         />; 
-      case 'notifications': return <Notifications students={students} isDevMaster={isDevMaster} />;
+      case 'notifications': return <Notifications students={students} isDevMaster={isDevMaster} user={user} />;
+      case 'links': return <RegistrationLinks user={user} isAdmin={isAdmin} />;
       case 'expenses': return isAdmin ? <ExpenseList expenses={expenses} addExpense={addExpense} updateExpense={updateExpense} deleteExpense={deleteExpense} /> : <Dashboard getStats={getStats} role={normalizedRole} students={students} expenses={expenses} userEmail={user?.email} />;
       case 'maintenance': return <Maintenance />;
       default: return <Dashboard getStats={getStats} role={normalizedRole} students={students} expenses={expenses} userEmail={user?.email} />;

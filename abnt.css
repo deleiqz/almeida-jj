@@ -1,0 +1,55 @@
+@page {
+  margin: 3cm 2cm 2cm 3cm;
+  size: A4;
+}
+body {
+  font-family: "Arial", sans-serif;
+  font-size: 12pt;
+  line-height: 1.5;
+  text-align: justify;
+  color: #000;
+}
+h1 {
+  font-size: 12pt;
+  font-weight: bold;
+  text-align: center;
+  text-transform: uppercase;
+  margin-bottom: 24pt;
+}
+h3 {
+  font-size: 12pt;
+  font-weight: bold;
+  text-transform: uppercase;
+  margin-top: 24pt;
+  margin-bottom: 12pt;
+  text-align: justify;
+}
+p {
+  text-indent: 1.25cm;
+  margin-top: 0;
+  margin-bottom: 12pt;
+}
+ul {
+  margin-top: 0;
+  margin-bottom: 12pt;
+  padding-left: 2.5cm;
+}
+li {
+  text-indent: 0;
+  margin-bottom: 6pt;
+}
+.center {
+  text-align: center;
+  text-indent: 0;
+}
+.signature {
+  margin-top: 60pt;
+  text-align: center;
+  text-indent: 0;
+}
+.line {
+  border-top: 1px solid black;
+  width: 60%;
+  margin: 0 auto;
+  margin-bottom: 5pt;
+}

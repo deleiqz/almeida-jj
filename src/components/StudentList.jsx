@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
 import { Search, Plus, Edit2, Share2, ClipboardCheck, Mail, MessageSquare, Phone, FileText } from 'lucide-react';
 import Modal from './Modal';
+import { supabase } from '../lib/supabase';
 
-const StudentList = ({ students, classes, enrollments, addStudent, updateStudent, deleteStudent }) => {
+const StudentList = ({ students, classes, enrollments, addStudent, updateStudent, deleteStudent, user }) => {
   const [isModalOpen, setModalOpen] = useState(false);
   const [isEditMode, setEditMode] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -12,17 +12,44 @@ const StudentList = ({ students, classes, enrollments, addStudent, updateStudent
   });
   const [copied, setCopied] = useState(false);
   const [isShareModalOpen, setShareModalOpen] = useState(false);
-  const [shareData, setShareData] = useState({ phone: '', email: '' });
-  const registrationLink = "https://almeida-jj.vercel.app/?registro";
+  const [shareData, setShareData] = useState({ name: '', phone: '', email: '' });
+  
+  const getRegistrationLink = async () => {
+    // Register the link in the database first
+    const { data, error } = await supabase
+      .from('registration_links')
+      .insert([{
+        sender_id: user?.id,
+        recipient_name: shareData.name || 'Interessado',
+        recipient_phone: shareData.phone,
+        status: 'enviado'
+      }])
+      .select('id')
+      .single();
 
-  const copyRegistrationLink = () => {
-    navigator.clipboard.writeText(registrationLink);
+    if (error) {
+      console.error("Erro ao gerar convite:", error);
+      return `https://almeida-jj.vercel.app/?registro`;
+    }
+    
+    return `https://almeida-jj.vercel.app/?registro&ref=${data.id}`;
+  };
+
+  const copyRegistrationLink = async () => {
+    const link = await getRegistrationLink();
+    navigator.clipboard.writeText(link);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleShare = (method) => {
-    const msg = `Olá! Segue o link para seu cadastro na Almeida JJ: ${registrationLink}`;
+  const handleShare = async (method) => {
+    if (!shareData.phone && (method === 'whatsapp' || method === 'sms')) {
+      alert("Por favor, informe o telefone do interessado.");
+      return;
+    }
+
+    const registrationLink = await getRegistrationLink();
+    const msg = `Olá${shareData.name ? ' ' + shareData.name : ''}! Segue o link para seu cadastro na Almeida JJ: ${registrationLink}`;
     let url = '';
 
     if (method === 'whatsapp') {
@@ -387,13 +414,22 @@ const StudentList = ({ students, classes, enrollments, addStudent, updateStudent
       </Modal>
 
       <Modal title="Compartilhar Link de Cadastro" isOpen={isShareModalOpen} onClose={() => setShareModalOpen(false)}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-            Envie o link de cadastro direto para o aluno ou copie para a área de transferência.
-          </p>
-          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <label style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Nome do Interessado</label>
+            <input 
+              type="text" 
+              placeholder="Ex: Pedro Silva"
+              value={shareData.name}
+              onChange={(e) => setShareData({...shareData, name: e.target.value})}
+              style={{ width: '100%', padding: '12px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--card-border)', color: 'white' }}
+            />
+          </div>
+
           <div className="glass" style={{ padding: '12px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <code style={{ color: 'var(--accent-primary)', fontSize: '0.85rem' }}>{registrationLink}</code>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+              <code style={{ color: 'var(--accent-primary)', fontSize: '0.8rem' }}>almeida-jj.vercel.app/?registro</code>
+              <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>O link terá seu rastreamento automático.</span>
+            </div>
             <button 
               onClick={copyRegistrationLink}
               style={{ background: 'transparent', border: 'none', color: copied ? '#10b981' : 'white', cursor: 'pointer' }}
