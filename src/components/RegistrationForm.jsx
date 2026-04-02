@@ -345,14 +345,20 @@ const RegistrationForm = () => {
       // Mark link as finalized if it came from a reference
       if (refId) {
         try {
+          const updateData = { 
+            status: 'finalizado', 
+            completed_at: new Date().toISOString(),
+            recipient_phone: formData.phone
+          };
+          
+          // Only add student_id if we successfully retrieved it (might be null due to RLS)
+          if (insertedData?.id) {
+            updateData.student_id = insertedData.id;
+          }
+          
           const { error: updateError } = await supabase
             .from('registration_links')
-            .update({ 
-              status: 'finalizado', 
-              completed_at: new Date().toISOString(),
-              student_id: insertedData.id,
-              recipient_phone: formData.phone // Ensure we have the contact even if missing before
-            })
+            .update(updateData)
             .eq('id', refId);
             
           if (updateError) console.error("Erro ao atualizar status do link:", updateError);
