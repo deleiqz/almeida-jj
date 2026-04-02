@@ -1,3 +1,4 @@
+import React, { useState } from 'react';
 import { Search, Plus, Edit2, Share2, ClipboardCheck, Mail, MessageSquare, Phone, FileText } from 'lucide-react';
 import Modal from './Modal';
 import { supabase } from '../lib/supabase';
@@ -487,7 +488,6 @@ const StudentList = ({ students, classes, enrollments, addStudent, updateStudent
               </button>
             </div>
           </div>
-        </div>
       </Modal>
     </div>
   );
