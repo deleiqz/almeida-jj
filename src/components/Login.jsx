@@ -20,18 +20,7 @@ const Login = ({ onLogin }) => {
     setError(null);
 
     try {
-      if (view === 'register') {
-        const { error: signUpError } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: { full_name: fullName }
-          }
-        });
-
-        if (signUpError) throw signUpError;
-        setSuccess(true);
-      } else if (view === 'forgot') {
+      if (view === 'forgot') {
         const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
           redirectTo: window.location.origin,
         });
@@ -116,34 +105,10 @@ const Login = ({ onLogin }) => {
           Almeida<span style={{ color: 'var(--accent-primary)' }}>JJ</span>
         </h1>
         <p style={{ color: 'var(--text-secondary)', marginBottom: '30px' }}>
-          {view === 'register' ? 'Criar nova conta' : view === 'forgot' ? 'Recuperar Senha' : 'Acesso Restrito'}
+          {view === 'forgot' ? 'Recuperar Senha' : 'Acesso Restrito'}
         </p>
 
         <form onSubmit={handleAuth} style={{ textAlign: 'left' }}>
-          {view === 'register' && (
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem' }}>Nome Completo</label>
-              <div style={{ position: 'relative' }}>
-                <LogIn style={{ position: 'absolute', left: '12px', top: '12px', color: 'var(--text-secondary)' }} size={18} />
-                <input 
-                  type="text" 
-                  placeholder="Ex: João Almeida"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '12px 12px 12px 40px',
-                    background: 'rgba(255,255,255,0.05)',
-                    border: '1px solid var(--card-border)',
-                    borderRadius: '10px',
-                    color: 'white',
-                    outline: 'none'
-                  }}
-                  required
-                />
-              </div>
-            </div>
-          )}
 
           <div style={{ marginBottom: '20px' }}>
             <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem' }}>E-mail</label>
@@ -220,13 +185,6 @@ const Login = ({ onLogin }) => {
             </div>
           )}
 
-          {view === 'register' && (
-             <div style={{ marginBottom: '30px', marginTop: '20px', background: 'rgba(255,215,0,0.05)', padding: '12px', borderRadius: '10px', border: '1px dashed var(--accent-primary)' }}>
-                <p style={{ fontSize: '0.8rem', color: 'var(--accent-primary)', margin: 0 }}>
-                  Nota: Novas contas entram automaticamente como <strong>Funcionário</strong>.
-                </p>
-             </div>
-          )}
 
           {error && <p style={{ color: 'var(--danger)', fontSize: '0.85rem', marginBottom: '20px', textAlign: 'center' }}>{error}</p>}
 
@@ -251,30 +209,31 @@ const Login = ({ onLogin }) => {
             }}
           >
             {loading ? 'Processando...' : 
-             view === 'register' ? <><UserPlus size={20} /> Cadastrar</> : 
              view === 'forgot' ? <><Mail size={20} /> Recuperar Senha</> : 
              <><LogIn size={20} /> Entrar</>}
           </button>
 
-          <button 
-            type="button"
-            onClick={() => { setView(view === 'login' ? 'register' : 'login'); setError(null); }}
-            style={{
-              width: '100%',
-              padding: '10px',
-              background: 'transparent',
-              color: 'var(--text-secondary)',
-              border: 'none',
-              fontSize: '0.9rem',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px'
-            }}
-          >
-            {view === 'login' ? 'Não tem conta? Cadastre-se' : <><ArrowLeft size={16} /> Voltar para Login</>}
-          </button>
+          {view === 'forgot' && (
+            <button 
+              type="button"
+              onClick={() => { setView('login'); setError(null); }}
+              style={{
+                width: '100%',
+                padding: '10px',
+                background: 'transparent',
+                color: 'var(--text-secondary)',
+                border: 'none',
+                fontSize: '0.9rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px'
+              }}
+            >
+              <><ArrowLeft size={16} /> Voltar para Login</>
+            </button>
+          )}
         </form>
       </div>
     </div>
