@@ -94,7 +94,7 @@ const RegistrationForm = () => {
   // Force dark theme on body and read URL params
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const ref = params.get('ref');
+    const ref = params.get('ref') || window.location.hash.substring(1);
     if (ref) setRefId(ref);
 
     const originalBg = document.body.style.backgroundColor;

@@ -14,9 +14,12 @@ const StudentList = ({ students, classes, enrollments, addStudent, updateStudent
   const [copied, setCopied] = useState(false);
   const [isShareModalOpen, setShareModalOpen] = useState(false);
   const [shareData, setShareData] = useState({ name: '', phone: '', email: '' });
+  const [generatedLink, setGeneratedLink] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
   
   const getRegistrationLink = async () => {
-    // Register the link in the database first
+    if (generatedLink) return generatedLink;
+    setIsGenerating(true);
     const { data, error } = await supabase
       .from('registration_links')
       .insert([{
@@ -30,10 +33,14 @@ const StudentList = ({ students, classes, enrollments, addStudent, updateStudent
 
     if (error) {
       console.error("Erro ao gerar convite:", error);
-      return `https://almeida-jj.vercel.app/?registro`;
+      setIsGenerating(false);
+      return `${window.location.origin}/?registro`;
     }
     
-    return `https://almeida-jj.vercel.app/?registro&ref=${data.id}`;
+    const finalLink = `${window.location.origin}/?registro&ref=${data.id}`;
+    setGeneratedLink(finalLink);
+    setIsGenerating(false);
+    return finalLink;
   };
 
   const copyRegistrationLink = async () => {
@@ -110,6 +117,12 @@ const StudentList = ({ students, classes, enrollments, addStudent, updateStudent
   const closeModal = () => {
     setModalOpen(false);
     setEditingId(null);
+  };
+
+  const closeShareModal = () => {
+    setShareModalOpen(false);
+    setGeneratedLink('');
+    setShareData({ name: '', phone: '', email: '' });
   };
 
   const getStudentClass = (studentId) => {
@@ -414,7 +427,7 @@ const StudentList = ({ students, classes, enrollments, addStudent, updateStudent
         </form>
       </Modal>
 
-      <Modal title="Compartilhar Link de Cadastro" isOpen={isShareModalOpen} onClose={() => setShareModalOpen(false)}>
+      <Modal title="Compartilhar Link de Cadastro" isOpen={isShareModalOpen} onClose={closeShareModal}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <label style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Nome do Interessado</label>
             <input 
@@ -427,16 +440,39 @@ const StudentList = ({ students, classes, enrollments, addStudent, updateStudent
           </div>
 
           <div className="glass" style={{ padding: '12px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-              <code style={{ color: 'var(--accent-primary)', fontSize: '0.8rem' }}>almeida-jj.vercel.app/?registro</code>
-              <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>O link terá seu rastreamento automático.</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: 1, overflow: 'hidden' }}>
+              <code style={{ 
+                color: generatedLink ? 'var(--accent-primary)' : 'var(--text-secondary)', 
+                fontSize: '0.75rem',
+                whiteSpace: 'nowrap',
+                textOverflow: 'ellipsis',
+                display: 'block',
+                overflow: 'hidden'
+              }}>
+                {generatedLink || `${window.location.host}/?registro`}
+              </code>
+              <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>
+                {isGenerating ? 'Gerando link rastreável...' : generatedLink ? 'Link com rastreamento ativo!' : 'Link genérico (sem rastreamento)'}
+              </span>
             </div>
-            <button 
-              onClick={copyRegistrationLink}
-              style={{ background: 'transparent', border: 'none', color: copied ? '#10b981' : 'white', cursor: 'pointer' }}
-            >
-              {copied ? <ClipboardCheck size={20} /> : <Share2 size={20} />}
-            </button>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              {!generatedLink && (
+                <button 
+                  onClick={getRegistrationLink}
+                  className="btn-primary"
+                  style={{ padding: '4px 8px', fontSize: '0.7rem' }}
+                >
+                  Gerar
+                </button>
+              )}
+              <button 
+                onClick={copyRegistrationLink}
+                style={{ background: 'transparent', border: 'none', color: copied ? '#10b981' : 'white', cursor: 'pointer', padding: '4px' }}
+                title="Copiar Link"
+              >
+                {copied ? <ClipboardCheck size={20} /> : <Share2 size={20} />}
+              </button>
+            </div>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
