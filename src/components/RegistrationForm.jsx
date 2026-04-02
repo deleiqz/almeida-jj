@@ -94,8 +94,25 @@ const RegistrationForm = () => {
   // Force dark theme on body and read URL params
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const ref = params.get('ref') || window.location.hash.substring(1);
-    if (ref) setRefId(ref);
+    let ref = params.get('ref');
+
+    // Fallback: check hash for UUID or 'ref=' format
+    if (!ref && window.location.hash) {
+      const hash = window.location.hash.substring(1);
+      if (hash.includes('ref=')) {
+        ref = new URLSearchParams(hash.split('?')[1] || hash).get('ref');
+      } else {
+        // Assume direct UUID in hash like /?registro#UUID
+        ref = hash.split(/[?&]/)[0];
+      }
+    }
+
+    // Validate UUID format before setting
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (ref && uuidRegex.test(ref)) {
+      console.log("Capturou ID de rastreio:", ref);
+      setRefId(ref);
+    }
 
     const originalBg = document.body.style.backgroundColor;
     const originalColor = document.body.style.color;
@@ -327,14 +344,21 @@ const RegistrationForm = () => {
     } else {
       // Mark link as finalized if it came from a reference
       if (refId) {
-        await supabase
-          .from('registration_links')
-          .update({ 
-            status: 'finalizado', 
-            completed_at: new Date().toISOString(),
-            student_id: insertedData.id 
-          })
-          .eq('id', refId);
+        try {
+          const { error: updateError } = await supabase
+            .from('registration_links')
+            .update({ 
+              status: 'finalizado', 
+              completed_at: new Date().toISOString(),
+              student_id: insertedData.id,
+              recipient_phone: formData.phone // Ensure we have the contact even if missing before
+            })
+            .eq('id', refId);
+            
+          if (updateError) console.error("Erro ao atualizar status do link:", updateError);
+        } catch (err) {
+          console.error("Falha no rastreio:", err);
+        }
       }
       setNewStudentId(insertedData.id);
       setSubmitted(true);

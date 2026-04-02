@@ -59,6 +59,13 @@ const StudentList = ({ students, classes, enrollments, addStudent, updateStudent
     }
 
     const registrationLink = generatedLink || await getRegistrationLink(shareData.name);
+    
+    // Ensure the link record has the phone number if it was missing
+    if (registrationLink && registrationLink.includes('ref=') && shareData.phone) {
+      const linkId = registrationLink.split('ref=')[1];
+      await supabase.from('registration_links').update({ recipient_phone: shareData.phone }).eq('id', linkId);
+    }
+
     const msg = `Olá${shareData.name ? ' ' + shareData.name : ''}! Segue o link para seu cadastro na Almeida JJ: ${registrationLink}`;
     let url = '';
 
