@@ -152,9 +152,16 @@ export const useStore = (skipFetch = false) => {
   };
 
   const deleteStudent = async (id) => {
+    // First, remove any registration_links that reference this student
+    await supabase.from('registration_links').update({ student_id: null }).eq('student_id', id);
+    
     const { error } = await supabase.from('students').delete().eq('id', id);
-    if (!error) fetchDisplayData();
-    else console.error("Error deleting student:", error);
+    if (error) {
+      console.error("Error deleting student:", error);
+      alert(`Erro ao excluir aluno: ${error.message}`);
+    } else {
+      fetchDisplayData();
+    }
   };
 
   const enrollStudent = async (studentId, classId) => {

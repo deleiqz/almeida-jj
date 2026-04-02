@@ -17,14 +17,16 @@ const StudentList = ({ students, classes, enrollments, addStudent, updateStudent
   const [generatedLink, setGeneratedLink] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   
-  const getRegistrationLink = async () => {
-    if (generatedLink) return generatedLink;
+  const getRegistrationLink = async (currentName) => {
+    const nameToUse = currentName || shareData.name || 'Interessado';
+    
+    // Always generate a new link to ensure the correct name is used
     setIsGenerating(true);
     const { data, error } = await supabase
       .from('registration_links')
       .insert([{
         sender_id: user?.id,
-        recipient_name: shareData.name || 'Interessado',
+        recipient_name: nameToUse,
         recipient_phone: shareData.phone,
         status: 'enviado'
       }])
@@ -44,7 +46,7 @@ const StudentList = ({ students, classes, enrollments, addStudent, updateStudent
   };
 
   const copyRegistrationLink = async () => {
-    const link = await getRegistrationLink();
+    const link = generatedLink || await getRegistrationLink(shareData.name);
     navigator.clipboard.writeText(link);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -56,7 +58,7 @@ const StudentList = ({ students, classes, enrollments, addStudent, updateStudent
       return;
     }
 
-    const registrationLink = await getRegistrationLink();
+    const registrationLink = generatedLink || await getRegistrationLink(shareData.name);
     const msg = `Olá${shareData.name ? ' ' + shareData.name : ''}! Segue o link para seu cadastro na Almeida JJ: ${registrationLink}`;
     let url = '';
 
@@ -452,19 +454,18 @@ const StudentList = ({ students, classes, enrollments, addStudent, updateStudent
                 {generatedLink || `${window.location.host}/?registro`}
               </code>
               <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>
-                {isGenerating ? 'Gerando link rastreável...' : generatedLink ? 'Link com rastreamento ativo!' : 'Link genérico (sem rastreamento)'}
+                {isGenerating ? 'Gerando link rastreável...' : generatedLink ? 'Link com rastreamento ativo!' : 'Digite o nome e clique em Gerar'}
               </span>
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>
-              {!generatedLink && (
-                <button 
-                  onClick={getRegistrationLink}
-                  className="btn-primary"
-                  style={{ padding: '4px 8px', fontSize: '0.7rem' }}
-                >
-                  Gerar
-                </button>
-              )}
+              <button 
+                onClick={() => getRegistrationLink(shareData.name)}
+                className="btn-primary"
+                disabled={isGenerating}
+                style={{ padding: '4px 8px', fontSize: '0.7rem' }}
+              >
+                {isGenerating ? '...' : generatedLink ? 'Novo' : 'Gerar'}
+              </button>
               <button 
                 onClick={copyRegistrationLink}
                 style={{ background: 'transparent', border: 'none', color: copied ? '#10b981' : 'white', cursor: 'pointer', padding: '4px' }}
@@ -474,6 +475,7 @@ const StudentList = ({ students, classes, enrollments, addStudent, updateStudent
               </button>
             </div>
           </div>
+
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <label style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Telefone (Para WhatsApp ou SMS)</label>
