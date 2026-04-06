@@ -31,3 +31,12 @@ dist-ssr
 # Large files
 *.zip
 *.pdf
+*.rar
+*.exe
+
+# WhatsApp Bridge Sessions
+.wwebjs_auth/
+PACOTE_CLIENTE_FINAL/
+INICIAR_TUNEL.bat
+BLINDAR_SISTEMA_CLIENTE.bat
+whatsapp-bridge/tunnel.js

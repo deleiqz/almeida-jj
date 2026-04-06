@@ -25,7 +25,7 @@ export const useStore = (skipFetch = false) => {
   const fetchDisplayData = async () => {
     try {
       setLoading(true);
-      const [stdsRes, expsRes, clsRes, attnRes, enrsRes] = await Promise.all([
+      const [stdsRes, expsRes, clsRes, attnRes, enrsRes, settRes] = await Promise.all([
         supabase.from('students').select('*').order('name'),
         supabase.from('expenses').select('*').order('due_date'),
         supabase.from('classes').select('*').order('time'),

@@ -66,11 +66,8 @@ DROP POLICY IF EXISTS "Admins can see all links" ON public.registration_links;
 CREATE POLICY "Admins can see all links" ON public.registration_links
     FOR SELECT TO authenticated
     USING (
-        EXISTS (
-            SELECT 1 FROM public.profiles 
-            WHERE profiles.id = auth.uid() 
-            AND (profiles.role = 'admin' OR profiles.role = 'master' OR profiles.role = 'dono')
-        )
+        (SELECT role FROM public.profiles WHERE id = auth.uid()) IN ('admin', 'master', 'dono')
+        OR auth.uid() = sender_id
     );
 
 DROP POLICY IF EXISTS "Employees can insert links" ON public.registration_links;
@@ -90,6 +87,9 @@ DROP POLICY IF EXISTS "Users can see their own profile" ON public.profiles;
 CREATE POLICY "Users can see their own profile" ON public.profiles FOR SELECT TO authenticated USING (auth.uid() = id);
 
 DROP POLICY IF EXISTS "Admins can see all profiles" ON public.profiles;
-CREATE POLICY "Admins can see all profiles" ON public.profiles FOR SELECT TO authenticated USING (
-    auth.uid() IN (SELECT id FROM public.profiles WHERE role IN ('admin', 'master', 'dono'))
-);
+CREATE POLICY "Admins can see all profiles" ON public.profiles 
+    FOR SELECT TO authenticated 
+    USING (
+        (SELECT role FROM public.profiles WHERE id = auth.uid()) IN ('admin', 'master', 'dono')
+        OR auth.uid() = id
+    );
