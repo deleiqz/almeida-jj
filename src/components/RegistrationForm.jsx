@@ -57,6 +57,17 @@ const sectionTitleStyle = {
   letterSpacing: '1px'
 };
 
+const PRICES = {
+  individual: {
+    evolucao: { mensal: 189, trimestral: 537, semestral: 1014, anual: 1919 },
+    performance: { mensal: 229, trimestral: 651, semestral: 1230, anual: 2316 }
+  },
+  familia: {
+    evolucao: { mensal: 340, trimestral: 966, semestral: 1825, anual: 3454 },
+    performance: { mensal: 412, trimestral: 1171, semestral: 2214, anual: 4168 }
+  }
+};
+
 const RegistrationForm = () => {
   const [formData, setFormData] = useState({
     name: '',
@@ -83,6 +94,7 @@ const RegistrationForm = () => {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [newStudentId, setNewStudentId] = useState(null);
+  const [paymentLinks, setPaymentLinks] = useState({});
   
   const canvasRef = useRef(null);
   const pointsRef = useRef([]);
@@ -113,6 +125,13 @@ const RegistrationForm = () => {
       console.log("Capturou ID de rastreio:", ref);
       setRefId(ref);
     }
+
+    // Fetch payment settings
+    const fetchSettings = async () => {
+      const { data } = await supabase.from('settings').select('*').eq('key', 'payment_links').single();
+      if (data) setPaymentLinks(data.value);
+    };
+    fetchSettings();
 
     const originalBg = document.body.style.backgroundColor;
     const originalColor = document.body.style.color;
@@ -298,17 +317,6 @@ const RegistrationForm = () => {
       }
     }
 
-    const PRICES = {
-      individual: {
-        evolucao: { mensal: 189, trimestral: 537, semestral: 1014, anual: 1919 },
-        performance: { mensal: 229, trimestral: 651, semestral: 1230, anual: 2316 }
-      },
-      familia: {
-        evolucao: { mensal: 340, trimestral: 966, semestral: 1825, anual: 3454 },
-        performance: { mensal: 412, trimestral: 1171, semestral: 2214, anual: 4168 }
-      }
-    };
-
     const paymentValue = PRICES[formData.planType][formData.subPlan][formData.plan].toString();
     let medicalInfo = formData.hasRestriction === 'sim' ? `Restrição Médica: ${formData.restrictionDesc}` : '';
 
@@ -323,7 +331,8 @@ const RegistrationForm = () => {
         plan: formData.plan.charAt(0).toUpperCase() + formData.plan.slice(1),
         sub_plan: `${formData.planType === 'familia' ? 'Família - ' : ''}${formData.subPlan.charAt(0).toUpperCase() + formData.subPlan.slice(1)}`,
         payment_value: paymentValue,
-        payment_method: formData.paymentMethod,
+        payment_method: formData.paymentMethod === 'credito' ? 'Cartão de Crédito' : formData.paymentMethod === 'debito' ? 'Cartão de Débito' : formData.paymentMethod.charAt(0).toUpperCase() + formData.paymentMethod.slice(1),
+        payment_link: paymentLinks[formData.paymentMethod] || '',
         birth_date: formData.birthDate,
         cpf: formData.cpf,
         parent_name: isMinor ? formData.parentName : '',
@@ -401,30 +410,72 @@ const RegistrationForm = () => {
 
   if (submitted) {
     const contractUrl = `${window.location.origin}/?contrato=${newStudentId}`;
-    const whatsappMsg = encodeURIComponent(`Olá! Seu cadastro na Almeida JJ foi concluído com sucesso. 🥋\n\nVocê pode visualizar e baixar seu contrato assinado aqui: ${contractUrl}`);
+    const whatsappMsg = encodeURIComponent(`Olá! Meu cadastro na Almeida JJ foi concluído. 🥋\n\nContrato: ${contractUrl}`);
     const whatsappLink = `https://wa.me/${formData.phone.replace(/\D/g, '')}?text=${whatsappMsg}`;
+    
+    const selectedMethod = formData.paymentMethod;
+    const paymentUrl = paymentLinks[selectedMethod];
 
     return (
       <div style={{ ...pageStyle, alignItems: 'center' }}>
-        <div style={{ ...cardStyle, textAlign: 'center', padding: '50px 30px' }}>
-          <div style={{ width: '70px', height: '70px', borderRadius: '50%', background: 'rgba(16, 185, 129, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
-            <span style={{ fontSize: '2rem' }}>✅</span>
+        <div style={{ ...cardStyle, textAlign: 'center', padding: '40px 30px' }}>
+          <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: 'rgba(16, 185, 129, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 15px' }}>
+            <span style={{ fontSize: '1.5rem' }}>🥋</span>
           </div>
-          <h2 style={{ color: '#10b981', marginBottom: '15px', fontSize: '1.6rem' }}>Matrícula Enviada!</h2>
-          <p style={{ color: '#a1a1aa', fontSize: '1rem', lineHeight: '1.6', marginBottom: '30px' }}>
-            Os seus dados foram recebidos pela <span style={{ color: '#ffd700', fontWeight: '700' }}>Almeida JJ</span>. Seja bem-vindo!
+          <h2 style={{ color: '#ffd700', marginBottom: '10px', fontSize: '1.4rem' }}>Cadastro Recebido!</h2>
+          <p style={{ color: '#a1a1aa', fontSize: '0.9rem', lineHeight: '1.5', marginBottom: '25px' }}>
+            Para confirmar sua matrícula e garantir os bônus, realize o pagamento agora via <strong>{selectedMethod.toUpperCase()}</strong>:
           </p>
 
+          <div style={{ background: 'rgba(255,255,255,0.03)', padding: '20px', borderRadius: '15px', border: '1px solid rgba(255,215,0,0.1)', marginBottom: '25px' }}>
+            <div style={{ fontSize: '0.8rem', color: '#a1a1aa', marginBottom: '8px' }}>Valor a Pagar</div>
+            <div style={{ fontSize: '1.8rem', color: '#fff', fontWeight: '800' }}>R$ {PRICES[formData.planType][formData.subPlan][formData.plan]}</div>
+            {formData.plan !== 'anual' && <div style={{ fontSize: '0.75rem', color: '#ffd700', marginTop: '4px' }}>+ R$ 150,00 (Matrícula)</div>}
+          </div>
+
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {selectedMethod === 'pix' ? (
+              <div style={{ background: '#fff', padding: '15px', borderRadius: '10px', marginBottom: '10px' }}>
+                <p style={{ color: '#000', fontSize: '0.8rem', margin: '0 0 10px', fontWeight: 'bold' }}>Chave Pix / Copia e Cola:</p>
+                <div style={{ 
+                  background: '#f4f4f4', padding: '10px', borderRadius: '8px', color: '#333', fontSize: '0.7rem', 
+                  wordBreak: 'break-all', marginBottom: '10px', border: '1px solid #ddd'
+                }}>
+                  {paymentUrl || 'Chave Pix será enviada no WhatsApp'}
+                </div>
+                {paymentUrl && (
+                  <button 
+                    onClick={() => {
+                      navigator.clipboard.writeText(paymentUrl);
+                      alert('Chave Pix copiada!');
+                    }}
+                    style={{ background: '#000', color: '#fff', border: 'none', padding: '10px', borderRadius: '8px', width: '100%', fontWeight: '700', cursor: 'pointer' }}
+                  >
+                    Copiar Código Pix
+                  </button>
+                )}
+              </div>
+            ) : (
+              paymentUrl && (
+                <a href={paymentUrl} target="_blank" rel="noreferrer" style={{
+                  background: '#ffd700', color: '#000', padding: '16px', border: 'none', borderRadius: '12px', textDecoration: 'none', fontWeight: '800', fontSize: '1.1rem'
+                }}>
+                  💳 PAGAR AGORA COM CARTÃO
+                </a>
+              )
+            )}
+
+            <div style={{ height: '1px', background: 'rgba(255,255,255,0.1)', margin: '10px 0' }}></div>
+            
             <a href={contractUrl} target="_blank" rel="noreferrer" style={{
-              background: 'rgba(255, 215, 0, 0.1)', color: '#ffd700', padding: '14px', border: '1px solid #ffd700', borderRadius: '12px', textDecoration: 'none', fontWeight: '700'
+              background: 'rgba(255, 215, 0, 0.05)', color: '#ffd700', padding: '12px', border: '1px solid rgba(255,215,0,0.3)', borderRadius: '10px', textDecoration: 'none', fontSize: '0.85rem'
             }}>
-              📄 Ver Meu Contrato Assinado
+              📄 Ver Meu Contrato
             </a>
             <a href={whatsappLink} target="_blank" rel="noreferrer" style={{
-              background: '#25d366', color: '#fff', padding: '14px', border: 'none', borderRadius: '12px', textDecoration: 'none', fontWeight: '700'
+              background: '#25d366', color: '#fff', padding: '12px', border: 'none', borderRadius: '12px', textDecoration: 'none', fontWeight: '700', fontSize: '0.85rem'
             }}>
-              💬 Receber Cópia no WhatsApp
+              💬 Confirmar pelo WhatsApp
             </a>
           </div>
         </div>
@@ -682,8 +733,22 @@ const RegistrationForm = () => {
               <option value="credito" style={{ background: '#1a1a1a', color: '#fff' }}>Crédito</option>
               <option value="dinheiro" style={{ background: '#1a1a1a', color: '#fff' }}>Dinheiro</option>
               <option value="gympass" style={{ background: '#1a1a1a', color: '#fff' }}>Gympass</option>
+              <option value="totalpass" style={{ background: '#1a1a1a', color: '#fff' }}>Totalpass</option>
             </select>
           </div>
+
+          {(formData.paymentMethod === 'gympass' || formData.paymentMethod === 'totalpass') && (
+            <div style={{ marginBottom: '20px' }}>
+              <label style={labelStyle}>Token de Verificação ({formData.paymentMethod === 'gympass' ? 'Gympass' : 'Totalpass'})</label>
+              <input 
+                type="text" 
+                placeholder="Ex: 12345678" 
+                value={formData.restrictionDesc} // Reusing field for brevity in this manual register
+                onChange={e => setFormData({...formData, restrictionDesc: e.target.value})} 
+                style={inputStyle} 
+              />
+            </div>
+          )}
 
           <div style={{ marginBottom: '20px', background: 'rgba(255,255,255,0.03)', padding: '15px', borderRadius: '10px' }}>
             <label style={{...labelStyle, color: '#ffd700'}}>DIREITO DE IMAGEM</label>

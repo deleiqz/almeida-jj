@@ -7,8 +7,24 @@ CREATE TABLE IF NOT EXISTS public.registration_links (
     status TEXT DEFAULT 'enviado', -- 'enviado' ou 'finalizado'
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     completed_at TIMESTAMP WITH TIME ZONE,
+    completed_at TIMESTAMP WITH TIME ZONE,
     student_id UUID REFERENCES public.students(id)
 );
+
+-- 1.1. Adicionar Link de Pagamento aos Alunos
+ALTER TABLE public.students ADD COLUMN IF NOT EXISTS payment_link TEXT;
+
+-- 1.2. Tabela de Configurações Globais (Links Pix, Crédito, etc)
+CREATE TABLE IF NOT EXISTS public.settings (
+    key TEXT PRIMARY KEY,
+    value JSONB,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Inserir links padrão (Exemplo) - Use o SQL Editor para mudar estes valores
+INSERT INTO public.settings (key, value) VALUES 
+('payment_links', '{"pix": "", "credito": "", "debito": "", "totalpass": ""}'::jsonb)
+ON CONFLICT (key) DO NOTHING;
 
 -- 2. Ativar Segurança (RLS) em TODAS as tabelas (Blindagem contra aviso do Supabase)
 ALTER TABLE public.students ENABLE ROW LEVEL SECURITY;

@@ -19,6 +19,7 @@ export const useStore = (skipFetch = false) => {
   const [classes, setClasses] = useState([]);
   const [attendance, setAttendance] = useState([]);
   const [enrollments, setEnrollments] = useState([]);
+  const [settings, setSettings] = useState({});
   const [loading, setLoading] = useState(true);
 
   const fetchDisplayData = async () => {
@@ -29,7 +30,8 @@ export const useStore = (skipFetch = false) => {
         supabase.from('expenses').select('*').order('due_date'),
         supabase.from('classes').select('*').order('time'),
         supabase.from('attendance').select('*').order('date', { ascending: false }),
-        supabase.from('class_enrollments').select('*')
+        supabase.from('class_enrollments').select('*'),
+        supabase.from('settings').select('*')
       ]);
 
       const stds = stdsRes.data;
@@ -37,6 +39,12 @@ export const useStore = (skipFetch = false) => {
       const cls = clsRes.data;
       const attn = attnRes.data;
       const enrs = enrsRes.data;
+      const sett = settRes.data;
+
+      if (sett) {
+        const config = sett.reduce((acc, s) => ({ ...acc, [s.key]: s.value }), {});
+        setSettings(config);
+      }
     
       if (stds) setStudents(stds.map(s => ({
         ...s,
@@ -45,6 +53,7 @@ export const useStore = (skipFetch = false) => {
         amount: s.payment_value,
         plan: s.plan || 'Mensal',
         paymentMethod: s.payment_method || 'Pix',
+        paymentLink: s.payment_link || '',
         birthDate: s.birth_date,
         address: s.address,
         cpf: s.cpf,
@@ -93,6 +102,7 @@ export const useStore = (skipFetch = false) => {
         phone: studentData.phone,
         plan: studentData.plan || 'Mensal',
         payment_method: studentData.paymentMethod || 'Pix',
+        payment_link: studentData.paymentLink || '',
         birth_date: studentData.birthDate,
         address: studentData.address,
         email: studentData.email,
@@ -129,6 +139,7 @@ export const useStore = (skipFetch = false) => {
         phone: studentData.phone,
         plan: studentData.plan,
         payment_method: studentData.paymentMethod,
+        payment_link: studentData.paymentLink || '',
         birth_date: studentData.birthDate,
         address: studentData.address,
         email: studentData.email,
@@ -340,9 +351,15 @@ export const useStore = (skipFetch = false) => {
     };
   };
 
+  const updateSettings = async (key, value) => {
+    const { error } = await supabase.from('settings').upsert({ key, value, updated_at: new Date().toISOString() });
+    if (error) console.error("Error updating settings:", error);
+    fetchDisplayData();
+  };
+
   return { 
-    students, expenses, classes, attendance, enrollments,
+    students, expenses, classes, attendance, enrollments, settings,
     addStudent, updateStudent, deleteStudent, enrollStudent, updateStudentBelt, addClass, updateClass, deleteClass, markAttendance, removeAttendance, addExpense, updateExpense, deleteExpense,
-    getStats, getStudentAttendanceCount, loading 
+    getStats, getStudentAttendanceCount, updateSettings, loading 
   };
 };

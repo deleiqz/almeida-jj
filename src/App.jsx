@@ -20,6 +20,7 @@ const Attendance = lazy(() => import('./components/Attendance'));
 const ClassList = lazy(() => import('./components/ClassList'));
 const Notifications = lazy(() => import('./components/Notifications'));
 const RegistrationLinks = lazy(() => import('./components/RegistrationLinks'));
+const CustomSettings = lazy(() => import('./components/Settings'));
 
 const App = () => {
   const queryParams = new URLSearchParams(window.location.search);
@@ -100,9 +101,9 @@ const App = () => {
     return () => subscription.unsubscribe();
   }, []);
   const { 
-    students, expenses, classes, attendance, enrollments,
+    students, expenses, classes, attendance, enrollments, settings,
     addStudent, updateStudent, deleteStudent, enrollStudent, updateStudentBelt, addClass, updateClass, deleteClass, markAttendance, removeAttendance, addExpense, updateExpense, deleteExpense,
-    getStats, getStudentAttendanceCount, loading 
+    getStats, getStudentAttendanceCount, updateSettings, loading 
   } = useStore(isPublicRegistration);
 
   const handleLogin = (user, role, name) => {
@@ -128,6 +129,7 @@ const App = () => {
     { id: 'links', label: 'Links Enviados', icon: <Send size={20} /> },
     { id: 'notifications', label: 'Notificações', icon: <Send size={20} /> },
     { id: 'expenses', label: 'Financeiro', icon: <CreditCard size={20} />, restricted: true },
+    { id: 'settings', label: 'Configurações', icon: <Settings size={20} />, restricted: true },
     { id: 'maintenance', label: 'Manutenção', icon: <Settings size={20} /> },
   ];
 
@@ -166,6 +168,7 @@ const App = () => {
       case 'notifications': return <Notifications students={students} isDevMaster={isDevMaster} user={user} />;
       case 'links': return <RegistrationLinks user={user} isAdmin={isAdmin} />;
       case 'expenses': return isAdmin ? <ExpenseList expenses={expenses} addExpense={addExpense} updateExpense={updateExpense} deleteExpense={deleteExpense} /> : <Dashboard getStats={getStats} role={normalizedRole} students={students} expenses={expenses} userEmail={user?.email} />;
+      case 'settings': return isAdmin ? <CustomSettings settings={settings} updateSettings={updateSettings} /> : <Dashboard getStats={getStats} />;
       case 'maintenance': return <Maintenance />;
       default: return <Dashboard getStats={getStats} role={normalizedRole} students={students} expenses={expenses} userEmail={user?.email} />;
     }

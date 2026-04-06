@@ -9,7 +9,7 @@ const StudentList = ({ students, classes, enrollments, addStudent, updateStudent
   const [editingId, setEditingId] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [newStudent, setNewStudent] = useState({ 
-    name: '', status: 'pago', nextDue: '', amount: 150, belt: 'Branca', phone: '', plan: 'Mensal', classId: '', paymentMethod: 'Pix' 
+    name: '', status: 'pago', nextDue: '', amount: 150, belt: 'Branca', phone: '', plan: 'Mensal', classId: '', paymentMethod: 'Pix', paymentLink: '' 
   });
   const [copied, setCopied] = useState(false);
   const [isShareModalOpen, setShareModalOpen] = useState(false);
@@ -101,7 +101,7 @@ const StudentList = ({ students, classes, enrollments, addStudent, updateStudent
 
   const openAddModal = () => {
     setEditMode(false);
-    setNewStudent({ name: '', status: 'pago', nextDue: '', amount: 150, belt: 'Branca', phone: '', plan: 'Mensal', classId: '', paymentMethod: 'Pix' });
+    setNewStudent({ name: '', status: 'pago', nextDue: '', amount: 150, belt: 'Branca', phone: '', plan: 'Mensal', classId: '', paymentMethod: 'Pix', paymentLink: '' });
     setModalOpen(true);
   };
 
@@ -118,6 +118,7 @@ const StudentList = ({ students, classes, enrollments, addStudent, updateStudent
       phone: student.phone || '', 
       plan: student.plan || 'Mensal',
       paymentMethod: student.paymentMethod || 'Pix',
+      paymentLink: student.paymentLink || '',
       classId: studentEnrollment?.class_id || ''
     });
     setModalOpen(true);
@@ -230,7 +231,25 @@ const StudentList = ({ students, classes, enrollments, addStudent, updateStudent
                       <span style={{ fontSize: '0.75rem', padding: '2px 6px', borderRadius: '4px', background: 'rgba(255,255,255,0.1)', color: 'var(--accent-primary)', alignSelf: 'flex-start' }}>
                         {student.plan}
                       </span>
-                      <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>{student.paymentMethod}</span>
+                      <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        {student.paymentMethod}
+                        {student.paymentLink && (
+                          <a href={student.paymentLink.startsWith('http') ? student.paymentLink : '#'} 
+                             onClick={(e) => {
+                               if (!student.paymentLink.startsWith('http')) {
+                                 e.preventDefault();
+                                 navigator.clipboard.writeText(student.paymentLink);
+                                 alert('Link/Chave Pix copiado!');
+                               }
+                             }}
+                             target="_blank" rel="noreferrer"
+                             style={{ color: 'var(--accent-primary)' }}
+                             title={student.paymentLink}
+                          >
+                            <Share2 size={12} />
+                          </a>
+                        )}
+                      </span>
                       
                       {(() => {
                         const inst = getInstallments(student);
@@ -412,8 +431,21 @@ const StudentList = ({ students, classes, enrollments, addStudent, updateStudent
                 <option value="Dinheiro">Dinheiro</option>
                 <option value="Cartão de Crédito">Cartão de Crédito</option>
                 <option value="Cartão de Débito">Cartão de Débito</option>
+                <option value="Gympass">Gympass</option>
+                <option value="Totalpass">Totalpass</option>
               </select>
             </div>
+          </div>
+
+          <div className="form-group">
+            <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Link de Pagamento / ID Benefício</label>
+            <input 
+              type="text" 
+              placeholder="Cole o link do Mercado Pago ou chave Pix aqui"
+              value={newStudent.paymentLink}
+              onChange={(e) => setNewStudent({...newStudent, paymentLink: e.target.value})}
+              style={{ width: '100%', padding: '12px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--card-border)', color: 'white' }}
+            />
           </div>
 
           <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
