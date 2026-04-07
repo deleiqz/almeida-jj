@@ -6,7 +6,7 @@ const imageQr = require('qrcode');
 const { MercadoPagoConfig, Preference } = require('mercadopago');
 
 // CONFIGURAÇÃO MERCADO PAGO - ADICIONE SEU ACCESS TOKEN DE PRODUÇÃO AQUI
-const MP_ACCESS_TOKEN = 'COLOQUE_SEU_TOKEN_AQUI'; 
+const MP_ACCESS_TOKEN = 'APP_USR-941031687557097-040713-68cec6df2e1b1705c30cec5e71899475-402502578';
 
 const clientMp = new MercadoPagoConfig({ accessToken: MP_ACCESS_TOKEN });
 const preference = new Preference(clientMp);
@@ -23,7 +23,7 @@ let messageCount = 0;
 const findChromeOnWindows = () => {
     const fs = require('fs');
     if (process.platform !== 'win32') return null;
-    
+
     const paths = [
         'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
         'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
@@ -74,7 +74,7 @@ const client = new Client({
 client.on('qr', async (qr) => {
     console.log('\n👇 ESCANEIE O QR CODE ABAIXO PARA CONECTAR:');
     qrcodeTerminal.generate(qr, { small: true });
-    
+
     // Gera versão para web para facilitar na nuvem
     try {
         lastQr = await imageQr.toDataURL(qr);
@@ -121,7 +121,7 @@ app.get('/', (req, res) => {
 
 // Rota de Status (API)
 app.get('/status', (req, res) => {
-    res.json({ 
+    res.json({
         connected: isReady,
         messageCount: messageCount,
         platform: process.platform,
@@ -178,15 +178,15 @@ app.post('/send-message', async (req, res) => {
 
         // Formata o número (garantindo que tenha @c.us)
         const chatId = phone.includes('@c.us') ? phone : `${phone}@c.us`;
-        
+
         await client.sendMessage(chatId, message);
         messageCount++;
         console.log(`✔️ [${messageCount}] Mensagem enviada para: ${phone}`);
-        
+
         // Delay solicitado pelo usuário: Mínimo 10 segundos
         // Vamos usar 10 a 15 segundos aleatórios para maior segurança
         const waitTime = Math.floor(Math.random() * (15000 - 10000 + 1) + 10000);
-        console.log(`⏳ Aguardando ${waitTime/1000} segundos para o próximo...`);
+        console.log(`⏳ Aguardando ${waitTime / 1000} segundos para o próximo...`);
         await delay(waitTime);
 
         res.json({ success: true });

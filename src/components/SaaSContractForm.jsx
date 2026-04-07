@@ -192,7 +192,7 @@ const SaaSContractForm = () => {
                 const mpResponse = await fetch('http://localhost:3000/create-saas-payment', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ gymName: formData.gymName, amount: 3250.00 })
+                    body: JSON.stringify({ gymName: formData.gymName, amount: 1.00 })
                 });
                 const mpData = await mpResponse.json();
                 if (mpData.init_point) setPaymentLink(mpData.init_point);
