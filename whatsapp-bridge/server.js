@@ -11,6 +11,12 @@ const MP_ACCESS_TOKEN = 'APP_USR-941031687557097-040713-68cec6df2e1b1705c30cec5e
 const clientMp = new MercadoPagoConfig({ accessToken: MP_ACCESS_TOKEN });
 const preference = new Preference(clientMp);
 
+// CONFIGURAÇÃO AIRTABLE
+const AIRTABLE_PAT = 'patKV3AcK9gDHNvg7.38645088e5ab443298c6091ab2b3801aef1792de655cc0e6c9365d512464b822';
+const AIRTABLE_BASE_ID = 'app4o6LoQEhgWFGz1';
+const Airtable = require('airtable');
+const airtableBase = new Airtable({ apiKey: AIRTABLE_PAT }).base(AIRTABLE_BASE_ID);
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -264,7 +270,7 @@ app.post('/webhook-mp', async (req, res) => {
                 const zapMsg = `💰 *PIX RECEBIDO COM SUCESSO!*\n\n✅ *Status:* Aprovado\n👤 *Pagador:* ${payerName}\n💵 *Valor:* R$ ${paymentData.transaction_amount}\n📅 *Data:* ${new Date(paymentData.date_approved).toLocaleString('pt-BR')}\n\nO Serviço B2B SaaS já foi comissionado!`;
 
                 // Dispara o WhatsApp pelo número do dono da Academia (Seu número)
-                const chatId = '5511986423450@c.us'; 
+                const chatId = '5511951313866@c.us'; 
                 await client.sendMessage(chatId, zapMsg);
                 console.log(`📲 [Webhook MP] WhatsApp enviado para o Administrador!`);
             }
@@ -273,6 +279,115 @@ app.post('/webhook-mp', async (req, res) => {
         }
     }
 });
+
+// --- INTEGRAÇÃO AIRTABLE ---
+
+// Rota para Sincronizar Contrato com Airtable (Chamada pelo Frontend após assinatura)
+app.post('/sync-airtable', async (req, res) => {
+    const { formData, signatureUrls, paymentDay } = req.body;
+
+    try {
+        console.log(`📊 [Airtable] Sincronizando contrato da academia: ${formData.gymName}`);
+
+        // 1. Salvar na Tabela de Contratos
+        const contractRecord = await airtableBase('Contratos_SaaS').create([
+            {
+                fields: {
+                    "Nome Academia": formData.gymName,
+                    "CNPJ/CPF": formData.cnpjCpf,
+                    "Responsavel 1": formData.responsibleName1,
+                    "CPF Proprietário": formData.responsibleCpf1,
+                    "Endereço Sede": formData.address,
+                    "Dia Vencimento": paymentDay,
+                    "Valor Setup": 3250.00,
+                    "Mensalidade": 200.00,
+                    "Data Assinatura": new Date().toISOString().split('T')[0],
+                    "Status": "Aguardando Pagamento Setup"
+                }
+            }
+        ]);
+
+        // 2. Criar a primeira mensalidade pendente na tabela de Pagamentos
+        await airtableBase('Pagamentos_Mensais').create([
+            {
+                fields: {
+                    "Nome Academia": formData.gymName,
+                    "Mês/Ano": `${new Date().getMonth() + 1}/${new Date().getFullYear()}`,
+                    "Valor": 200.00,
+                    "Status": "Pendente",
+                    "Tipo": "Mensalidade"
+                }
+            }
+        ]);
+
+        console.log("✅ [Airtable] Sincronização concluída com sucesso!");
+        res.json({ success: true, recordId: contractRecord[0].id });
+    } catch (error) {
+        console.error("❌ [Airtable] Erro na sincronização:", error.message);
+        res.status(500).json({ error: 'Erro ao salvar no Airtable.' });
+    }
+});
+
+// Função para Garantir que as Tabelas existam no Airtable
+// (Utiliza a Meta API do Airtable - Requer Scopes de schema.bases:write)
+async function initAirtableSchema() {
+    console.log("🛠️ [Airtable] Verificando estrutura de tabelas...");
+    
+    const headers = {
+        'Authorization': `Bearer ${AIRTABLE_PAT}`,
+        'Content-Type': 'application/json'
+    };
+
+    try {
+        // Criar Tabela Contratos_SaaS
+        const res1 = await fetch(`https://api.airtable.com/v0/meta/bases/${AIRTABLE_BASE_ID}/tables`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+                name: "Contratos_SaaS",
+                description: "Registro de academias que assinaram o contrato B2B",
+                fields: [
+                    { name: "Nome Academia", type: "singleLineText" },
+                    { name: "CNPJ/CPF", type: "singleLineText" },
+                    { name: "Responsavel 1", type: "singleLineText" },
+                    { name: "CPF Proprietário", type: "singleLineText" },
+                    { name: "Endereço Sede", type: "multilineText" },
+                    { name: "Dia Vencimento", type: "singleLineText" },
+                    { name: "Valor Setup", type: "currency", options: { symbol: "R$", precision: 2 } },
+                    { name: "Mensalidade", type: "currency", options: { symbol: "R$", precision: 2 } },
+                    { name: "Data Assinatura", type: "date", options: { dateFormat: { name: "iso", format: "YYYY-MM-DD" } } },
+                    { name: "Status", type: "singleSelect", options: { choices: [{name: "Aguardando Pagamento Setup"}, {name: "Ativo"}, {name: "Inativo"}] } }
+                ]
+            })
+        });
+        if (res1.status === 200) console.log("✅ [Airtable] Tabela Contratos_SaaS criada!");
+    } catch (err) { console.log("ℹ️ [Airtable] Tabela Contratos_SaaS já existe ou erro na criação."); }
+
+    try {
+        // Criar Tabela Pagamentos_Mensais
+        const res2 = await fetch(`https://api.airtable.com/v0/meta/bases/${AIRTABLE_BASE_ID}/tables`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+                name: "Pagamentos_Mensais",
+                description: "Controle de faturamento recorrente",
+                fields: [
+                    { name: "Nome Academia", type: "singleLineText" },
+                    { name: "Mês/Ano", type: "singleLineText" },
+                    { name: "Valor", type: "currency", options: { symbol: "R$", precision: 2 } },
+                    { name: "Status", type: "singleSelect", options: { choices: [{name: "Pendente"}, {name: "Pago"}] } },
+                    { name: "Tipo", type: "singleLineText" },
+                    { name: "Data Pagamento", type: "date", options: { dateFormat: { name: "iso", format: "YYYY-MM-DD" } } }
+                ]
+            })
+        });
+        if (res2.status === 200) console.log("✅ [Airtable] Tabela Pagamentos_Mensais criada!");
+    } catch (err) { console.log("ℹ️ [Airtable] Tabela Pagamentos_Mensais já existe ou erro na criação."); }
+}
+
+// Inicializa o Schema ao ligar o servidor
+initAirtableSchema();
+
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', () => {

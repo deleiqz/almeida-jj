@@ -194,8 +194,13 @@ const SaaSContractForm = () => {
             if (!formData.responsibleRg2 || formData.responsibleRg2.length < 5) return alert("Insira um RG válido para o Proprietário 2.");
             if (!isValidCNPJorCPF(formData.responsibleCpf2)) return alert("O CPF do Proprietário 2 é inválido. Coloque um CPF real.");
             
-            if (formData.responsibleCpf1.replace(/[^\\d]+/g, '') === formData.responsibleCpf2.replace(/[^\\d]+/g, '')) return alert("O CPF do Proprietário 2 não pode ser o mesmo do Proprietário 1.");
-            if (formData.responsibleRg1.replace(/[^\\d]+/g, '') === formData.responsibleRg2.replace(/[^\\d]+/g, '')) return alert("O RG do Proprietário 2 não pode ser o mesmo do Proprietário 1.");
+            const cleanCpf1 = formData.responsibleCpf1.replace(/[^\d]+/g, '');
+            const cleanCpf2 = formData.responsibleCpf2.replace(/[^\d]+/g, '');
+            const cleanRg1 = formData.responsibleRg1.replace(/[^\d]+/g, '');
+            const cleanRg2 = formData.responsibleRg2.replace(/[^\d]+/g, '');
+
+            if (cleanCpf2 && cleanCpf1 === cleanCpf2) return alert("O CPF do Proprietário 2 não pode ser o mesmo do Proprietário 1.");
+            if (cleanRg2 && cleanRg1 === cleanRg2) return alert("O RG do Proprietário 2 não pode ser o mesmo do Proprietário 1.");
             
             if (!formData.responsibleEnd2 || formData.responsibleEnd2.length < 8) return alert("Insira um Endereço Pessoal completo para o Proprietário 2.");
         }
@@ -253,7 +258,7 @@ const SaaSContractForm = () => {
             }).eq('id', contractLinkId);
 
             try {
-                const mpResponse = await fetch('http://localhost:3000/create-saas-payment', {
+                const mpResponse = await fetch('https://almeidajj-mp.loca.lt/create-saas-payment', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ gymName: formData.gymName, amountSetup: 1.00, amountMonthly: 1.00 })
@@ -262,9 +267,23 @@ const SaaSContractForm = () => {
                 if (mpData.init_point) setPaymentLink(mpData.init_point);
             } catch (mpErr) { console.error("Erro MP:", mpErr); }
 
+            // --- SINCRONIZAÇÃO AIRTABLE ---
+            try {
+                await fetch('https://almeidajj-mp.loca.lt/sync-airtable', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        formData, 
+                        signatureUrls: { url1, url2 },
+                        paymentDay: formData.paymentDay 
+                    })
+                });
+            } catch (airtableErr) { console.error("Erro Airtable:", airtableErr); }
+            // ------------------------------
+
             try {
                 const names = formData.responsibleName2 ? `${formData.responsibleName1} e ${formData.responsibleName2}` : formData.responsibleName1;
-                await fetch('http://localhost:3000/send-message', {
+                await fetch('https://almeidajj-mp.loca.lt/send-message', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
