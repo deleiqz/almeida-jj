@@ -15,6 +15,7 @@ const SaaSContractForm = () => {
     const [recipientName, setRecipientName] = useState('');
     const [sigUrls, setSigUrls] = useState({ url1: '', url2: '' });
     const [paymentLink, setPaymentLink] = useState('');
+    const [termsAccepted, setTermsAccepted] = useState(false);
     
     const [formData, setFormData] = useState({
         gymName: '',
@@ -176,6 +177,8 @@ const SaaSContractForm = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         
+        if (!termsAccepted) return alert("Você precisa confirmar que leu e aceita os termos do contrato de prestação de serviços.");
+
         if (!formData.gymName || formData.gymName.length < 5) return alert("Por favor, insira uma Razão Social válida (Mín. 5 caracteres).");
         if (!isValidCNPJorCPF(formData.cnpjCpf)) return alert("O CPF ou CNPJ da Academia (Sede) fornecido é inválido.");
         if (!formData.address || formData.address.length < 8) return alert("Insira um Endereço Completo válido para a Sede.");
@@ -506,6 +509,15 @@ const SaaSContractForm = () => {
                                 • Pagamento Setup: <strong>R$ 3.250,00</strong> (Módulo Mercado Pago será liberado após o envio)<br />
                                 • Mensalidade: <strong>R$ 200,00</strong> (Cobrada no dia {formData.paymentDay} de cada mês)
                             </div>
+                        </div>
+
+                        <div style={{ marginBottom: '25px', padding: '15px', background: 'rgba(255,215,0,0.1)', borderRadius: '10px', border: '1px solid rgba(255,215,0,0.3)', display: 'flex', alignItems: 'center', gap: '15px', cursor: 'pointer' }} onClick={() => setTermsAccepted(!termsAccepted)}>
+                            <div style={{ width: '24px', height: '24px', borderRadius: '6px', border: termsAccepted ? 'none' : '2px solid rgba(255,255,255,0.4)', background: termsAccepted ? '#16a34a' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                {termsAccepted && <CheckCircle size={18} color="#fff" />}
+                            </div>
+                            <span style={{ color: '#e4e4e7', fontSize: '0.95rem' }}>
+                                Declaro que li integralmente e concordo com todas as cláusulas e termos do Contrato de Prestação de Serviços (Cláusulas 1 a 8) dispostos acima.
+                            </span>
                         </div>
 
                         <button type="submit" disabled={submitting} className="btn-primary" style={{ width: '100%', padding: '22px', background: '#ffd700', color: '#000', fontWeight: '900', fontSize: '1.1rem', letterSpacing: '1px', textTransform: 'uppercase' }}>
