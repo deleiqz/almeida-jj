@@ -410,7 +410,19 @@ const RegistrationForm = () => {
 
   if (submitted) {
     const contractUrl = `${window.location.origin}/?contrato=${newStudentId}`;
-    const whatsappMsg = encodeURIComponent(`Olá! Meu cadastro na Almeida JJ foi concluído. 🥋\n\nContrato: ${contractUrl}`);
+    const planValue = PRICES[formData.planType][formData.subPlan][formData.plan];
+    const pixKey = paymentLinks.pix || 'almeidajjcamps@gmail.com';
+    
+    const whatsappMsg = encodeURIComponent(
+      `Olá! Meu cadastro na Almeida JJ foi concluído. 🥋\n\n` +
+      `*Resumo da Matrícula:*\n` +
+      `• Aluno: ${formData.name}\n` +
+      `• Plano: ${formData.plan.toUpperCase()}\n` +
+      `• Valor: R$ ${planValue},00\n` +
+      `• Chave Pix: ${pixKey}\n\n` +
+      `*Contrato Digital:* ${contractUrl}\n\n` +
+      `Favor enviar o comprovante após o pagamento. 🥊`
+    );
     const whatsappLink = `https://wa.me/${formData.phone.replace(/\D/g, '')}?text=${whatsappMsg}`;
     
     const selectedMethod = formData.paymentMethod;
@@ -429,7 +441,7 @@ const RegistrationForm = () => {
 
           <div style={{ background: 'rgba(255,255,255,0.03)', padding: '20px', borderRadius: '15px', border: '1px solid rgba(255,215,0,0.1)', marginBottom: '25px' }}>
             <div style={{ fontSize: '0.8rem', color: '#a1a1aa', marginBottom: '8px' }}>Valor a Pagar</div>
-            <div style={{ fontSize: '1.8rem', color: '#fff', fontWeight: '800' }}>R$ {PRICES[formData.planType][formData.subPlan][formData.plan]}</div>
+            <div style={{ fontSize: '1.8rem', color: '#fff', fontWeight: '800' }}>R$ {PRICES[formData.planType][formData.subPlan][formData.plan]},00</div>
             {formData.plan !== 'anual' && formData.plan !== 'teste' && <div style={{ fontSize: '0.75rem', color: '#ffd700', marginTop: '4px' }}>+ R$ 150,00 (Matrícula)</div>}
           </div>
 
@@ -441,17 +453,28 @@ const RegistrationForm = () => {
                   background: '#f4f4f4', padding: '10px', borderRadius: '8px', color: '#333', fontSize: '0.7rem', 
                   wordBreak: 'break-all', marginBottom: '10px', border: '1px solid #ddd'
                 }}>
-                  {paymentUrl || 'Chave Pix será enviada no WhatsApp'}
+                  {paymentUrl || 'almeidajjcamps@gmail.com'}
                 </div>
                 {paymentUrl && (
                   <button 
                     onClick={() => {
-                      navigator.clipboard.writeText(paymentUrl);
+                      navigator.clipboard.writeText(paymentUrl || 'almeidajjcamps@gmail.com');
                       alert('Chave Pix copiada!');
                     }}
                     style={{ background: '#000', color: '#fff', border: 'none', padding: '10px', borderRadius: '8px', width: '100%', fontWeight: '700', cursor: 'pointer' }}
                   >
                     Copiar Código Pix
+                  </button>
+                )}
+                {!paymentUrl && (
+                  <button 
+                    onClick={() => {
+                      navigator.clipboard.writeText('almeidajjcamps@gmail.com');
+                      alert('Chave Pix copiada!');
+                    }}
+                    style={{ background: '#000', color: '#fff', border: 'none', padding: '10px', borderRadius: '8px', width: '100%', fontWeight: '700', cursor: 'pointer' }}
+                  >
+                    Copiar Chave Pix
                   </button>
                 )}
               </div>
@@ -685,7 +708,7 @@ const RegistrationForm = () => {
                   }}
                 >
                   <div style={{ fontSize: '0.9rem', fontWeight: '700' }}>{d.label}</div>
-                  <div style={{ fontSize: '1rem', color: '#ffd700', fontWeight: '800', marginTop: '4px' }}>R$ {d.price}</div>
+                  <div style={{ fontSize: '1rem', color: '#ffd700', fontWeight: '800', marginTop: '4px' }}>R$ {d.price},00</div>
                   {d.promo && (
                     <div style={{ 
                       position: 'absolute', top: '0', right: '0', background: '#ffd700', color: '#000', 
