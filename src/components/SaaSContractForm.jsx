@@ -129,12 +129,68 @@ const SaaSContractForm = () => {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
     };
 
+    const isValidCNPJorCPF = (val) => {
+        if (!val) return false;
+        const clean = val.replace(/[^\d]+/g, '');
+        if (clean.length <= 11) {
+            if (clean === '' || clean.length !== 11 || /^(\d)\1{10}$/.test(clean)) return false;
+            let add = 0;
+            for (let i = 0; i < 9; i++) add += parseInt(clean.charAt(i)) * (10 - i);
+            let rev = 11 - (add % 11);
+            if (rev === 10 || rev === 11) rev = 0;
+            if (rev !== parseInt(clean.charAt(9))) return false;
+            add = 0;
+            for (let i = 0; i < 10; i++) add += parseInt(clean.charAt(i)) * (11 - i);
+            rev = 11 - (add % 11);
+            if (rev === 10 || rev === 11) rev = 0;
+            if (rev !== parseInt(clean.charAt(10))) return false;
+            return true;
+        } else {
+            let cnpj = clean;
+            if (cnpj === '' || cnpj.length !== 14 || /^(\d)\1{13}$/.test(cnpj)) return false;
+            let size = cnpj.length - 2;
+            let numbers = cnpj.substring(0, size);
+            let digits = cnpj.substring(size);
+            let sum = 0;
+            let pos = size - 7;
+            for (let i = size; i >= 1; i--) {
+                sum += numbers.charAt(size - i) * pos--;
+                if (pos < 2) pos = 9;
+            }
+            let result = sum % 11 < 2 ? 0 : 11 - sum % 11;
+            if (result != digits.charAt(0)) return false;
+            size = size + 1;
+            numbers = cnpj.substring(0, size);
+            sum = 0;
+            pos = size - 7;
+            for (let i = size; i >= 1; i--) {
+                sum += numbers.charAt(size - i) * pos--;
+                if (pos < 2) pos = 9;
+            }
+            result = sum % 11 < 2 ? 0 : 11 - sum % 11;
+            if (result != digits.charAt(1)) return false;
+            return true;
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         
-        if (!formData.responsibleName1 || !formData.responsibleCpf1) {
-            alert("Por favor, preencha os dados do primeiro responsável.");
-            return;
+        if (!formData.gymName || formData.gymName.length < 5) return alert("Por favor, insira uma Razão Social válida (Mín. 5 caracteres).");
+        if (!isValidCNPJorCPF(formData.cnpjCpf)) return alert("O CPF ou CNPJ da Academia (Sede) fornecido é inválido.");
+        if (!formData.address || formData.address.length < 8) return alert("Insira um Endereço Completo válido para a Sede.");
+
+        if (!formData.responsibleName1 || formData.responsibleName1.length < 5) return alert("Insira o Nome Completo real do Proprietário 1.");
+        if (!formData.responsibleRg1 || formData.responsibleRg1.length < 5) return alert("Insira um RG válido para o Proprietário 1.");
+        if (!isValidCNPJorCPF(formData.responsibleCpf1)) return alert("O CPF do Proprietário 1 é inválido. Coloque um CPF real.");
+        if (!formData.responsibleEnd1 || formData.responsibleEnd1.length < 8) return alert("Insira um Endereço Pessoal completo para o Proprietário 1.");
+        if (!formData.responsibleCep1 || formData.responsibleCep1.length < 8) return alert("Insira um CEP válido para o Proprietário 1.");
+
+        if (formData.responsibleName2 || formData.responsibleCpf2 || formData.responsibleRg2) {
+            if (!formData.responsibleName2 || formData.responsibleName2.length < 5) return alert("Insira o Nome Completo real do Proprietário 2.");
+            if (!formData.responsibleRg2 || formData.responsibleRg2.length < 5) return alert("Insira um RG válido para o Proprietário 2.");
+            if (!isValidCNPJorCPF(formData.responsibleCpf2)) return alert("O CPF do Proprietário 2 é inválido. Coloque um CPF real.");
+            if (!formData.responsibleEnd2 || formData.responsibleEnd2.length < 8) return alert("Insira um Endereço Pessoal completo para o Proprietário 2.");
         }
 
         setSubmitting(true);
