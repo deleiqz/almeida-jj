@@ -3,7 +3,7 @@ const cors = require('cors');
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcodeTerminal = require('qrcode-terminal');
 const imageQr = require('qrcode');
-const { MercadoPagoConfig, Preference } = require('mercadopago');
+const { MercadoPagoConfig, Preference, Payment } = require('mercadopago');
 
 // CONFIGURAÇÃO MERCADO PAGO - ADICIONE SEU ACCESS TOKEN DE PRODUÇÃO AQUI
 const MP_ACCESS_TOKEN = 'APP_USR-941031687557097-040713-68cec6df2e1b1705c30cec5e71899475-402502578';
@@ -226,6 +226,7 @@ app.post('/create-saas-payment', async (req, res) => {
                 pending: 'https://almeida-jj.vercel.app/'
             },
             auto_return: 'approved',
+            notification_url: 'https://almeidajj-mp.loca.lt/webhook-mp'
         };
 
         const result = await preference.create({ body });
@@ -233,6 +234,43 @@ app.post('/create-saas-payment', async (req, res) => {
     } catch (error) {
         console.error('Erro ao criar preferência MP:', error);
         res.status(500).json({ error: 'Erro ao gerar link de pagamento.' });
+    }
+});
+
+// Rota de Escuta para Webhook do Mercado Pago (Recebimento PIX e Cartão)
+app.post('/webhook-mp', async (req, res) => {
+    console.log("🔔 [Webhook MP] Evento Recebido:", req.query);
+    res.sendStatus(200); // 1. Confirma recebimento rápido pro Mercado Pago não repetir envio
+
+    // Identificar ID e Type do evento de acordo com a doc do MP
+    const type = req.query.type || req.query.topic || req.body?.type;
+    const id = req.query['data.id'] || req.body?.data?.id || (type === 'payment' ? req.query.id : null);
+
+    if (type === 'payment' && id) {
+        try {
+            console.log(`🔍 [Webhook MP] Validando status do pagamento ID: ${id}...`);
+            const paymentClient = new Payment(clientMp);
+            const paymentData = await paymentClient.get({ id });
+
+            if (paymentData.status === 'approved') {
+                console.log(`✅ [Webhook MP] Pagamento ${id} APROVADO! Enviando WhatsApp...`);
+                
+                // Extrai nome do pagador se tiver
+                let payerName = paymentData.payer?.first_name || 'Cliente';
+                if (payerName === 'Cliente' && paymentData.payer?.email) {
+                     payerName = paymentData.payer.email.split('@')[0];
+                }
+
+                const zapMsg = `💰 *PIX RECEBIDO COM SUCESSO!*\n\n✅ *Status:* Aprovado\n👤 *Pagador:* ${payerName}\n💵 *Valor:* R$ ${paymentData.transaction_amount}\n📅 *Data:* ${new Date(paymentData.date_approved).toLocaleString('pt-BR')}\n\nO Serviço B2B SaaS já foi comissionado!`;
+
+                // Dispara o WhatsApp pelo número do dono da Academia (Seu número)
+                const chatId = '5511986423450@c.us'; 
+                await client.sendMessage(chatId, zapMsg);
+                console.log(`📲 [Webhook MP] WhatsApp enviado para o Administrador!`);
+            }
+        } catch (error) {
+            console.error("❌ [Webhook MP] Erro ao buscar dados do pagamento ou enviar ZAP:", error.message);
+        }
     }
 });
 
