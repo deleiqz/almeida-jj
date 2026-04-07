@@ -267,19 +267,7 @@ const SaaSContractForm = () => {
                 if (mpData.init_point) setPaymentLink(mpData.init_point);
             } catch (mpErr) { console.error("Erro MP:", mpErr); }
 
-            // --- SINCRONIZAÇÃO AIRTABLE ---
-            try {
-                await fetch('https://almeidajj-mp.loca.lt/sync-airtable', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        formData, 
-                        signatureUrls: { url1, url2 },
-                        paymentDay: formData.paymentDay 
-                    })
-                });
-            } catch (airtableErr) { console.error("Erro Airtable:", airtableErr); }
-            // ------------------------------
+            // --- O AIRTABLE AGORA É SINCRONIZADO AUTOMATICAMENTE PELO BANCO DE DADOS (TRIGGER) ---
 
             try {
                 const names = formData.responsibleName2 ? `${formData.responsibleName1} e ${formData.responsibleName2}` : formData.responsibleName1;
