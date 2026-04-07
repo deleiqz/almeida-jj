@@ -59,12 +59,12 @@ const sectionTitleStyle = {
 
 const PRICES = {
   individual: {
-    evolucao: { mensal: 189, trimestral: 537, semestral: 1014, anual: 1919 },
-    performance: { mensal: 229, trimestral: 651, semestral: 1230, anual: 2316 }
+    evolucao: { mensal: 189, trimestral: 537, semestral: 1014, anual: 1919, teste: 1 },
+    performance: { mensal: 229, trimestral: 651, semestral: 1230, anual: 2316, teste: 1 }
   },
   familia: {
-    evolucao: { mensal: 340, trimestral: 966, semestral: 1825, anual: 3454 },
-    performance: { mensal: 412, trimestral: 1171, semestral: 2214, anual: 4168 }
+    evolucao: { mensal: 340, trimestral: 966, semestral: 1825, anual: 3454, teste: 1 },
+    performance: { mensal: 412, trimestral: 1171, semestral: 2214, anual: 4168, teste: 1 }
   }
 };
 
@@ -430,7 +430,7 @@ const RegistrationForm = () => {
           <div style={{ background: 'rgba(255,255,255,0.03)', padding: '20px', borderRadius: '15px', border: '1px solid rgba(255,215,0,0.1)', marginBottom: '25px' }}>
             <div style={{ fontSize: '0.8rem', color: '#a1a1aa', marginBottom: '8px' }}>Valor a Pagar</div>
             <div style={{ fontSize: '1.8rem', color: '#fff', fontWeight: '800' }}>R$ {PRICES[formData.planType][formData.subPlan][formData.plan]}</div>
-            {formData.plan !== 'anual' && <div style={{ fontSize: '0.75rem', color: '#ffd700', marginTop: '4px' }}>+ R$ 150,00 (Matrícula)</div>}
+            {formData.plan !== 'anual' && formData.plan !== 'teste' && <div style={{ fontSize: '0.75rem', color: '#ffd700', marginTop: '4px' }}>+ R$ 150,00 (Matrícula)</div>}
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -655,16 +655,17 @@ const RegistrationForm = () => {
             {(() => {
               const PRICES = {
                 individual: {
-                  evolucao: { mensal: 189, trimestral: 537, semestral: 1014, anual: 1919 },
-                  performance: { mensal: 229, trimestral: 651, semestral: 1230, anual: 2316 }
+                  evolucao: { mensal: 189, trimestral: 537, semestral: 1014, anual: 1919, teste: 1 },
+                  performance: { mensal: 229, trimestral: 651, semestral: 1230, anual: 2316, teste: 1 }
                 },
                 familia: {
-                  evolucao: { mensal: 340, trimestral: 966, semestral: 1825, anual: 3454 },
-                  performance: { mensal: 412, trimestral: 1171, semestral: 2214, anual: 4168 }
+                  evolucao: { mensal: 340, trimestral: 966, semestral: 1825, anual: 3454, teste: 1 },
+                  performance: { mensal: 412, trimestral: 1171, semestral: 2214, anual: 4168, teste: 1 }
                 }
               };
               const currentPrices = PRICES[formData.planType][formData.subPlan];
               const durations = [
+                { id: 'teste', label: 'Teste (Pix)', price: 1 },
                 { id: 'mensal', label: 'Mensal', price: currentPrices.mensal },
                 { id: 'trimestral', label: 'Trimestral', price: currentPrices.trimestral },
                 { id: 'semestral', label: 'Semestral', price: currentPrices.semestral },
@@ -706,8 +707,8 @@ const RegistrationForm = () => {
           
           <div style={{ marginBottom: '20px' }}>
             <label style={labelStyle}>Matrícula</label>
-            <div style={{ color: formData.plan === 'anual' ? '#10b981' : '#fff', fontWeight: '700', fontSize: '1.1rem' }}>
-              {formData.plan === 'anual' ? 'ISENTA 🎁' : 'R$ 150,00'}
+            <div style={{ color: (formData.plan === 'anual' || formData.plan === 'teste') ? '#10b981' : '#fff', fontWeight: '700', fontSize: '1.1rem' }}>
+              {(formData.plan === 'anual' || formData.plan === 'teste') ? 'ISENTA 🎁' : 'R$ 150,00'}
             </div>
           </div>
 
