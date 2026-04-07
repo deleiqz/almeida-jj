@@ -864,7 +864,7 @@ const RegistrationForm = () => {
           </button>
           
           <p style={{ textAlign: 'center', fontSize: '0.75rem', color: 'rgba(255,255,255,0.25)', marginTop: '15px' }}>
-            © {new Date().getFullYear()} Almeida JJ • Sistema de Gestão
+            © 2026 fdwords Elite Group. All rights reserved.
           </p>
         </form>
       </div>

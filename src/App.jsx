@@ -271,14 +271,14 @@ const App = () => {
           </button>
 
           {/* Elegant Creator Brand */}
-          <div style={{ marginTop: '25px', padding: '10px', textAlign: 'center', borderTop: '1px solid rgba(255, 215, 0, 0.05)' }}>
-            <p style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.15)', letterSpacing: '2px', textTransform: 'uppercase', margin: 0 }}>
-              Desenvolvido por
-            </p>
-            <p style={{ fontSize: '0.85rem', color: '#ffd700', fontWeight: '700', margin: '4px 0 0', fontFamily: "'Outfit', sans-serif", opacity: 0.5 }}>
-               VANDERLEI DIAS
-            </p>
-          </div>
+            <div style={{ marginTop: 'auto', paddingTop: '20px', borderTop: '1px solid rgba(255,255,255,0.05)', textAlign: 'center' }}>
+              <p style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>
+                Desenvolvido por
+              </p>
+              <p style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--accent-primary)', letterSpacing: '0.5px' }}>
+                © 2026 fdwords Elite Group. All rights reserved.
+              </p>
+            </div>
         </div>
       </nav>
 
