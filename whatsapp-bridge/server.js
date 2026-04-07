@@ -198,7 +198,7 @@ app.post('/send-message', async (req, res) => {
 
 // Rota para Criar Link de Pagamento Mercado Pago (SaaS Setup)
 app.post('/create-saas-payment', async (req, res) => {
-    const { gymName, amount } = req.body;
+    const { gymName, amountSetup, amountMonthly } = req.body;
 
     if (MP_ACCESS_TOKEN === 'COLOQUE_SEU_TOKEN_AQUI') {
         return res.status(500).json({ error: 'Mercado Pago não configurado. Por favor, adicione seu Access Token no arquivo server.js da ponte.' });
@@ -210,7 +210,13 @@ app.post('/create-saas-payment', async (req, res) => {
                 {
                     title: `Taxa de Implementação - ${gymName}`,
                     quantity: 1,
-                    unit_price: Number(amount) || 3250.00,
+                    unit_price: Number(amountSetup) || 3250.00,
+                    currency_id: 'BRL'
+                },
+                {
+                    title: `Primeira Mensalidade (Manutenção)`,
+                    quantity: 1,
+                    unit_price: Number(amountMonthly) || 200.00,
                     currency_id: 'BRL'
                 }
             ],
