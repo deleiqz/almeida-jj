@@ -3,6 +3,8 @@ import { supabase } from '../lib/supabase';
 import jjBg from '../assets/jj-bg.png';
 import logo from '../assets/logo.jpg';
 import { CheckCircle, ShieldCheck, Send, Info, Trash2, Printer, LayoutDashboard, CreditCard, ExternalLink, Calendar } from 'lucide-react';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 
 const SaaSContractForm = () => {
     const queryParams = new URLSearchParams(window.location.search);
@@ -36,6 +38,7 @@ const SaaSContractForm = () => {
 
     const canvasRef1 = useRef(null);
     const canvasRef2 = useRef(null);
+    const pdfRootRef = useRef(null);
     let isDrawing1 = false;
     let isDrawing2 = false;
 
@@ -229,6 +232,37 @@ const SaaSContractForm = () => {
             const url2 = await uploadSign(blob2, 2);
             setSigUrls({ url1, url2 });
 
+            // 1.5. Gerar PDF do Contrato Assinado
+            let pdfUrl = '';
+            try {
+                // Pequeno delay para garantir que as URLs das assinaturas foram setadas se estivermos renderizando-as
+                await new Promise(r => setTimeout(r, 500));
+                
+                const element = document.getElementById('contract-pdf-content');
+                if (element) {
+                    const canvas = await html2canvas(element, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+                    const imgData = canvas.toDataURL('image/jpeg', 0.8);
+                    const pdf = new jsPDF('p', 'mm', 'a4');
+                    const imgProps = pdf.getImageProperties(imgData);
+                    const pdfWidth = pdf.internal.pageSize.getWidth();
+                    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+                    
+                    pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+                    const pdfBlob = pdf.output('blob');
+                    
+                    const pdfFileName = `contrato_assinado_${formData.gymName.replace(/\s+/g, '_')}_${Date.now()}.pdf`;
+                    const pdfPath = `contracts/${pdfFileName}`;
+                    const { error: pdfUploadError } = await supabase.storage.from('documents').upload(pdfPath, pdfBlob);
+                    
+                    if (!pdfUploadError) {
+                        const { data: pdfUrlData } = supabase.storage.from('documents').getPublicUrl(pdfPath);
+                        pdfUrl = pdfUrlData.publicUrl;
+                    }
+                }
+            } catch (pdfErr) {
+                console.error("Erro ao gerar PDF:", pdfErr);
+            }
+
             const { error: insertError } = await supabase.from('saas_agreements').insert([{
                 link_id: contractLinkId,
                 gym_name: formData.gymName,
@@ -247,6 +281,7 @@ const SaaSContractForm = () => {
                 payment_day: formData.paymentDay,
                 signature_url: url1,
                 signature_url_2: url2,
+                contract_pdf_url: pdfUrl,
                 ip_address: 'Formulário Digital B2B'
             }]);
 
@@ -388,7 +423,7 @@ const SaaSContractForm = () => {
                 </div>
             </div>
 
-            <div style={{ maxWidth: '800px', margin: '0 auto', fontFamily: 'serif', padding: '20px' }}>
+            <div id="contract-pdf-content" style={{ maxWidth: '800px', margin: '0 auto', fontFamily: 'serif', padding: '20px', background: '#fff' }}>
                 <div style={{ textAlign: 'center', marginBottom: '40px', borderBottom: '2px solid #000', paddingBottom: '20px' }}>
                     <h1 style={{ fontSize: '1.4rem' }}>ALMEIDA JJ - SISTEMA DE GESTÃO</h1>
                     <p style={{ fontSize: '0.9rem', color: '#666' }}>Formalização de Contrato Digital SaaS B2B</p>
@@ -398,7 +433,7 @@ const SaaSContractForm = () => {
 
                 <div style={{ marginTop: '60px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '40px' }}>
                     <div style={{ textAlign: 'center' }}>
-                        <img src={sigUrls.url1} alt="Signature 1" style={{ maxHeight: '80px', marginBottom: '10px' }} />
+                        {sigUrls.url1 && <img src={sigUrls.url1} alt="Signature 1" style={{ maxHeight: '80px', marginBottom: '10px' }} />}
                         <div style={{ borderTop: '1px solid #000', paddingTop: '5px' }}>
                             <strong>{formData.responsibleName1}</strong><br />
                             <span style={{ fontSize: '0.8rem' }}>Contratante / Proprietário 1</span><br />
@@ -407,7 +442,7 @@ const SaaSContractForm = () => {
                     </div>
                     {formData.responsibleName2 && (
                         <div style={{ textAlign: 'center' }}>
-                            <img src={sigUrls.url2} alt="Signature 2" style={{ maxHeight: '80px', marginBottom: '10px' }} />
+                            {sigUrls.url2 && <img src={sigUrls.url2} alt="Signature 2" style={{ maxHeight: '80px', marginBottom: '10px' }} />}
                             <div style={{ borderTop: '1px solid #000', paddingTop: '5px' }}>
                                 <strong>{formData.responsibleName2}</strong><br />
                                 <span style={{ fontSize: '0.8rem' }}>Contratante / Proprietário 2</span><br />
