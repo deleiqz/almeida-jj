@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import jjBg from '../assets/jj-bg.png';
 import logo from '../assets/logo.jpg';
-import { CheckCircle, ShieldCheck, Send, Info, Trash2 } from 'lucide-react';
+import { CheckCircle, ShieldCheck, Send, Info, Trash2, Printer, LayoutDashboard } from 'lucide-react';
 
 const SaaSContractForm = () => {
     const queryParams = new URLSearchParams(window.location.search);
@@ -13,6 +13,7 @@ const SaaSContractForm = () => {
     const [submitted, setSubmitted] = useState(false);
     const [isValidLink, setIsValidLink] = useState(false);
     const [recipientName, setRecipientName] = useState('');
+    const [sigUrls, setSigUrls] = useState({ url1: '', url2: '' });
     
     const [formData, setFormData] = useState({
         gymName: '',
@@ -126,7 +127,6 @@ const SaaSContractForm = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         
-        // Basic validation
         if (!formData.responsibleName1 || !formData.responsibleCpf1) {
             alert("Por favor, preencha os dados do primeiro responsável.");
             return;
@@ -135,7 +135,6 @@ const SaaSContractForm = () => {
         setSubmitting(true);
 
         try {
-            // 1. Get Signatures Blobs
             const canvas1 = canvasRef1.current;
             const canvas2 = canvasRef2.current;
             
@@ -154,8 +153,8 @@ const SaaSContractForm = () => {
 
             const url1 = await uploadSign(blob1, 1);
             const url2 = await uploadSign(blob2, 2);
+            setSigUrls({ url1, url2 });
 
-            // 2. Insert Agreement
             const { error: insertError } = await supabase.from('saas_agreements').insert([{
                 link_id: contractLinkId,
                 gym_name: formData.gymName,
@@ -172,13 +171,11 @@ const SaaSContractForm = () => {
 
             if (insertError) throw insertError;
 
-            // 3. Update Link Status
             await supabase.from('saas_contract_links').update({
                 status: 'assinado',
                 used_at: new Date().toISOString()
             }).eq('id', contractLinkId);
 
-            // 4. Notify Vanderlei (WhatsApp)
             try {
                 const names = formData.responsibleName2 
                     ? `${formData.responsibleName1} e ${formData.responsibleName2}` 
@@ -197,6 +194,7 @@ const SaaSContractForm = () => {
             }
 
             setSubmitted(true);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         } catch (err) {
             alert(`Erro ao assinar contrato: ${err.message}`);
             console.error(err);
@@ -204,6 +202,44 @@ const SaaSContractForm = () => {
             setSubmitting(false);
         }
     };
+
+    const ContractText = () => (
+        <>
+            <h2 style={{ textAlign: 'center', color: submitted ? '#000' : '#fff', marginBottom: '30px', fontSize: '1.4rem' }}>CONTRATO DE PRESTAÇÃO DE SERVIÇOS DE DESENVOLVIMENTO E LICENCIAMENTO DE SOFTWARE</h2>
+            
+            <p><strong>CONTRATANTE:</strong> {formData.gymName || '[RAZÃO SOCIAL]'}, CNPJ/CPF nº {formData.cnpjCpf || '[PREENCHER]'}, com sede em {formData.address || '[ENDEREÇO COMPLETO]'}, neste ato representada por seus representantes legais <strong>{formData.responsibleName1 || '[RESPONSÁVEL 1]'}</strong> e <strong>{formData.responsibleName2 || '[RESPONSÁVEL 2]'}</strong>, doravante denominada <strong>CONTRATANTE</strong>.</p>
+            
+            <p><strong>CONTRATADA:</strong> Vanderlei Dias Mendes, brasileiro, Desenvolvedor de Software, portador do CPF nº 072.501.549-74, com sede na Av. Osvaldo Valle Cordeiro 1260, AP 91 Torre 2, São Paulo/SP, doravante denominada <strong>CONTRATADA</strong>.</p>
+            
+            <p>As partes acima identificadas celebram o presente Contrato de Prestação de Serviços de Desenvolvimento, Licenciamento e Manutenção de Software (SaaS), que se regerá pelas seguintes cláusulas e condições:</p>
+            
+            <h3 style={{ color: submitted ? '#000' : '#fff', marginTop: '25px' }}>CLÁUSULA 1 - DO OBJETO</h3>
+            <p>O presente contrato tem como objeto:</p>
+            <ul style={{ paddingLeft: '20px' }}>
+                <li>O desenvolvimento, parametrização e implementação do Sistema de Gestão Exclusivo para a academia Almeida JJ, englobando controle financeiro, gestão de alunos com CRUD completo, ficha de inscrição digital nativa, painel dashboard inteligente e servidor de disparos de WhatsApp integrado;</li>
+                <li>O licenciamento de uso do software para a <strong>CONTRATANTE</strong>;</li>
+                <li>A prestação contínua de serviços de hospedagem em nuvem, manutenção técnica e correções de retaguarda técnica (bugs).</li>
+            </ul>
+
+            <h3 style={{ color: submitted ? '#000' : '#fff', marginTop: '25px' }}>CLÁUSULA 2 - DOS VALORES E FORMA DE PAGAMENTO</h3>
+            <p>Pela prestação dos serviços e licenciamento, a <strong>CONTRATANTE</strong> pagará à <strong>CONTRATADA</strong> os seguintes valores:</p>
+            <p><strong>2.1. Taxa de Implementação (Setup):</strong> O valor fixo e único de R$ 3.250,00 (Três mil, duzentos e cinquenta reais). Forma de pagamento: 50% no aceite deste contrato e 50% na aprovação final do sistema.</p>
+            <p><strong>2.2. Taxa de Manutenção e Hospedagem (Mensalidade):</strong> O valor mensal de R$ 200,00 (Duzentos reais), referente ao licenciamento contínuo de uso do software e suporte técnico preventivo.</p>
+
+            <h3 style={{ color: submitted ? '#000' : '#fff', marginTop: '25px' }}>CLÁUSULA 3 - DO PRAZO E DA RENOVAÇÃO</h3>
+            <p><strong>3.1.</strong> O presente contrato é celebrado pelo prazo determinado de 12 (doze) meses, contados a partir da data da entrega oficial do sistema.</p>
+            <p><strong>3.2.</strong> Após o período inicial, o contrato será prorrogado automaticamente por prazo indeterminado.</p>
+
+            <h3 style={{ color: submitted ? '#000' : '#fff', marginTop: '25px' }}>CLÁUSULA 4 - DO INADIMPLEMENTO E DAS PENALIDADES</h3>
+            <p><strong>4.1. Multa por Atraso:</strong> Atraso superior a 5 dias acarretará multa de 2% e juros de 1% ao mês.</p>
+            <p><strong>4.2. Suspensão:</strong> inadimplência por mais de 15 dias confere o direito de suspensão técnica temporária.</p>
+
+            <h3 style={{ color: submitted ? '#000' : '#fff', marginTop: '25px' }}>CLÁUSULA 5 - PROPRIEDADE E DADOS (LGPD)</h3>
+            <p><strong>5.1.</strong> O código-fonte e tecnologias desenvolvidas são de propriedade da CONTRATADA. Os dados dos alunos são de propriedade exclusiva da CONTRATANTE.</p>
+            
+            <p style={{ marginTop: '40px', textAlign: 'center' }}>São Paulo, {new Date().getDate()} de {['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'][new Date().getMonth()]} de 2026.</p>
+        </>
+    );
 
     if (loading) return (
         <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffd700' }}>
@@ -222,16 +258,60 @@ const SaaSContractForm = () => {
     );
 
     if (submitted) return (
-        <div style={{ minHeight: '100vh', background: '#0a0a0a', backgroundImage: `linear-gradient(rgba(0,0,0,0.8), rgba(0,0,0,0.8)), url(${jjBg})`, backgroundSize: 'cover', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-            <div className="glass" style={{ padding: '50px', maxWidth: '600px', textAlign: 'center' }}>
-                <CheckCircle size={80} color="#ffd700" style={{ marginBottom: '20px' }} />
-                <h1 style={{ marginBottom: '15px' }}>Formalização Concluída!</h1>
-                <p style={{ color: '#a1a1aa', fontSize: '1.1rem', marginBottom: '30px' }}>
-                    O contrato da <strong>{formData.gymName}</strong> foi assinado digitalmente por ambos os proprietários e arquivado com sucesso. O sistema será ativado em breve.
-                </p>
+        <div style={{ minHeight: '100vh', background: '#fff', color: '#000', padding: '40px 20px' }}>
+            <style>{`@media print { .no-print { display: none !important; } .print-only { display: block !important; } body { background: white !important; color: black !important; padding: 0 !important; } } `}</style>
+            
+            {/* Confirmation Header (Hidden when printing) */}
+            <div className="no-print" style={{ maxWidth: '900px', margin: '0 auto 40px', textAlign: 'center', background: '#f8fafc', padding: '30px', borderRadius: '15px', border: '1px solid #e2e8f0' }}>
+                <CheckCircle size={50} color="#10b981" style={{ marginBottom: '10px' }} />
+                <h1 style={{ fontSize: '1.8rem', color: '#0f172a' }}>Formalização Concluída!</h1>
+                <p style={{ color: '#64748b', marginBottom: '20px' }}>O contrato da <strong>{formData.gymName}</strong> foi assinado e arquivado. Você pode imprimir esta cópia abaixo para seus registros.</p>
                 <div style={{ display: 'flex', gap: '15px', justifyContent: 'center' }}>
-                  <button onClick={() => window.print()} className="btn-secondary">Gerar PDF/Imprimir</button>
-                  <button onClick={() => window.location.href = '/'} className="btn-primary" style={{ background: '#ffd700', color: '#000' }}>Acessar Dashboard</button>
+                  <button onClick={() => window.print()} className="btn-primary" style={{ background: '#0f172a', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 25px' }}><Printer size={20} /> Gerar PDF/Imprimir</button>
+                  <button onClick={() => window.location.href = '/'} className="btn-secondary" style={{ background: '#fff', border: '1px solid #cbd5e1', color: '#64748b', display: 'flex', alignItems: 'center', gap: '8px' }}><LayoutDashboard size={20} /> Painel Inicial</button>
+                </div>
+            </div>
+
+            {/* FULL PRINTABLE CONTRACT */}
+            <div style={{ maxWidth: '800px', margin: '0 auto', fontFamily: 'serif', padding: '0 20px' }}>
+                <div style={{ textAlign: 'center', marginBottom: '30px', borderBottom: '1px solid #000', paddingBottom: '20px' }}>
+                    <h1 style={{ fontSize: '1.2rem', textTransform: 'uppercase', marginBottom: '5px' }}>Almeida JJ - Sistema de Gestão</h1>
+                    <p style={{ fontSize: '0.8rem', color: '#666' }}>Documento de Formalização Digitalizada</p>
+                </div>
+
+                <ContractText />
+
+                {/* SIGNATURES SECTION */}
+                <div style={{ marginTop: '50px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '40px' }}>
+                    <div style={{ textAlign: 'center' }}>
+                        <div style={{ minHeight: '80px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <img src={sigUrls.url1} alt="Assinatura 1" style={{ maxHeight: '80px', maxWidth: '100%', objectFit: 'contain' }} />
+                        </div>
+                        <div style={{ borderTop: '1px solid #000', marginTop: '10px', paddingTop: '5px' }}>
+                            <strong>{formData.responsibleName1}</strong><br />
+                            <span style={{ fontSize: '0.8rem', color: '#666' }}>Assinante Digital (Proprietário 1)</span><br />
+                            <span style={{ fontSize: '0.8rem', color: '#666' }}>CPF: {formData.responsibleCpf1}</span>
+                        </div>
+                    </div>
+
+                    {formData.responsibleName2 && (
+                        <div style={{ textAlign: 'center' }}>
+                            <div style={{ minHeight: '80px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <img src={sigUrls.url2} alt="Assinatura 2" style={{ maxHeight: '80px', maxWidth: '100%', objectFit: 'contain' }} />
+                            </div>
+                            <div style={{ borderTop: '1px solid #000', marginTop: '10px', paddingTop: '5px' }}>
+                                <strong>{formData.responsibleName2}</strong><br />
+                                <span style={{ fontSize: '0.8rem', color: '#666' }}>Assinante Digital (Proprietário 2)</span><br />
+                                <span style={{ fontSize: '0.8rem', color: '#666' }}>CPF: {formData.responsibleCpf2}</span>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* TESTEMUNHA VIRTUAL (VANDERLEI) */}
+                <div style={{ marginTop: '60px', borderTop: '1px dashed #ccc', paddingTop: '20px', textAlign: 'center' }}>
+                    <p style={{ fontSize: '0.8rem', color: '#999' }}>Assinado digitamente via plataforma Almeida JJ em {new Date().toLocaleString('pt-BR')}</p>
+                    <p style={{ fontSize: '0.7rem', color: '#ccc' }}>IP Original: Formulário Autenticado Digital • Documento Validado via Supabase Storage</p>
                 </div>
             </div>
         </div>
@@ -261,54 +341,13 @@ const SaaSContractForm = () => {
                         <span style={{ fontWeight: '600', textTransform: 'uppercase', fontSize: '0.9rem', letterSpacing: '1px' }}>Válido como Documento Jurídico Digital</span>
                     </div>
 
-                    {/* Contract Content - FULL TEXT */}
+                    {/* Contract Content - BOX VISUAL */}
                     <div className="contract-box" style={{ 
                         background: 'rgba(0,0,0,0.3)', padding: '40px', borderRadius: '12px', 
                         height: '500px', overflowY: 'auto', marginBottom: '40px', border: '1px solid rgba(255,255,255,0.05)',
                         fontSize: '0.95rem', lineHeight: '1.7', color: '#e4e4e7', textAlign: 'justify'
                     }}>
-                        <h2 style={{ textAlign: 'center', color: '#fff', marginBottom: '30px', fontSize: '1.2rem' }}>CONTRATO DE PRESTAÇÃO DE SERVIÇOS DE DESENVOLVIMENTO E LICENCIAMENTO DE SOFTWARE</h2>
-                        
-                        <p><strong>CONTRATANTE:</strong> {formData.gymName || '[RAZÃO SOCIAL]'}, CNPJ/CPF nº {formData.cnpjCpf || '[PREENCHER]'}, com sede em {formData.address || '[ENDEREÇO COMPLETO]'}, neste ato representada por seus representantes legais <strong>{formData.responsibleName1 || '[RESPONSÁVEL 1]'}</strong> e <strong>{formData.responsibleName2 || '[RESPONSÁVEL 2]'}</strong>, doravante denominada <strong>CONTRATANTE</strong>.</p>
-                        
-                        <p><strong>CONTRATADA:</strong> Vanderlei Dias Mendes, brasileiro, Desenvolvedor de Software, portador do CPF nº 072.501.549-74, com sede na Av. Osvaldo Valle Cordeiro 1260, AP 91 Torre 2, São Paulo/SP, doravante denominada <strong>CONTRATADA</strong>.</p>
-                        
-                        <p>As partes acima identificadas celebram o presente Contrato de Prestação de Serviços de Desenvolvimento, Licenciamento e Manutenção de Software (SaaS), que se regerá pelas seguintes cláusulas e condições:</p>
-                        
-                        <h3 style={{ color: '#fff', marginTop: '25px' }}>CLÁUSULA 1 - DO OBJETO</h3>
-                        <p>O presente contrato tem como objeto:</p>
-                        <ul style={{ paddingLeft: '20px' }}>
-                            <li>O desenvolvimento, parametrização e implementação do Sistema de Gestão Exclusivo para a academia Almeida JJ, englobando controle financeiro, gestão de alunos com CRUD completo, ficha de inscrição digital nativa, painel dashboard inteligente e servidor de disparos de WhatsApp integrado;</li>
-                            <li>O licenciamento de uso do software para a <strong>CONTRATANTE</strong>;</li>
-                            <li>A prestação contínua de serviços de hospedagem em nuvem, manutenção técnica e correções de retaguarda técnica (bugs).</li>
-                        </ul>
-
-                        <h3 style={{ color: '#fff', marginTop: '25px' }}>CLÁUSULA 2 - DOS VALORES E FORMA DE PAGAMENTO</h3>
-                        <p>Pela prestação dos serviços e licenciamento, a <strong>CONTRATANTE</strong> pagará à <strong>CONTRATADA</strong> os seguintes valores:</p>
-                        <p><strong>2.1. Taxa de Implementação (Setup):</strong> O valor fixo e único de R$ 3.250,00 (Três mil, duzentos e cinquenta reais), referente à programação, banco de dados, design da plataforma, design da ficha de matrícula exclusiva e infraestrutura de base. Forma de pagamento: 50% no aceite deste contrato e 50% na aprovação final do sistema.</p>
-                        <p><strong>2.2. Taxa de Manutenção e Hospedagem (Mensalidade):</strong> O valor mensal de R$ 200,00 (Duzentos reais), referente ao licenciamento contínuo de uso do software e suporte técnico preventivo.</p>
-
-                        <h3 style={{ color: '#fff', marginTop: '25px' }}>CLÁUSULA 3 - DO PRAZO E DA RENOVAÇÃO</h3>
-                        <p><strong>3.1.</strong> O presente contrato é celebrado pelo prazo determinado de 12 (doze) meses, contados a partir da data da entrega oficial do sistema.</p>
-                        <p><strong>3.2.</strong> Após o período inicial, o contrato será prorrogado automaticamente por prazo indeterminado.</p>
-
-                        <h3 style={{ color: '#fff', marginTop: '25px' }}>CLÁUSULA 4 - DO INADIMPLEMENTO E DAS PENALIDADES</h3>
-                        <p><strong>4.1. Multa por Atraso:</strong> Atraso superior a 5 dias acarretará multa de 2% e juros de 1% ao mês.</p>
-                        <p><strong>4.2. Suspensão:</strong> Caso a inadimplência perdure por mais de 15 dias, a CONTRATADA reserva-se o direito de suspender o acesso ao sistema.</p>
-                        <p><strong>4.3. Multa Rescisória:</strong> Cancelamento antes de 12 meses implica em multa de 15% sobre as parcelas restantes.</p>
-
-                        <h3 style={{ color: '#fff', marginTop: '25px' }}>CLÁUSULA 5 - DIREITOS AUTORAIS E LGPD</h3>
-                        <p><strong>5.1.</strong> O código-fonte e tecnologias são de propriedade da CONTRATADA. Os dados dos alunos são de propriedade exclusiva da CONTRATANTE.</p>
-                        <p><strong>5.2.</strong> Ambas as partes comprometem-se a zelar pela Lei Geral de Proteção de Dados (LGPD).</p>
-
-                        <h3 style={{ color: '#fff', marginTop: '25px' }}>CLÁUSULA 6 - SUPORTE E BOAS PRÁTICAS</h3>
-                        <p><strong>6.1.</strong> O suporte técnico será remoto em dias úteis, horário comercial.</p>
-                        <p><strong>6.2.</strong> A CONTRATADA não se responsabiliza por banimentos de WhatsApp causados por mau uso da ferramenta de disparos.</p>
-
-                        <h3 style={{ color: '#fff', marginTop: '25px' }}>CLÁUSULA 8 - DO FORO</h3>
-                        <p><strong>8.1.</strong> Fica eleito o foro da Comarca de São Paulo/SP para dirimir controvérsias.</p>
-                        
-                        <p style={{ marginTop: '30px', textAlign: 'center' }}>São Paulo, {new Date().getDate()} de {['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'][new Date().getMonth()]} de 2026.</p>
+                        <ContractText />
                     </div>
 
                     {/* Registration Form */}
@@ -390,16 +429,12 @@ const SaaSContractForm = () => {
                             style={{ 
                                 width: '100%', padding: '20px', background: '#ffd700', color: '#000', 
                                 fontWeight: '900', fontSize: '1.1rem', display: 'flex', alignItems: 'center', 
-                                justifyContent: 'center', gap: '12px', transition: 'all 0.3s ease' 
+                                justifyContent: 'center', gap: '12px' 
                             }}
                         >
                             {submitting ? 'PROCESSANDO ASSINATURAS...' : <><Send size={22} /> FINALIZAR CONTRATO E ATIVAR SISTEMA</>}
                         </button>
                     </form>
-                </div>
-
-                <div style={{ textAlign: 'center', marginTop: '40px', color: 'rgba(255,255,255,0.2)', fontSize: '0.85rem' }}>
-                    Desenvolvido por <strong>fdwords Elite Group</strong> • Tecnologia Segura e Criptografada © 2026
                 </div>
             </div>
         </div>
