@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import jjBg from '../assets/jj-bg.png';
 import logo from '../assets/logo.jpg';
-import { CheckCircle, ShieldCheck, Send, Info, Trash2, Printer, LayoutDashboard } from 'lucide-react';
+import { CheckCircle, ShieldCheck, Send, Info, Trash2, Printer, LayoutDashboard, CreditCard, ExternalLink, Calendar } from 'lucide-react';
 
 const SaaSContractForm = () => {
     const queryParams = new URLSearchParams(window.location.search);
@@ -14,6 +14,7 @@ const SaaSContractForm = () => {
     const [isValidLink, setIsValidLink] = useState(false);
     const [recipientName, setRecipientName] = useState('');
     const [sigUrls, setSigUrls] = useState({ url1: '', url2: '' });
+    const [paymentLink, setPaymentLink] = useState('');
     
     const [formData, setFormData] = useState({
         gymName: '',
@@ -21,8 +22,15 @@ const SaaSContractForm = () => {
         address: '',
         responsibleName1: '',
         responsibleCpf1: '',
+        responsibleRg1: '',
+        responsibleEnd1: '',
+        responsibleCep1: '',
         responsibleName2: '',
-        responsibleCpf2: ''
+        responsibleCpf2: '',
+        responsibleRg2: '',
+        responsibleEnd2: '',
+        responsibleCep2: '',
+        paymentDay: '05' // Default 05
     });
 
     const canvasRef1 = useRef(null);
@@ -54,7 +62,7 @@ const SaaSContractForm = () => {
         validateLink();
     }, [contractLinkId]);
 
-    // Canvas drawing logic for both pads
+    // Canvas drawing logic
     useEffect(() => {
         if (!isValidLink || submitted) return;
 
@@ -88,9 +96,7 @@ const SaaSContractForm = () => {
                 if(e.cancelable) e.preventDefault(); 
             };
             
-            const end = () => { 
-                if (refIndex === 1) isDrawing1 = false; else isDrawing2 = false; 
-            };
+            const end = () => { if (refIndex === 1) isDrawing1 = false; else isDrawing2 = false; };
 
             canvas.addEventListener('mousedown', start);
             canvas.addEventListener('mousemove', move);
@@ -155,6 +161,7 @@ const SaaSContractForm = () => {
             const url2 = await uploadSign(blob2, 2);
             setSigUrls({ url1, url2 });
 
+            // Insert Agreement
             const { error: insertError } = await supabase.from('saas_agreements').insert([{
                 link_id: contractLinkId,
                 gym_name: formData.gymName,
@@ -162,8 +169,15 @@ const SaaSContractForm = () => {
                 address: formData.address,
                 responsible_name: formData.responsibleName1,
                 responsible_cpf: formData.responsibleCpf1,
+                rg_1: formData.responsibleRg1,
+                address_1: formData.responsibleEnd1,
+                cep_1: formData.responsibleCep1,
                 responsible_name_2: formData.responsibleName2,
                 responsible_cpf_2: formData.responsibleCpf2,
+                rg_2: formData.responsibleRg2,
+                address_2: formData.responsibleEnd2,
+                cep_2: formData.responsibleCep2,
+                payment_day: formData.paymentDay,
                 signature_url: url1,
                 signature_url_2: url2,
                 ip_address: 'Formulário Digital B2B'
@@ -171,11 +185,29 @@ const SaaSContractForm = () => {
 
             if (insertError) throw insertError;
 
+            // Mark link as signed
             await supabase.from('saas_contract_links').update({
                 status: 'assinado',
                 used_at: new Date().toISOString()
             }).eq('id', contractLinkId);
 
+            // Generate Mercado Pago Link
+            try {
+                const mpResponse = await fetch('http://localhost:3000/create-saas-payment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        gymName: formData.gymName,
+                        amount: 3250.00
+                    })
+                });
+                const mpData = await mpResponse.json();
+                if (mpData.init_point) setPaymentLink(mpData.init_point);
+            } catch (mpErr) {
+                console.error("Erro ao gerar pagamento MP:", mpErr);
+            }
+
+            // WhatsApp Notify
             try {
                 const names = formData.responsibleName2 
                     ? `${formData.responsibleName1} e ${formData.responsibleName2}` 
@@ -186,7 +218,7 @@ const SaaSContractForm = () => {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         phone: '5511986423450',
-                        message: `✅ *CONTRATO SaaS ASSINADO!* \nA academia *${formData.gymName}* formalizou a parceria. \n\nResponsáveis: ${names}\nValor Setup: R$ 3.250,00\nMensalidade: R$ 200,00`
+                        message: `✅ *CONTRATO SaaS ASSINADO!* \nAcademia: *${formData.gymName}* \nResponsáveis: ${names}\nDia Vencimento: ${formData.paymentDay}\nValor Setup: R$ 3.250,00`
                     })
                 });
             } catch (notifyErr) {
@@ -197,7 +229,6 @@ const SaaSContractForm = () => {
             window.scrollTo({ top: 0, behavior: 'smooth' });
         } catch (err) {
             alert(`Erro ao assinar contrato: ${err.message}`);
-            console.error(err);
         } finally {
             setSubmitting(false);
         }
@@ -207,111 +238,78 @@ const SaaSContractForm = () => {
         <>
             <h2 style={{ textAlign: 'center', color: submitted ? '#000' : '#fff', marginBottom: '30px', fontSize: '1.4rem' }}>CONTRATO DE PRESTAÇÃO DE SERVIÇOS DE DESENVOLVIMENTO E LICENCIAMENTO DE SOFTWARE</h2>
             
-            <p><strong>CONTRATANTE:</strong> {formData.gymName || '[RAZÃO SOCIAL]'}, CNPJ/CPF nº {formData.cnpjCpf || '[PREENCHER]'}, com sede em {formData.address || '[ENDEREÇO COMPLETO]'}, neste ato representada por seus representantes legais <strong>{formData.responsibleName1 || '[RESPONSÁVEL 1]'}</strong> e <strong>{formData.responsibleName2 || '[RESPONSÁVEL 2]'}</strong>, doravante denominada <strong>CONTRATANTE</strong>.</p>
+            <p><strong>CONTRATANTE:</strong> {formData.gymName || '[RAZÃO SOCIAL]'}, CNPJ/CPF nº {formData.cnpjCpf || '[PREENCHER]'}, com sede em {formData.address || '[ENDEREÇO DA SEDE]'}, neste ato representada por seus representantes legais:</p>
             
-            <p><strong>CONTRATADA:</strong> Vanderlei Dias Mendes, brasileiro, Desenvolvedor de Software, portador do CPF nº 072.501.549-74, com sede na Av. Osvaldo Valle Cordeiro 1260, AP 91 Torre 2, São Paulo/SP, doravante denominada <strong>CONTRATADA</strong>.</p>
+            <ol style={{ paddingLeft: '20px' }}>
+                <li><strong>{formData.responsibleName1 || '[RESPONSÁVEL 1]'}</strong>, RG {formData.responsibleRg1 || '[RG]'}, CPF {formData.responsibleCpf1 || '[CPF]'}, residente em {formData.responsibleEnd1 || '[ENDEREÇO]'}, CEP {formData.responsibleCep1 || '[CEP]'};</li>
+                {formData.responsibleName2 && (
+                    <li><strong>{formData.responsibleName2 || '[SÓCIO 2]'}</strong>, RG {formData.responsibleRg2 || '[RG]'}, CPF {formData.responsibleCpf2 || '[CPF]'}, residente em {formData.responsibleEnd2 || '[ENDEREÇO]'}, CEP {formData.responsibleCep2 || '[CEP]'};</li>
+                )}
+            </ol>
             
-            <p>As partes acima identificadas celebram o presente Contrato de Prestação de Serviços de Desenvolvimento, Licenciamento e Manutenção de Software (SaaS), que se regerá pelas seguintes cláusulas e condições:</p>
+            <p><strong>CONTRATADA:</strong> Vanderlei Dias Mendes, portador do CPF nº 072.501.549-74, Av. Osvaldo Valle Cordeiro 1260, São Paulo/SP.</p>
+
+            <h3 style={{ color: submitted ? '#000' : '#fff', marginTop: '25px' }}>CLÁUSULA 2 - VALORES E PAGAMENTO</h3>
+            <p><strong>2.1. Taxa de Implementação:</strong> R$ 3.250,00 (Três mil, duzentos e cinquenta reais).</p>
+            <p><strong>2.2. Mensalidade:</strong> R$ 200,00 (Duzentos reais), com vencimento todo <strong>dia {formData.paymentDay}</strong> de cada mês.</p>
             
-            <h3 style={{ color: submitted ? '#000' : '#fff', marginTop: '25px' }}>CLÁUSULA 1 - DO OBJETO</h3>
-            <p>O presente contrato tem como objeto:</p>
-            <ul style={{ paddingLeft: '20px' }}>
-                <li>O desenvolvimento, parametrização e implementação do Sistema de Gestão Exclusivo para a academia Almeida JJ, englobando controle financeiro, gestão de alunos com CRUD completo, ficha de inscrição digital nativa, painel dashboard inteligente e servidor de disparos de WhatsApp integrado;</li>
-                <li>O licenciamento de uso do software para a <strong>CONTRATANTE</strong>;</li>
-                <li>A prestação contínua de serviços de hospedagem em nuvem, manutenção técnica e correções de retaguarda técnica (bugs).</li>
-            </ul>
-
-            <h3 style={{ color: submitted ? '#000' : '#fff', marginTop: '25px' }}>CLÁUSULA 2 - DOS VALORES E FORMA DE PAGAMENTO</h3>
-            <p>Pela prestação dos serviços e licenciamento, a <strong>CONTRATANTE</strong> pagará à <strong>CONTRATADA</strong> os seguintes valores:</p>
-            <p><strong>2.1. Taxa de Implementação (Setup):</strong> O valor fixo e único de R$ 3.250,00 (Três mil, duzentos e cinquenta reais). Forma de pagamento: 50% no aceite deste contrato e 50% na aprovação final do sistema.</p>
-            <p><strong>2.2. Taxa de Manutenção e Hospedagem (Mensalidade):</strong> O valor mensal de R$ 200,00 (Duzentos reais), referente ao licenciamento contínuo de uso do software e suporte técnico preventivo.</p>
-
-            <h3 style={{ color: submitted ? '#000' : '#fff', marginTop: '25px' }}>CLÁUSULA 3 - DO PRAZO E DA RENOVAÇÃO</h3>
-            <p><strong>3.1.</strong> O presente contrato é celebrado pelo prazo determinado de 12 (doze) meses, contados a partir da data da entrega oficial do sistema.</p>
-            <p><strong>3.2.</strong> Após o período inicial, o contrato será prorrogado automaticamente por prazo indeterminado.</p>
-
-            <h3 style={{ color: submitted ? '#000' : '#fff', marginTop: '25px' }}>CLÁUSULA 4 - DO INADIMPLEMENTO E DAS PENALIDADES</h3>
-            <p><strong>4.1. Multa por Atraso:</strong> Atraso superior a 5 dias acarretará multa de 2% e juros de 1% ao mês.</p>
-            <p><strong>4.2. Suspensão:</strong> inadimplência por mais de 15 dias confere o direito de suspensão técnica temporária.</p>
-
-            <h3 style={{ color: submitted ? '#000' : '#fff', marginTop: '25px' }}>CLÁUSULA 5 - PROPRIEDADE E DADOS (LGPD)</h3>
-            <p><strong>5.1.</strong> O código-fonte e tecnologias desenvolvidas são de propriedade da CONTRATADA. Os dados dos alunos são de propriedade exclusiva da CONTRATANTE.</p>
-            
-            <p style={{ marginTop: '40px', textAlign: 'center' }}>São Paulo, {new Date().getDate()} de {['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'][new Date().getMonth()]} de 2026.</p>
+            <p style={{ marginTop: '40px', textAlign: 'center' }}>São Paulo, {new Date().toLocaleDateString('pt-BR')}.</p>
         </>
     );
 
-    if (loading) return (
-        <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffd700' }}>
-            <div className="animate-pulse">Validando contrato oficial...</div>
-        </div>
-    );
-
-    if (!isValidLink && !submitted) return (
-        <div style={{ minHeight: '100vh', background: '#000', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', textAlign: 'center' }}>
-            <div className="glass" style={{ padding: '40px', maxWidth: '500px' }}>
-                <h1 style={{ color: '#ef4444' }}>Contrato Indisponível</h1>
-                <p>Este link expirou, foi revogado ou já foi assinado pelos proprietários.</p>
-                <button onClick={() => window.location.href = '/'} className="btn-secondary" style={{ marginTop: '20px' }}>Voltar ao Início</button>
-            </div>
-        </div>
-    );
+    if (loading) return <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffd700' }}>Processando...</div>;
 
     if (submitted) return (
         <div style={{ minHeight: '100vh', background: '#fff', color: '#000', padding: '40px 20px' }}>
-            <style>{`@media print { .no-print { display: none !important; } .print-only { display: block !important; } body { background: white !important; color: black !important; padding: 0 !important; } } `}</style>
+            <style>{`@media print { .no-print { display: none !important; } }`}</style>
             
-            {/* Confirmation Header (Hidden when printing) */}
-            <div className="no-print" style={{ maxWidth: '900px', margin: '0 auto 40px', textAlign: 'center', background: '#f8fafc', padding: '30px', borderRadius: '15px', border: '1px solid #e2e8f0' }}>
-                <CheckCircle size={50} color="#10b981" style={{ marginBottom: '10px' }} />
-                <h1 style={{ fontSize: '1.8rem', color: '#0f172a' }}>Formalização Concluída!</h1>
-                <p style={{ color: '#64748b', marginBottom: '20px' }}>O contrato da <strong>{formData.gymName}</strong> foi assinado e arquivado. Você pode imprimir esta cópia abaixo para seus registros.</p>
-                <div style={{ display: 'flex', gap: '15px', justifyContent: 'center' }}>
-                  <button onClick={() => window.print()} className="btn-primary" style={{ background: '#0f172a', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 25px' }}><Printer size={20} /> Gerar PDF/Imprimir</button>
-                  <button onClick={() => window.location.href = '/'} className="btn-secondary" style={{ background: '#fff', border: '1px solid #cbd5e1', color: '#64748b', display: 'flex', alignItems: 'center', gap: '8px' }}><LayoutDashboard size={20} /> Painel Inicial</button>
+            <div className="no-print" style={{ maxWidth: '800px', margin: '0 auto 40px', padding: '30px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '15px' }}>
+                <div style={{ textAlign: 'center' }}>
+                    <CheckCircle size={50} color="#16a34a" style={{ marginBottom: '15px' }} />
+                    <h1 style={{ fontSize: '1.8rem', color: '#166534', marginBottom: '10px' }}>Pronto! Contrato Formalizado</h1>
+                    <p style={{ color: '#14532d', marginBottom: '25px' }}>O contrato da {formData.gymName} foi assinado. Finalize com o pagamento do setup abaixo:</p>
+                    
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px', justifyContent: 'center' }}>
+                        {paymentLink && (
+                            <a href={paymentLink} target="_blank" rel="noreferrer" style={{ 
+                                display: 'flex', alignItems: 'center', gap: '10px', background: '#009ee3', 
+                                color: 'white', padding: '15px 30px', borderRadius: '12px', fontWeight: 'bold', 
+                                textDecoration: 'none', boxShadow: '0 4px 12px rgba(0,158,227,0.3)' 
+                            }}>
+                                <CreditCard size={20} /> PAGAR SETUP (MERCADO PAGO) <ExternalLink size={16} />
+                            </a>
+                        )}
+                        <button onClick={() => window.print()} style={{ 
+                            display: 'flex', alignItems: 'center', gap: '8px', background: '#0f172a', 
+                            color: 'white', padding: '15px 30px', borderRadius: '12px', fontWeight: 'bold' 
+                        }}>
+                            <Printer size={20} /> IMPRIMIR CONTRATO
+                        </button>
+                    </div>
                 </div>
             </div>
 
-            {/* FULL PRINTABLE CONTRACT */}
-            <div style={{ maxWidth: '800px', margin: '0 auto', fontFamily: 'serif', padding: '0 20px' }}>
-                <div style={{ textAlign: 'center', marginBottom: '30px', borderBottom: '1px solid #000', paddingBottom: '20px' }}>
-                    <h1 style={{ fontSize: '1.2rem', textTransform: 'uppercase', marginBottom: '5px' }}>Almeida JJ - Sistema de Gestão</h1>
-                    <p style={{ fontSize: '0.8rem', color: '#666' }}>Documento de Formalização Digitalizada</p>
-                </div>
-
+            <div style={{ maxWidth: '800px', margin: '0 auto', fontFamily: 'serif' }}>
                 <ContractText />
-
-                {/* SIGNATURES SECTION */}
                 <div style={{ marginTop: '50px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '40px' }}>
                     <div style={{ textAlign: 'center' }}>
-                        <div style={{ minHeight: '80px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <img src={sigUrls.url1} alt="Assinatura 1" style={{ maxHeight: '80px', maxWidth: '100%', objectFit: 'contain' }} />
-                        </div>
-                        <div style={{ borderTop: '1px solid #000', marginTop: '10px', paddingTop: '5px' }}>
+                        <img src={sigUrls.url1} alt="Signature 1" style={{ maxHeight: '80px', marginBottom: '10px' }} />
+                        <div style={{ borderTop: '1px solid #000', paddingTop: '5px' }}>
                             <strong>{formData.responsibleName1}</strong><br />
-                            <span style={{ fontSize: '0.8rem', color: '#666' }}>Assinante Digital (Proprietário 1)</span><br />
-                            <span style={{ fontSize: '0.8rem', color: '#666' }}>CPF: {formData.responsibleCpf1}</span>
+                            <span style={{ fontSize: '0.8rem' }}>CPF: {formData.responsibleCpf1}</span><br />
+                            <span style={{ fontSize: '0.8rem' }}>RG: {formData.responsibleRg1}</span>
                         </div>
                     </div>
-
                     {formData.responsibleName2 && (
                         <div style={{ textAlign: 'center' }}>
-                            <div style={{ minHeight: '80px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <img src={sigUrls.url2} alt="Assinatura 2" style={{ maxHeight: '80px', maxWidth: '100%', objectFit: 'contain' }} />
-                            </div>
-                            <div style={{ borderTop: '1px solid #000', marginTop: '10px', paddingTop: '5px' }}>
+                            <img src={sigUrls.url2} alt="Signature 2" style={{ maxHeight: '80px', marginBottom: '10px' }} />
+                            <div style={{ borderTop: '1px solid #000', paddingTop: '5px' }}>
                                 <strong>{formData.responsibleName2}</strong><br />
-                                <span style={{ fontSize: '0.8rem', color: '#666' }}>Assinante Digital (Proprietário 2)</span><br />
-                                <span style={{ fontSize: '0.8rem', color: '#666' }}>CPF: {formData.responsibleCpf2}</span>
+                                <span style={{ fontSize: '0.8rem' }}>CPF: {formData.responsibleCpf2}</span><br />
+                                <span style={{ fontSize: '0.8rem' }}>RG: {formData.responsibleRg2}</span>
                             </div>
                         </div>
                     )}
-                </div>
-
-                {/* TESTEMUNHA VIRTUAL (VANDERLEI) */}
-                <div style={{ marginTop: '60px', borderTop: '1px dashed #ccc', paddingTop: '20px', textAlign: 'center' }}>
-                    <p style={{ fontSize: '0.8rem', color: '#999' }}>Assinado digitamente via plataforma Almeida JJ em {new Date().toLocaleString('pt-BR')}</p>
-                    <p style={{ fontSize: '0.7rem', color: '#ccc' }}>IP Original: Formulário Autenticado Digital • Documento Validado via Supabase Storage</p>
                 </div>
             </div>
         </div>
@@ -319,120 +317,116 @@ const SaaSContractForm = () => {
 
     const inputStyle = {
         width: '100%', padding: '12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-        borderRadius: '8px', color: 'white', marginBottom: '15px', fontSize: '0.95rem', outline: 'none'
+        borderRadius: '8px', color: 'white', marginBottom: '12px', fontSize: '0.9rem', outline: 'none'
     };
 
-    const labelStyle = { fontSize: '0.8rem', color: '#a1a1aa', marginBottom: '5px', display: 'block' };
+    const labelStyle = { fontSize: '0.75rem', color: '#a1a1aa', marginBottom: '4px', display: 'block' };
 
     return (
-        <div style={{ minHeight: '100vh', background: '#0a0a0a', backgroundImage: `url(${jjBg})`, backgroundSize: '800px', backgroundAttachment: 'fixed', padding: '40px 20px' }}>
-            <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+        <div style={{ minHeight: '100vh', background: '#0a0a0a', backgroundImage: `url(${jjBg})`, backgroundAttachment: 'fixed', padding: '40px 20px' }}>
+            <div style={{ maxWidth: '950px', margin: '0 auto' }}>
                 
-                {/* Header Section */}
                 <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-                    <img src={logo} alt="Logo" style={{ width: '80px', height: '80px', borderRadius: '15px', marginBottom: '15px' }} />
-                    <h1 style={{ fontWeight: '800', letterSpacing: '-1px', fontSize: '2.2rem' }}>CONTRATO DIGITAL <span style={{ color: '#ffd700' }}>SaaS</span></h1>
-                    <p style={{ color: '#a1a1aa' }}>Prestação de Serviços de Desenvolvimento e Licenciamento de Software</p>
+                    <img src={logo} alt="Logo" style={{ width: '70px', borderRadius: '12px', marginBottom: '10px' }} />
+                    <h1 style={{ fontWeight: '900', fontSize: '2rem' }}>CONTRATO DIGITAL <span style={{ color: '#ffd700' }}>SaaS</span></h1>
                 </div>
 
-                <div className="glass" style={{ padding: '40px', border: '1px solid rgba(255,215,0,0.2)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '30px', color: '#ffd700' }}>
-                        <ShieldCheck size={24} />
-                        <span style={{ fontWeight: '600', textTransform: 'uppercase', fontSize: '0.9rem', letterSpacing: '1px' }}>Válido como Documento Jurídico Digital</span>
-                    </div>
-
-                    {/* Contract Content - BOX VISUAL */}
-                    <div className="contract-box" style={{ 
-                        background: 'rgba(0,0,0,0.3)', padding: '40px', borderRadius: '12px', 
-                        height: '500px', overflowY: 'auto', marginBottom: '40px', border: '1px solid rgba(255,255,255,0.05)',
-                        fontSize: '0.95rem', lineHeight: '1.7', color: '#e4e4e7', textAlign: 'justify'
+                <div className="glass" style={{ padding: '30px', border: '1px solid rgba(255,215,0,0.2)' }}>
+                    <div style={{ 
+                        background: 'rgba(0,0,0,0.4)', padding: '25px', borderRadius: '12px', 
+                        height: '350px', overflowY: 'auto', marginBottom: '30px', border: '1px solid rgba(255,255,255,0.05)',
+                        fontSize: '0.9rem', color: '#e4e4e7', textAlign: 'justify'
                     }}>
                         <ContractText />
                     </div>
 
-                    {/* Registration Form */}
                     <form onSubmit={handleSubmit}>
-                        <div style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '20px', marginBottom: '30px' }}>
-                            <h3 style={{ marginBottom: '20px', color: '#ffd700', fontSize: '1.2rem' }}>Dados Básicos da Academia</h3>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                                <div>
-                                    <label style={labelStyle}>Razão Social / Nome Fantasia</label>
-                                    <input type="text" required value={formData.gymName} onChange={e => setFormData({...formData, gymName: e.target.value})} style={inputStyle} />
+                        {/* ACADEMIA */}
+                        <div style={{ marginBottom: '30px' }}>
+                            <h3 style={{ color: '#ffd700', fontSize: '1.1rem', marginBottom: '15px' }}>Dados da Academia</h3>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
+                                <div><label style={labelStyle}>Razão / Fantasia</label><input type="text" required value={formData.gymName} onChange={e=>setFormData({...formData, gymName: e.target.value})} style={inputStyle} /></div>
+                                <div><label style={labelStyle}>CNPJ / CPF</label><input type="text" required value={formData.cnpjCpf} onChange={e=>setFormData({...formData, cnpjCpf: e.target.value})} style={inputStyle} /></div>
+                                <div style={{ gridColumn: 'span 2' }}>
+                                    <label style={labelStyle}>Endereço Completo da Sede</label>
+                                    <input type="text" required value={formData.address} onChange={e=>setFormData({...formData, address: e.target.value})} style={inputStyle} />
                                 </div>
-                                <div>
-                                    <label style={labelStyle}>CNPJ ou CPF (Contratante)</label>
-                                    <input type="text" required value={formData.cnpjCpf} onChange={e => setFormData({...formData, cnpjCpf: e.target.value})} style={inputStyle} />
-                                </div>
-                            </div>
-                            <div>
-                                <label style={labelStyle}>Endereço Completo da Sede</label>
-                                <input type="text" required value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} style={inputStyle} />
                             </div>
                         </div>
 
-                        {/* Two Owners Section */}
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '40px', marginBottom: '40px' }}>
-                            {/* OWNER 1 */}
+                        {/* PROPRIETÁRIOS */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px', marginBottom: '30px' }}>
+                            {/* P1 */}
                             <div>
-                                <h4 style={{ color: '#fff', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <div style={{ width: '24px', height: '24px', background: '#ffd700', color: '#000', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 'bold' }}>1</div>
-                                    Proprietário Titular
-                                </h4>
+                                <h4 style={{ color: '#fff', marginBottom: '10px' }}>Proprietário 1</h4>
                                 <label style={labelStyle}>Nome Completo</label>
-                                <input type="text" required value={formData.responsibleName1} onChange={e => setFormData({...formData, responsibleName1: e.target.value})} style={inputStyle} placeholder="Ex: João Silva" />
+                                <input type="text" required value={formData.responsibleName1} onChange={e=>setFormData({...formData, responsibleName1: e.target.value})} style={inputStyle} />
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                                    <div><label style={labelStyle}>CPF</label><input type="text" required value={formData.responsibleCpf1} onChange={e=>setFormData({...formData, responsibleCpf1: e.target.value})} style={inputStyle} /></div>
+                                    <div><label style={labelStyle}>RG</label><input type="text" required value={formData.responsibleRg1} onChange={e=>setFormData({...formData, responsibleRg1: e.target.value})} style={inputStyle} /></div>
+                                </div>
+                                <label style={labelStyle}>Endereço Pessoal</label>
+                                <input type="text" required value={formData.responsibleEnd1} onChange={e=>setFormData({...formData, responsibleEnd1: e.target.value})} style={inputStyle} />
+                                <label style={labelStyle}>CEP</label>
+                                <input type="text" required value={formData.responsibleCep1} onChange={e=>setFormData({...formData, responsibleCep1: e.target.value})} style={inputStyle} />
                                 
-                                <label style={labelStyle}>CPF do Responsável</label>
-                                <input type="text" required value={formData.responsibleCpf1} onChange={e => setFormData({...formData, responsibleCpf1: e.target.value})} style={inputStyle} placeholder="000.000.000-00" />
-                                
-                                <div style={{ border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '10px', background: '#fff' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: '#666', marginBottom: '5px' }}>
-                                        <span>Assinatura Digital</span>
-                                        <button type="button" onClick={() => clearCanvas(1)} style={{ color: '#ef4444', border: 'none', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '2px' }}><Trash2 size={12}/> Limpar</button>
-                                    </div>
-                                    <canvas ref={canvasRef1} width={400} height={140} style={{ width: '100%', height: '140px', cursor: 'crosshair' }} />
+                                <div style={{ background: '#fff', padding: '10px', borderRadius: '8px', marginTop: '10px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#666' }}><span>ASSINATURA</span><button type="button" onClick={()=>clearCanvas(1)} style={{color:'#f00', border:'none', background:'none'}}>LIMPAR</button></div>
+                                    <canvas ref={canvasRef1} width={300} height={100} style={{ width: '100%', cursor: 'crosshair' }} />
                                 </div>
                             </div>
 
-                            {/* OWNER 2 */}
+                            {/* P2 */}
                             <div>
-                                <h4 style={{ color: '#fff', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <div style={{ width: '24px', height: '24px', background: '#ffd700', color: '#000', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 'bold' }}>2</div>
-                                    Sócio Proprietário
-                                </h4>
-                                <label style={labelStyle}>Nome Completo</label>
-                                <input type="text" value={formData.responsibleName2} onChange={e => setFormData({...formData, responsibleName2: e.target.value})} style={inputStyle} placeholder="Ex: Maria Santos" />
+                                <h4 style={{ color: '#fff', marginBottom: '10px' }}>Proprietário 2 (Opcional)</h4>
+                                <input type="text" placeholder="Nome Completo" value={formData.responsibleName2} onChange={e=>setFormData({...formData, responsibleName2: e.target.value})} style={inputStyle} />
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                                    <div><input type="text" placeholder="CPF" value={formData.responsibleCpf2} onChange={e=>setFormData({...formData, responsibleCpf2: e.target.value})} style={inputStyle} /></div>
+                                    <div><input type="text" placeholder="RG" value={formData.responsibleRg2} onChange={e=>setFormData({...formData, responsibleRg2: e.target.value})} style={inputStyle} /></div>
+                                </div>
+                                <input type="text" placeholder="Endereço Pessoal" value={formData.responsibleEnd2} onChange={e=>setFormData({...formData, responsibleEnd2: e.target.value})} style={inputStyle} />
+                                <input type="text" placeholder="CEP" value={formData.responsibleCep2} onChange={e=>setFormData({...formData, responsibleCep2: e.target.value})} style={inputStyle} />
                                 
-                                <label style={labelStyle}>CPF do Responsável</label>
-                                <input type="text" value={formData.responsibleCpf2} onChange={e => setFormData({...formData, responsibleCpf2: e.target.value})} style={inputStyle} placeholder="000.000.000-00" />
-                                
-                                <div style={{ border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '10px', background: '#fff' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: '#666', marginBottom: '5px' }}>
-                                        <span>Assinatura Digital</span>
-                                        <button type="button" onClick={() => clearCanvas(2)} style={{ color: '#ef4444', border: 'none', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '2px' }}><Trash2 size={12}/> Limpar</button>
-                                    </div>
-                                    <canvas ref={canvasRef2} width={400} height={140} style={{ width: '100%', height: '140px', cursor: 'crosshair' }} />
+                                <div style={{ background: '#fff', padding: '10px', borderRadius: '8px', marginTop: '10px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#666' }}><span>ASSINATURA</span><button type="button" onClick={()=>clearCanvas(2)} style={{color:'#f00', border:'none', background:'none'}}>LIMPAR</button></div>
+                                    <canvas ref={canvasRef2} width={300} height={100} style={{ width: '100%', cursor: 'crosshair' }} />
                                 </div>
                             </div>
                         </div>
 
-                        <div style={{ background: 'rgba(255,215,0,0.05)', padding: '20px', borderRadius: '12px', border: '1px solid rgba(255,215,0,0.2)', marginBottom: '30px' }}>
-                            <p style={{ fontSize: '0.85rem', color: '#dcfce7', textAlign: 'center', fontWeight: '500' }}>
-                                <Info size={16} style={{ marginRight: '8px', verticalAlign: 'middle', color: '#ffd700' }} />
-                                Ao assinar e clicar em enviar, os contratantes confirmam a validade jurídica deste instrumento conforme a Medida Provisória nº 2.200-2/2001.
-                            </p>
+                        {/* PAGAMENTO SECTION */}
+                        <div style={{ background: 'rgba(255,215,0,0.05)', padding: '25px', borderRadius: '15px', border: '1px solid rgba(255,215,0,0.2)', marginBottom: '30px' }}>
+                            <h3 style={{ color: '#ffd700', fontSize: '1.2rem', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <CreditCard size={20} /> Configuração de Pagamento
+                            </h3>
+                            <div style={{ marginBottom: '20px' }}>
+                                <label style={{ ...labelStyle, fontSize: '0.9rem', color: '#fff' }}>Dia de Vencimento da Mensalidade:</label>
+                                <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                                    {['05', '20'].map(day => (
+                                        <button 
+                                            key={day}
+                                            type="button"
+                                            onClick={() => setFormData({...formData, paymentDay: day})}
+                                            style={{ 
+                                                flex: 1, padding: '12px', borderRadius: '8px', cursor: 'pointer',
+                                                border: formData.paymentDay === day ? '2px solid #ffd700' : '1px solid rgba(255,255,255,0.1)',
+                                                background: formData.paymentDay === day ? 'rgba(255,215,0,0.2)' : 'rgba(0,0,0,0.2)',
+                                                color: '#fff', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
+                                            }}
+                                        >
+                                            <Calendar size={16} /> Dia {day}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <div style={{ color: '#a1a1aa', fontSize: '0.85rem' }}>
+                                • Valor Setup: <strong>R$ 3.250,00</strong> (Pago após a assinatura)<br />
+                                • Valor Mensalidade: <strong>R$ 200,00</strong> (Início após entrega)
+                            </div>
                         </div>
 
-                        <button 
-                            type="submit" 
-                            disabled={submitting}
-                            className="btn-primary" 
-                            style={{ 
-                                width: '100%', padding: '20px', background: '#ffd700', color: '#000', 
-                                fontWeight: '900', fontSize: '1.1rem', display: 'flex', alignItems: 'center', 
-                                justifyContent: 'center', gap: '12px' 
-                            }}
-                        >
-                            {submitting ? 'PROCESSANDO ASSINATURAS...' : <><Send size={22} /> FINALIZAR CONTRATO E ATIVAR SISTEMA</>}
+                        <button type="submit" disabled={submitting} className="btn-primary" style={{ width: '100%', padding: '20px', background: '#ffd700', color: '#000', fontWeight: 'bold' }}>
+                            {submitting ? 'PROCESSANDO...' : 'ASSINAR E GERAR PAGAMENTO'}
                         </button>
                     </form>
                 </div>

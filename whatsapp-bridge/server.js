@@ -3,6 +3,13 @@ const cors = require('cors');
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcodeTerminal = require('qrcode-terminal');
 const imageQr = require('qrcode');
+const { MercadoPagoConfig, Preference } = require('mercadopago');
+
+// CONFIGURAÇÃO MERCADO PAGO - ADICIONE SEU ACCESS TOKEN DE PRODUÇÃO AQUI
+const MP_ACCESS_TOKEN = 'COLOQUE_SEU_TOKEN_AQUI'; 
+
+const clientMp = new MercadoPagoConfig({ accessToken: MP_ACCESS_TOKEN });
+const preference = new Preference(clientMp);
 
 const app = express();
 app.use(cors());
@@ -186,6 +193,40 @@ app.post('/send-message', async (req, res) => {
     } catch (error) {
         console.error(`❌ Erro ao enviar para ${phone}:`, error.message);
         res.status(500).json({ error: error.message });
+    }
+});
+
+// Rota para Criar Link de Pagamento Mercado Pago (SaaS Setup)
+app.post('/create-saas-payment', async (req, res) => {
+    const { gymName, amount } = req.body;
+
+    if (MP_ACCESS_TOKEN === 'COLOQUE_SEU_TOKEN_AQUI') {
+        return res.status(500).json({ error: 'Mercado Pago não configurado. Por favor, adicione seu Access Token no arquivo server.js da ponte.' });
+    }
+
+    try {
+        const body = {
+            items: [
+                {
+                    title: `Taxa de Implementação - ${gymName}`,
+                    quantity: 1,
+                    unit_price: Number(amount) || 3250.00,
+                    currency_id: 'BRL'
+                }
+            ],
+            back_urls: {
+                success: 'https://almeida-jj.vercel.app/',
+                failure: 'https://almeida-jj.vercel.app/',
+                pending: 'https://almeida-jj.vercel.app/'
+            },
+            auto_return: 'approved',
+        };
+
+        const result = await preference.create({ body });
+        res.json({ init_point: result.init_point });
+    } catch (error) {
+        console.error('Erro ao criar preferência MP:', error);
+        res.status(500).json({ error: 'Erro ao gerar link de pagamento.' });
     }
 });
 
