@@ -193,8 +193,13 @@ const SaaSContractForm = () => {
             if (!formData.responsibleName2 || formData.responsibleName2.length < 5) return alert("Insira o Nome Completo real do Proprietário 2.");
             if (!formData.responsibleRg2 || formData.responsibleRg2.length < 5) return alert("Insira um RG válido para o Proprietário 2.");
             if (!isValidCNPJorCPF(formData.responsibleCpf2)) return alert("O CPF do Proprietário 2 é inválido. Coloque um CPF real.");
+            
+            if (formData.responsibleCpf1.replace(/[^\\d]+/g, '') === formData.responsibleCpf2.replace(/[^\\d]+/g, '')) return alert("O CPF do Proprietário 2 não pode ser o mesmo do Proprietário 1.");
+            if (formData.responsibleRg1.replace(/[^\\d]+/g, '') === formData.responsibleRg2.replace(/[^\\d]+/g, '')) return alert("O RG do Proprietário 2 não pode ser o mesmo do Proprietário 1.");
+            
             if (!formData.responsibleEnd2 || formData.responsibleEnd2.length < 8) return alert("Insira um Endereço Pessoal completo para o Proprietário 2.");
         }
+
 
         setSubmitting(true);
 
