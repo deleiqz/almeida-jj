@@ -33,12 +33,25 @@ const Maintenance = ({ user, isDevMaster }) => {
 
   const generateSaasLink = async (e) => {
     e.preventDefault();
-    if (!newRecipient) return;
+    if (!newRecipient) {
+      alert("Por favor, digite o nome da academia.");
+      return;
+    }
     
+    console.log("Gerando link para:", newRecipient);
     const { data, error } = await supabase.from('saas_contract_links').insert([{ recipient_name: newRecipient }]).select();
+    
+    if (error) {
+      console.error("Erro ao gerar link:", error);
+      alert(`Erro no banco de dados: ${error.message}`);
+      return;
+    }
+
     if (data) {
+      console.log("Link gerado com sucesso:", data);
       setNewRecipient('');
       fetchSaasLinks();
+      alert("Link gerado com sucesso!");
     }
   };
 
