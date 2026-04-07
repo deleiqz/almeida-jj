@@ -205,18 +205,18 @@ app.post('/create-saas-payment', async (req, res) => {
     }
 
     try {
+        const totalAmount = (Number(amountSetup) || 3250.00) + (Number(amountMonthly) || 200.00);
+        
         const body = {
             items: [
                 {
-                    title: `Taxa de Implementação - ${gymName}`,
+                    id: "saas-setup-mensalidade",
+                    title: `Setup + 1ª Mensalidade - ${gymName}`,
+                    description: "Taxa de implementação do sistema e licenciamento do primeiro mês.",
+                    picture_url: "https://almeida-jj.vercel.app/logo.jpg",
+                    category_id: "services",
                     quantity: 1,
-                    unit_price: Number(amountSetup) || 3250.00,
-                    currency_id: 'BRL'
-                },
-                {
-                    title: `Primeira Mensalidade (Manutenção)`,
-                    quantity: 1,
-                    unit_price: Number(amountMonthly) || 200.00,
+                    unit_price: totalAmount,
                     currency_id: 'BRL'
                 }
             ],
