@@ -9,6 +9,8 @@ import ErrorBoundary from './components/ErrorBoundary';
 import { supabase } from './lib/supabase';
 import { LogOut } from 'lucide-react';
 import ContractView from './components/ContractView';
+import SaaSContractForm from './components/SaaSContractForm';
+
 
 // Lazy-load heavy components for faster initial render
 const Dashboard = lazy(() => import('./components/Dashboard'));
@@ -26,6 +28,11 @@ const App = () => {
   const queryParams = new URLSearchParams(window.location.search);
   const isPublicRegistration = queryParams.get('registro') !== null;
   const contractId = queryParams.get('contrato');
+  const isSaaSContract = queryParams.get('contrato_saas') !== null;
+  
+  if (isSaaSContract) {
+    return <SaaSContractForm />;
+  }
   
   if (contractId) {
     return <ContractView studentId={contractId} onBack={() => window.location.href = '/'} />;
@@ -169,7 +176,7 @@ const App = () => {
       case 'links': return <RegistrationLinks user={user} isAdmin={isAdmin} />;
       case 'expenses': return isAdmin ? <ExpenseList expenses={expenses} addExpense={addExpense} updateExpense={updateExpense} deleteExpense={deleteExpense} /> : <Dashboard getStats={getStats} role={normalizedRole} students={students} expenses={expenses} userEmail={user?.email} />;
       case 'settings': return normalizedRole === 'master' ? <CustomSettings settings={settings} updateSettings={updateSettings} /> : <Dashboard getStats={getStats} />;
-      case 'maintenance': return <Maintenance />;
+      case 'maintenance': return <Maintenance user={user} isDevMaster={isDevMaster} />;
       default: return <Dashboard getStats={getStats} role={normalizedRole} students={students} expenses={expenses} userEmail={user?.email} />;
     }
   };

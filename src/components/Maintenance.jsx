@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Wrench, Zap, BarChart, HardHat, PlusCircle, Edit2, Trash2 } from 'lucide-react';
+import { Wrench, Zap, BarChart, HardHat, PlusCircle, Edit2, Trash2, FileSignature, Copy, CheckCircle2 } from 'lucide-react';
 import Modal from './Modal';
+import { supabase } from '../lib/supabase';
+
 
 const defaultTasks = [
   { id: 1, title: "Manutenção de Esteiras", desc: "Lubrificação e check de motor.", priority: "Alta" },
@@ -12,7 +14,41 @@ const defaultOpps = [
   { id: 2, title: "Sistema de Som", desc: "Upgrade para Bluetooth 5.0.", value: "R$ 800,00" },
 ];
 
-const Maintenance = () => {
+const Maintenance = ({ user, isDevMaster }) => {
+  const [saasLinks, setSaasLinks] = useState([]);
+  const [newRecipient, setNewRecipient] = useState('');
+  const [fetchingLinks, setFetchingLinks] = useState(false);
+
+  const fetchSaasLinks = async () => {
+    if (!isDevMaster) return;
+    setFetchingLinks(true);
+    const { data, error } = await supabase.from('saas_contract_links').select('*').order('created_at', { ascending: false });
+    if (data) setSaasLinks(data);
+    setFetchingLinks(false);
+  };
+
+  useEffect(() => {
+    fetchSaasLinks();
+  }, [isDevMaster]);
+
+  const generateSaasLink = async (e) => {
+    e.preventDefault();
+    if (!newRecipient) return;
+    
+    const { data, error } = await supabase.from('saas_contract_links').insert([{ recipient_name: newRecipient }]).select();
+    if (data) {
+      setNewRecipient('');
+      fetchSaasLinks();
+    }
+  };
+
+  const copyToClipboard = (id) => {
+    const url = `${window.location.origin}/?contrato_saas=${id}`;
+    navigator.clipboard.writeText(url);
+    alert("Link copiado para o clipboard!");
+  };
+
+
   const [tasks, setTasks] = useState(() => {
     const saved = localStorage.getItem('ag_maintenance_tasks');
     return saved ? JSON.parse(saved) : defaultTasks;
@@ -167,6 +203,57 @@ const Maintenance = () => {
           </div>
         </div>
       </div>
+
+      {/* SEÇÃO DE CONTRATOS SAAS (APENAS PARA DEV MASTER) */}
+      {isDevMaster && (
+        <div className="glass" style={{ marginTop: '24px', padding: '24px', border: '1px solid rgba(255,215,0,0.3)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <h3 style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: 0, color: '#ffd700' }}>
+              <FileSignature /> Gerenciador de Contratos SaaS (B2B)
+            </h3>
+          </div>
+
+          <form onSubmit={generateSaasLink} style={{ display: 'flex', gap: '10px', marginBottom: '24px' }}>
+            <input 
+              type="text" placeholder="Nome da Academia / Cliente" value={newRecipient} onChange={(e) => setNewRecipient(e.target.value)}
+              style={{ flex: 1, padding: '12px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--card-border)', color: 'white' }}
+            />
+            <button type="submit" className="btn-primary" style={{ background: '#ffd700', color: '#000', padding: '0 20px' }}>
+              Gerar Novo Link
+            </button>
+          </form>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {fetchingLinks ? <span>Carregando links...</span> : (
+              saasLinks.map(link => (
+                <div key={link.id} style={{ padding: '15px', background: 'rgba(255,255,255,0.03)', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <div style={{ fontWeight: '600' }}>{link.recipient_name}</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>ID: {link.id}</div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                    <span style={{ 
+                      fontSize: '0.7rem', padding: '4px 8px', borderRadius: '4px', 
+                      background: link.status === 'assinado' ? 'rgba(16,185,129,0.2)' : 'rgba(255,171,0,0.2)',
+                      color: link.status === 'assinado' ? '#10b981' : '#ffab00'
+                    }}>
+                      {link.status.toUpperCase()}
+                    </span>
+                    {link.status === 'pendente' && (
+                      <button onClick={() => copyToClipboard(link.id)} style={{ background: 'rgba(255,255,255,0.1)', color: '#fff', padding: '6px 12px', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.8rem' }}>
+                        <Copy size={14} /> Copiar Link
+                      </button>
+                    )}
+                    {link.status === 'assinado' && <CheckCircle2 size={20} color="#10b981" />}
+                  </div>
+                </div>
+              ))
+            )}
+            {saasLinks.length === 0 && !fetchingLinks && <span style={{ color: 'var(--text-secondary)', textAlign: 'center' }}>Nenhum contrato gerado ainda.</span>}
+          </div>
+        </div>
+      )}
+
 
       <Modal title={isEdit ? `Editar ${modalType === 'task' ? 'Tarefa' : 'Oportunidade'}` : `Nova ${modalType === 'task' ? 'Tarefa' : 'Oportunidade'}`} isOpen={isModalOpen} onClose={() => setModalOpen(false)}>
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
