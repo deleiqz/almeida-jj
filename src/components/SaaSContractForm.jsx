@@ -258,14 +258,18 @@ const SaaSContractForm = () => {
             }).eq('id', contractLinkId);
 
             try {
-                const mpResponse = await fetch('https://almeidajj-mp.loca.lt/create-saas-payment', {
+                // Geração do link de pagamento via Vercel Serverless Function (Seguro e sem CORS)
+                const mpResponse = await fetch('/api/mercado-pago', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ gymName: formData.gymName, amountSetup: 1.00, amountMonthly: 1.00 })
+                    body: JSON.stringify({
+                        gymName: formData.gymName,
+                        amount: 3250.00
+                    })
                 });
                 const mpData = await mpResponse.json();
                 if (mpData.init_point) setPaymentLink(mpData.init_point);
-            } catch (mpErr) { console.error("Erro MP:", mpErr); }
+            } catch (mpErr) { console.error("Erro Mercado Pago:", mpErr); }
 
             // --- O AIRTABLE AGORA É SINCRONIZADO AUTOMATICAMENTE PELO BANCO DE DADOS (TRIGGER) ---
 

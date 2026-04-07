@@ -280,53 +280,9 @@ app.post('/webhook-mp', async (req, res) => {
     }
 });
 
-// --- INTEGRAÇÃO AIRTABLE ---
+// --- A SINCRONIZAÇÃO DO AIRTABLE FOI MIGRADA PARA A NUVEM (SUPABASE) PARA INDEPENDÊNCIA TOTAL ---
 
-// Rota para Sincronizar Contrato com Airtable (Chamada pelo Frontend após assinatura)
-app.post('/sync-airtable', async (req, res) => {
-    const { formData, signatureUrls, paymentDay } = req.body;
-
-    try {
-        console.log(`📊 [Airtable] Sincronizando contrato da academia: ${formData.gymName}`);
-
-        // 1. Salvar na Tabela de Contratos
-        const contractRecord = await airtableBase('Contratos_SaaS').create([
-            {
-                fields: {
-                    "Nome Academia": formData.gymName,
-                    "CNPJ/CPF": formData.cnpjCpf,
-                    "Responsavel 1": formData.responsibleName1,
-                    "CPF Proprietário": formData.responsibleCpf1,
-                    "Endereço Sede": formData.address,
-                    "Dia Vencimento": paymentDay,
-                    "Valor Setup": 3250.00,
-                    "Mensalidade": 200.00,
-                    "Data Assinatura": new Date().toISOString().split('T')[0],
-                    "Status": "Aguardando Pagamento Setup"
-                }
-            }
-        ]);
-
-        // 2. Criar a primeira mensalidade pendente na tabela de Pagamentos
-        await airtableBase('Pagamentos_Mensais').create([
-            {
-                fields: {
-                    "Nome Academia": formData.gymName,
-                    "Mês/Ano": `${new Date().getMonth() + 1}/${new Date().getFullYear()}`,
-                    "Valor": 200.00,
-                    "Status": "Pendente",
-                    "Tipo": "Mensalidade"
-                }
-            }
-        ]);
-
-        console.log("✅ [Airtable] Sincronização concluída com sucesso!");
-        res.json({ success: true, recordId: contractRecord[0].id });
-    } catch (error) {
-        console.error("❌ [Airtable] Erro na sincronização:", error.message);
-        res.status(500).json({ error: 'Erro ao salvar no Airtable.' });
-    }
-});
+// Função para Garantir que as Tabelas existam no Airtable
 
 // Função para Garantir que as Tabelas existam no Airtable
 // (Utiliza a Meta API do Airtable - Requer Scopes de schema.bases:write)
