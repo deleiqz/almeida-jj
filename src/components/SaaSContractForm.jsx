@@ -317,10 +317,9 @@ const SaaSContractForm = () => {
                 if (mpLink) setPaymentLink(mpLink);
             } catch (mpErr) { console.error("Erro MP:", mpErr); }
 
-            // PDF Generation
             let pdfUrl = '';
             try {
-                await new Promise(r => setTimeout(r, 1500)); // Delay aumentado para 1.5s para segurança
+                await new Promise(r => setTimeout(r, 2000)); // Delay de 2s para garantir renderização das assinaturas
                 const element = document.getElementById('contract-pdf-content-hidden');
                 if (element) {
                     const canvas = await html2canvas(element, { 
@@ -329,15 +328,36 @@ const SaaSContractForm = () => {
                         backgroundColor: '#ffffff',
                         logging: false
                     });
-                    const imgData = canvas.toDataURL('image/jpeg', 0.85);
+                    
+                    const imgData = canvas.toDataURL('image/jpeg', 0.95);
                     const pdf = new jsPDF('p', 'mm', 'a4');
-                    const imgProps = pdf.getImageProperties(imgData);
+                    
                     const pdfWidth = pdf.internal.pageSize.getWidth();
-                    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+                    const pdfHeight = pdf.internal.pageSize.getHeight();
                     
-                    pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+                    const canvasWidth = canvas.width;
+                    const canvasHeight = canvas.height;
+                    
+                    // Proporção para converter pixels do canvas para mm do PDF
+                    const pxToMm = pdfWidth / (canvasWidth / 2); // /2 por causa do scale: 2
+                    const totalCanvasHeightMm = (canvasHeight / 2) * pxToMm;
+                    
+                    let heightLeft = totalCanvasHeightMm;
+                    let position = 0;
+                    
+                    // Página 1
+                    pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, totalCanvasHeightMm);
+                    heightLeft -= pdfHeight;
+                    
+                    // Páginas Adicionais (Loop de Scanner)
+                    while (heightLeft > 0) {
+                        position = heightLeft - totalCanvasHeightMm;
+                        pdf.addPage();
+                        pdf.addImage(imgData, 'JPEG', 0, position, pdfWidth, totalCanvasHeightMm);
+                        heightLeft -= pdfHeight;
+                    }
+
                     const pdfBlob = pdf.output('blob');
-                    
                     const pdfFileName = `contrato_assinado_${formData.gymName.replace(/\s+/g, '_')}_${Date.now()}.pdf`;
                     const pdfPath = `contracts/${pdfFileName}`;
                     const { error: pdfUploadError } = await supabase.storage.from('documents').upload(pdfPath, pdfBlob);
