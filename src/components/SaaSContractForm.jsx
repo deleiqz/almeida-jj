@@ -586,7 +586,7 @@ const SaaSContractForm = () => {
                                     <img 
                                         src={sigDataUrls.dataUrl1 || sigUrls.url1} 
                                         alt="Signature 1" 
-                                        style={{ maxHeight: '80px', marginBottom: '10px' }} 
+                                        style={{ maxHeight: '80px', marginBottom: '10px', filter: 'brightness(0)' }} 
                                     />
                                 )}
                                 <div style={{ borderTop: '1px solid #000', paddingTop: '5px' }}>
@@ -601,7 +601,7 @@ const SaaSContractForm = () => {
                                         <img 
                                             src={sigDataUrls.dataUrl2 || sigUrls.url2} 
                                             alt="Signature 2" 
-                                            style={{ maxHeight: '80px', marginBottom: '10px' }} 
+                                            style={{ maxHeight: '80px', marginBottom: '10px', filter: 'brightness(0)' }} 
                                         />
                                     )}
                                     <div style={{ borderTop: '1px solid #000', paddingTop: '5px' }}>

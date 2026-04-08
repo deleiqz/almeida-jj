@@ -36,15 +36,16 @@ BEGIN
     END IF;
 
     -- Constrói o Payload com suporte a UPSERT baseado no Link ID
+    -- Garantimos que o 'Link ID' seja enviado como Texto e seja o campo de mesclagem
     v_payload := jsonb_build_object(
         'performUpsert', jsonb_build_object('fieldsToMergeOn', jsonb_build_array('Link ID')),
         'records', jsonb_build_array(
             jsonb_build_object(
                 'fields', jsonb_build_object(
-                    'Link ID', NEW.link_id,
-                    'Nome Academia', NEW.gym_name,
-                    'Endereço Sede', NEW.address,
-                    'Dia Vencimento', NEW.payment_day,
+                    'Link ID', NEW.link_id::text,
+                    'Nome Academia', COALESCE(NEW.gym_name, 'Academia Sem Nome'),
+                    'Endereço Sede', COALESCE(NEW.address, ''),
+                    'Dia Vencimento', COALESCE(NEW.payment_day::text, '20'),
                     'Valor Setup', 3250.00,
                     'Mensalidade', 200.00,
                     'Data Assinatura', TO_CHAR(NOW(), 'YYYY-MM-DD'),
