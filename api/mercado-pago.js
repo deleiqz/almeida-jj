@@ -23,7 +23,7 @@ export default async function handler(req, res) {
     const { gymName, amount } = req.body;
 
     const client = new MercadoPagoConfig({
-      accessToken: 'APP_USR-710461877685608-040715-3864117b4ab4430e69eb7f6104443912-1662999464',
+      accessToken: 'APP_USR-941031687557097-040713-68cec6df2e1b1705c30cec5e71899475-402502578',
     });
 
     const preference = new Preference(client);
@@ -33,7 +33,7 @@ export default async function handler(req, res) {
           {
             title: `Taxa de Adesão/Setup - ${gymName}`,
             quantity: 1,
-            unit_price: amount || 3250.00,
+            unit_price: Number(amount) || 3250.00,
             currency_id: 'BRL',
           },
         ],
