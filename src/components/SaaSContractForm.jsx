@@ -548,12 +548,14 @@ const SaaSContractForm = () => {
                     position: 'absolute', 
                     left: '-2000px', 
                     width: '800px', 
-                    background: '#fff',
-                    opacity: 0.01,
-                    pointerEvents: 'none'
+                    background: 'white',
+                    color: 'black',
+                    opacity: 1,
+                    pointerEvents: 'none',
+                    zIndex: -9999
                 }}>
-                    <div style={{ padding: '20px', fontFamily: 'serif', color: '#000' }}>
-                        <div style={{ textAlign: 'center', marginBottom: '40px', borderBottom: '2px solid #000', paddingBottom: '20px' }}>
+                    <div style={{ padding: '60px', fontFamily: 'serif', background: 'white', color: 'black' }}>
+                        <div style={{ textAlign: 'center', marginBottom: '40px', borderBottom: '2px solid black', paddingBottom: '20px' }}>
                             <h1 style={{ fontSize: '1.4rem' }}>ALMEIDA JJ - SISTEMA DE GESTÃO</h1>
                             <p style={{ fontSize: '0.9rem', color: '#666' }}>Formalização de Contrato Digital SaaS B2B</p>
                         </div>
@@ -590,8 +592,8 @@ const SaaSContractForm = () => {
                                 </div>
                             )}
                         </div>
-                        <div style={{ marginTop: '80px', textAlign: 'center', borderTop: '1px dashed #ccc', paddingTop: '20px' }}>
-                            <p style={{ fontSize: '0.7rem', color: '#999' }}>Documento assinado digitalmente em {new Date().toLocaleString('pt-BR')} via Autenticação IP: Formulário SaaS Almeida JJ.</p>
+                        <div style={{ marginTop: '80px', textAlign: 'center', borderTop: '1px dashed #000', paddingTop: '20px' }}>
+                            <p style={{ fontSize: '0.7rem', color: '#000' }}>Documento assinado digitalmente em {new Date().toLocaleString('pt-BR')} via Autenticação IP: Formulário SaaS Almeida JJ.</p>
                         </div>
                     </div>
                 </div>

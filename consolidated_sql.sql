@@ -1,9 +1,11 @@
--- ==========================================================
--- SCRIPT DE ESTABILIZAÇÃO DEFINITIVO: VERSÃO COMPATÍVEL
--- ==========================================================
--- 💡 Versão com argumentos posicionais para evitar erro "function does not exist"
+-- 1. FAXINA DE GATILHOS ANTIGOS (Remove qualquer "Infiltrado" que cause duplicados ou linhas vazias)
+DROP TRIGGER IF EXISTS sync_saas_to_airtable ON public.saas_agreements;
+DROP TRIGGER IF EXISTS send_to_airtable ON public.saas_agreements;
+DROP TRIGGER IF EXISTS tr_sync_saas ON public.saas_agreements;
+DROP TRIGGER IF EXISTS tr_sync_airtable ON public.saas_agreements;
+DROP FUNCTION IF EXISTS public.fn_sync_saas_to_airtable() CASCADE;
 
--- 1. CONFIGURAÇÃO DE STORAGE
+-- 2. CONFIGURAÇÃO DE STORAGE (Garantir acesso público ao PDF)
 INSERT INTO storage.buckets (id, name, public)
 VALUES ('contracts', 'contracts', true)
 ON CONFLICT (id) DO UPDATE SET public = true;
@@ -16,7 +18,7 @@ BEGIN
     END IF;
 END $$;
 
--- 2. FUNÇÃO MESTRE (Argumentos Posicionais - Máxima Compatibilidade)
+-- 3. FUNÇÃO MESTRE DEFINITIVA: Sincronização e Upsert
 CREATE OR REPLACE FUNCTION public.fn_sync_saas_to_airtable()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -25,14 +27,15 @@ DECLARE
     v_airtable_pat TEXT := 'patKV3AcK9gDHNvg7.38645088e5ab443298c6091ab2b3801aef1792de655cc0e6c9365d512464b822';
     v_base_id TEXT := 'app4o6LoQEhgWFGz1';
 BEGIN
-    -- Preparar anexo (PDF)
+    -- Formata o objeto de anexo seguindo o padrão exato da API do Airtable
     IF NEW.contract_pdf_url IS NOT NULL AND NEW.contract_pdf_url != '' THEN
         v_attachments := jsonb_build_array(jsonb_build_object('url', NEW.contract_pdf_url));
     ELSE
+        -- Se não tiver PDF ainda, manda apenas o array vazio (Airtable exige array para anexos)
         v_attachments := '[]'::jsonb;
     END IF;
 
-    -- Construir Payload para UPSERT
+    -- Constrói o Payload com suporte a UPSERT baseado no Link ID
     v_payload := jsonb_build_object(
         'performUpsert', jsonb_build_object('fieldsToMergeOn', jsonb_build_array('Link ID')),
         'records', jsonb_build_array(
@@ -52,30 +55,30 @@ BEGIN
         )
     );
 
-    -- Envio para o Airtable via PATCH (Usando argumentos posicionais)
-    -- Assinatura: net.http_request(method, url, headers, params, body, timeout)
+    -- Envio Blindado: Tenta sincronizar, mas não cancela o salvamento se o Airtable estiver fora do ar.
     BEGIN
         PERFORM net.http_request(
-            'PATCH'::text,                                             -- method
-            ('https://api.airtable.com/v0/' || v_base_id || '/Contratos_SaaS')::text, -- url
-            jsonb_build_object('Authorization', 'Bearer ' || v_airtable_pat, 'Content-Type', 'application/json'), -- headers
-            '{}'::jsonb,                                               -- params
-            v_payload::text,                                           -- body
-            7000                                                       -- timeout
+            'PATCH'::text,
+            ('https://api.airtable.com/v0/' || v_base_id || '/Contratos_SaaS')::text,
+            jsonb_build_object('Authorization', 'Bearer ' || v_airtable_pat, 'Content-Type', 'application/json'),
+            '{}'::jsonb,
+            v_payload::text,
+            7000
         );
     EXCEPTION WHEN OTHERS THEN
-        RAISE NOTICE 'Erro Airtable ignorado para salvar no Supabase: %', SQLERRM;
+        RAISE NOTICE 'Sincronização Airtable ignorada: %', SQLERRM;
     END;
 
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 3. APLICAÇÃO DO GATILHO
-DROP TRIGGER IF EXISTS tr_sync_airtable ON public.saas_agreements;
+-- 4. ATIVAÇÃO DO GATILHO (Dispara no Insert e no Upgrade do PDF)
 CREATE TRIGGER tr_sync_airtable
 AFTER INSERT OR UPDATE OF contract_pdf_url ON public.saas_agreements
 FOR EACH ROW
 EXECUTE FUNCTION public.fn_sync_saas_to_airtable();
 
 GRANT ALL ON public.saas_agreements TO anon, authenticated, service_role;
+
+-- ✅ FIM DO SCRIPT ✅
