@@ -16,6 +16,7 @@ const SaaSContractForm = () => {
     const [isValidLink, setIsValidLink] = useState(false);
     const [recipientName, setRecipientName] = useState('');
     const [sigUrls, setSigUrls] = useState({ url1: '', url2: '' });
+    const [sigDataUrls, setSigDataUrls] = useState({ dataUrl1: '', dataUrl2: '' });
     const [paymentLink, setPaymentLink] = useState('');
     const [termsAccepted, setTermsAccepted] = useState(false);
     
@@ -43,6 +44,21 @@ const SaaSContractForm = () => {
     let isDrawing2 = false;
 
     useEffect(() => {
+        const generatePaymentLink = async (gymName) => {
+            try {
+                const mpResponse = await fetch('/api/mercado-pago', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ gymName, amount: 3250.00 })
+                });
+                const mpData = await mpResponse.json();
+                return mpData.init_point || null;
+            } catch (err) {
+                console.error("Erro MP:", err);
+                return null;
+            }
+        };
+
         const validateLink = async () => {
             if (!contractLinkId) {
                 setLoading(false);
@@ -53,13 +69,56 @@ const SaaSContractForm = () => {
                 .from('saas_contract_links')
                 .select('*')
                 .eq('id', contractLinkId)
-                .eq('status', 'pendente')
                 .single();
 
             if (data) {
                 setIsValidLink(true);
                 setRecipientName(data.recipient_name);
                 setFormData(prev => ({ ...prev, gymName: data.recipient_name }));
+
+                // RECUPERAÇÃO ROBUSTA: Mesmo se houver duplicatas por erro, pegamos a mais recente
+                const { data: agreementDataArray, error: agreementError } = await supabase
+                    .from('saas_agreements')
+                    .select('*')
+                    .eq('link_id', contractLinkId)
+                    .order('id', { ascending: false })
+                    .limit(1);
+                
+                const agreementData = agreementDataArray?.[0];
+                
+                if (agreementData) {
+                    setFormData({
+                        gymName: agreementData.gym_name,
+                        cnpjCpf: agreementData.cnpj_cpf,
+                        address: agreementData.address,
+                        responsibleName1: agreementData.responsible_name,
+                        responsibleCpf1: agreementData.responsible_cpf,
+                        responsibleRg1: agreementData.rg_1,
+                        responsibleEnd1: agreementData.address_1,
+                        responsibleCep1: agreementData.cep_1,
+                        responsibleName2: agreementData.responsible_name_2,
+                        responsibleCpf2: agreementData.responsible_cpf_2,
+                        responsibleRg2: agreementData.rg_2,
+                        responsibleEnd2: agreementData.address_2,
+                        responsibleCep2: agreementData.cep_2,
+                        paymentDay: agreementData.payment_day
+                    });
+                    setSigUrls({ url1: agreementData.signature_url, url2: agreementData.signature_url_2 });
+                    
+                    if (agreementData.payment_url) {
+                        setPaymentLink(agreementData.payment_url);
+                    } else {
+                        const newLink = await generatePaymentLink(agreementData.gym_name);
+                        if (newLink) {
+                            setPaymentLink(newLink);
+                            await supabase.from('saas_agreements').update({ payment_url: newLink }).eq('link_id', contractLinkId);
+                        }
+                    }
+                    setSubmitted(true);
+                } else if (data.status === 'assinado') {
+                    // Caso estranho: Status é assinado mas não achou acordo, permitimos preencher de novo ou investigamos
+                    console.warn("Link marcado como assinado, mas dados não encontrados.");
+                }
             }
             setLoading(false);
         };
@@ -182,6 +241,7 @@ const SaaSContractForm = () => {
         
         if (!termsAccepted) return alert("Você precisa confirmar que leu e aceita os termos do contrato de prestação de serviços.");
 
+        // Validações Completas
         if (!formData.gymName || formData.gymName.length < 5) return alert("Por favor, insira uma Razão Social válida (Mín. 5 caracteres).");
         if (!isValidCNPJorCPF(formData.cnpjCpf)) return alert("O CPF ou CNPJ da Academia (Sede) fornecido é inválido.");
         if (!formData.address || formData.address.length < 8) return alert("Insira um Endereço Completo válido para a Sede.");
@@ -199,22 +259,35 @@ const SaaSContractForm = () => {
             
             const cleanCpf1 = formData.responsibleCpf1.replace(/[^\d]+/g, '');
             const cleanCpf2 = formData.responsibleCpf2.replace(/[^\d]+/g, '');
-            const cleanRg1 = formData.responsibleRg1.replace(/[^\d]+/g, '');
-            const cleanRg2 = formData.responsibleRg2.replace(/[^\d]+/g, '');
-
             if (cleanCpf2 && cleanCpf1 === cleanCpf2) return alert("O CPF do Proprietário 2 não pode ser o mesmo do Proprietário 1.");
-            if (cleanRg2 && cleanRg1 === cleanRg2) return alert("O RG do Proprietário 2 não pode ser o mesmo do Proprietário 1.");
             
             if (!formData.responsibleEnd2 || formData.responsibleEnd2.length < 8) return alert("Insira um Endereço Pessoal completo para o Proprietário 2.");
         }
-
-
+        
         setSubmitting(true);
 
         try {
+            // DEFESA MÁXIMA: Verificar se já existe antes de qualquer upload
+            const { data: existing } = await supabase
+                .from('saas_agreements')
+                .select('id, payment_url')
+                .eq('link_id', contractLinkId)
+                .maybeSingle();
+
+            if (existing) {
+                if (existing.payment_url) setPaymentUrl(existing.payment_url);
+                setSubmitted(true);
+                setSubmitting(false);
+                return;
+            }
+
             const canvas1 = canvasRef1.current;
             const canvas2 = canvasRef2.current;
             
+            const d1 = canvas1.toDataURL('image/png');
+            const d2 = canvas2 ? canvas2.toDataURL('image/png') : '';
+            setSigDataUrls({ dataUrl1: d1, dataUrl2: d2 });
+
             const blob1 = await new Promise(resolve => canvas1.toBlob(resolve, 'image/png'));
             const blob2 = canvas2 ? await new Promise(resolve => canvas2.toBlob(resolve, 'image/png')) : null;
 
@@ -232,16 +305,31 @@ const SaaSContractForm = () => {
             const url2 = await uploadSign(blob2, 2);
             setSigUrls({ url1, url2 });
 
-            // 1.5. Gerar PDF do Contrato Assinado
+            let mpLink = null;
+            try {
+                const mpResponse = await fetch('/api/mercado-pago', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ gymName: formData.gymName, amount: 3250.00 })
+                });
+                const mpData = await mpResponse.json();
+                mpLink = mpData.init_point || null;
+                if (mpLink) setPaymentLink(mpLink);
+            } catch (mpErr) { console.error("Erro MP:", mpErr); }
+
+            // PDF Generation
             let pdfUrl = '';
             try {
-                // Pequeno delay para garantir que as URLs das assinaturas foram setadas se estivermos renderizando-as
-                await new Promise(r => setTimeout(r, 500));
-                
-                const element = document.getElementById('contract-pdf-content');
+                await new Promise(r => setTimeout(r, 1500)); // Delay aumentado para 1.5s para segurança
+                const element = document.getElementById('contract-pdf-content-hidden');
                 if (element) {
-                    const canvas = await html2canvas(element, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
-                    const imgData = canvas.toDataURL('image/jpeg', 0.8);
+                    const canvas = await html2canvas(element, { 
+                        scale: 2, 
+                        useCORS: true, 
+                        backgroundColor: '#ffffff',
+                        logging: false
+                    });
+                    const imgData = canvas.toDataURL('image/jpeg', 0.85);
                     const pdf = new jsPDF('p', 'mm', 'a4');
                     const imgProps = pdf.getImageProperties(imgData);
                     const pdfWidth = pdf.internal.pageSize.getWidth();
@@ -259,11 +347,10 @@ const SaaSContractForm = () => {
                         pdfUrl = pdfUrlData.publicUrl;
                     }
                 }
-            } catch (pdfErr) {
-                console.error("Erro ao gerar PDF:", pdfErr);
-            }
+            } catch (pdfErr) { console.error("Erro PDF:", pdfErr); }
 
-            const { error: insertError } = await supabase.from('saas_agreements').insert([{
+            // Usando UPSERT em vez de INSERT para garantir que se for repetido, ele apenas sobrescreva
+            const { error: insertError } = await supabase.from('saas_agreements').upsert([{
                 link_id: contractLinkId,
                 gym_name: formData.gymName,
                 cnpj_cpf: formData.cnpjCpf,
@@ -282,8 +369,9 @@ const SaaSContractForm = () => {
                 signature_url: url1,
                 signature_url_2: url2,
                 contract_pdf_url: pdfUrl,
+                payment_url: mpLink,
                 ip_address: 'Formulário Digital B2B'
-            }]);
+            }], { onConflict: 'link_id' }); // Conflito no link_id (requer UNIQUE constraint no banco)
 
             if (insertError) throw insertError;
 
@@ -291,22 +379,6 @@ const SaaSContractForm = () => {
                 status: 'assinado',
                 used_at: new Date().toISOString()
             }).eq('id', contractLinkId);
-
-            try {
-                // Geração do link de pagamento via Vercel Serverless Function (Seguro e sem CORS)
-                const mpResponse = await fetch('/api/mercado-pago', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        gymName: formData.gymName,
-                        amount: 3250.00
-                    })
-                });
-                const mpData = await mpResponse.json();
-                if (mpData.init_point) setPaymentLink(mpData.init_point);
-            } catch (mpErr) { console.error("Erro Mercado Pago:", mpErr); }
-
-            // --- O AIRTABLE AGORA É SINCRONIZADO AUTOMATICAMENTE PELO BANCO DE DADOS (TRIGGER) ---
 
             try {
                 const names = formData.responsibleName2 ? `${formData.responsibleName1} e ${formData.responsibleName2}` : formData.responsibleName1;
@@ -469,6 +541,59 @@ const SaaSContractForm = () => {
                     <img src={logo} alt="Logo" style={{ width: '70px', borderRadius: '12px', marginBottom: '10px' }} />
                     <h1 style={{ fontWeight: '900', fontSize: '2.2rem', letterSpacing: '-1px' }}>CONTRATO DIGITAL <span style={{ color: '#ffd700' }}>SaaS</span></h1>
                     <p style={{ color: '#a1a1aa' }}>Academia Almeida JJ - Licenciamento e Gestão</p>
+                </div>
+
+                {/* Elemento oculto para geração do PDF (Renderizado com Opacidade para garantir captura) */}
+                <div id="contract-pdf-content-hidden" style={{ 
+                    position: 'absolute', 
+                    left: '-2000px', 
+                    width: '800px', 
+                    background: '#fff',
+                    opacity: 0.01,
+                    pointerEvents: 'none'
+                }}>
+                    <div style={{ padding: '20px', fontFamily: 'serif', color: '#000' }}>
+                        <div style={{ textAlign: 'center', marginBottom: '40px', borderBottom: '2px solid #000', paddingBottom: '20px' }}>
+                            <h1 style={{ fontSize: '1.4rem' }}>ALMEIDA JJ - SISTEMA DE GESTÃO</h1>
+                            <p style={{ fontSize: '0.9rem', color: '#666' }}>Formalização de Contrato Digital SaaS B2B</p>
+                        </div>
+                        <ContractText />
+                        <div style={{ marginTop: '60px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '40px' }}>
+                            <div style={{ textAlign: 'center' }}>
+                                {(sigDataUrls.dataUrl1 || sigUrls.url1) && (
+                                    <img 
+                                        src={sigDataUrls.dataUrl1 || sigUrls.url1} 
+                                        alt="Signature 1" 
+                                        style={{ maxHeight: '80px', marginBottom: '10px' }} 
+                                    />
+                                )}
+                                <div style={{ borderTop: '1px solid #000', paddingTop: '5px' }}>
+                                    <strong>{formData.responsibleName1}</strong><br />
+                                    <span style={{ fontSize: '0.8rem' }}>Contratante / Proprietário 1</span><br />
+                                    <span style={{ fontSize: '0.8rem' }}>CPF: {formData.responsibleCpf1} | RG: {formData.responsibleRg1}</span>
+                                </div>
+                            </div>
+                            {formData.responsibleName2 && (
+                                <div style={{ textAlign: 'center' }}>
+                                    {(sigDataUrls.dataUrl2 || sigUrls.url2) && (
+                                        <img 
+                                            src={sigDataUrls.dataUrl2 || sigUrls.url2} 
+                                            alt="Signature 2" 
+                                            style={{ maxHeight: '80px', marginBottom: '10px' }} 
+                                        />
+                                    )}
+                                    <div style={{ borderTop: '1px solid #000', paddingTop: '5px' }}>
+                                        <strong>{formData.responsibleName2}</strong><br />
+                                        <span style={{ fontSize: '0.8rem' }}>Contratante / Proprietário 2</span><br />
+                                        <span style={{ fontSize: '0.8rem' }}>CPF: {formData.responsibleCpf2} | RG: {formData.responsibleRg2}</span>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                        <div style={{ marginTop: '80px', textAlign: 'center', borderTop: '1px dashed #ccc', paddingTop: '20px' }}>
+                            <p style={{ fontSize: '0.7rem', color: '#999' }}>Documento assinado digitalmente em {new Date().toLocaleString('pt-BR')} via Autenticação IP: Formulário SaaS Almeida JJ.</p>
+                        </div>
+                    </div>
                 </div>
 
                 <div className="glass" style={{ padding: '30px', border: '1px solid rgba(255,215,0,0.2)' }}>

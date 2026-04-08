@@ -26,7 +26,8 @@ async function fixColumns() {
         { name: "Valor Setup", type: "currency", options: { symbol: "R$", precision: 2 } },
         { name: "Mensalidade", type: "currency", options: { symbol: "R$", precision: 2 } },
         { name: "Data Assinatura", type: "date", options: { dateFormat: { name: "iso", format: "YYYY-MM-DD" } } },
-        { name: "Status", type: "singleSelect", options: { choices: [{name: "Aguardando Pagamento Setup"}, {name: "Ativo"}, {name: "Inativo"}] } }
+        { name: "Status", type: "singleSelect", options: { choices: [{name: "Aguardando Pagamento Setup"}, {name: "Ativo"}, {name: "Inativo"}] } },
+        { name: "Anexo Contrato", type: "multipleAttachments" }
     ];
 
     for (const field of missingFields) {
