@@ -183,7 +183,7 @@ const App = () => {
       case 'notifications': return <Notifications students={students} isDevMaster={isDevMaster} user={user} />;
       case 'links': return <RegistrationLinks user={user} isAdmin={isAdmin} />;
       case 'expenses': return isAdmin ? <ExpenseList expenses={expenses} addExpense={addExpense} updateExpense={updateExpense} deleteExpense={deleteExpense} /> : <Dashboard getStats={getStats} role={normalizedRole} students={students} expenses={expenses} userEmail={user?.email} />;
-      case 'settings': return normalizedRole === 'master' ? <CustomSettings settings={settings} updateSettings={updateSettings} /> : <Dashboard getStats={getStats} />;
+      case 'settings': return (normalizedRole === 'master' || isDevMaster) ? <CustomSettings settings={settings} updateSettings={updateSettings} /> : <Dashboard getStats={getStats} />;
       case 'maintenance': return <Maintenance user={user} isDevMaster={isDevMaster} />;
       default: return <Dashboard getStats={getStats} role={normalizedRole} students={students} expenses={expenses} userEmail={user?.email} />;
     }
