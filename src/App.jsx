@@ -10,6 +10,7 @@ import { supabase } from './lib/supabase';
 import { LogOut } from 'lucide-react';
 import ContractView from './components/ContractView';
 import SaaSContractForm from './components/SaaSContractForm';
+import BlockedPage from './components/BlockedPage';
 
 
 // Lazy-load heavy components for faster initial render
@@ -145,6 +146,13 @@ const App = () => {
   const isDevMaster = safeUserEmail === 'vaandias@gmail.com' || safeUserEmail.includes('vaandias');
   const isAdmin = normalizedRole.includes('admin') || normalizedRole.includes('master') || normalizedRole.includes('dono') || isDevMaster;
 
+  // SYSTEM BLOCK CHECK: If system_blocked is 'true' in settings and user is NOT the dev master, show BlockedPage
+  const isSystemBlocked = settings?.system_blocked === 'true' || settings?.system_blocked === true;
+  
+  if (isSystemBlocked && !isDevMaster && user) {
+    return <BlockedPage />;
+  }
+
   const filteredNavItems = navItems.filter(item => !item.restricted || isAdmin);
 
   const renderContent = () => {
@@ -210,6 +218,26 @@ const App = () => {
       backgroundRepeat: 'no-repeat',
       backgroundAttachment: 'fixed'
     }}>
+      {/* Dev Master warning banner when system is blocked */}
+      {isSystemBlocked && isDevMaster && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 9999,
+          background: 'linear-gradient(90deg, #dc2626, #ef4444, #dc2626)',
+          color: 'white',
+          padding: '10px 20px',
+          textAlign: 'center',
+          fontWeight: '700',
+          fontSize: '0.85rem',
+          letterSpacing: '0.5px',
+          boxShadow: '0 4px 15px rgba(239, 68, 68, 0.4)'
+        }}>
+          ⚠️ SISTEMA BLOQUEADO POR INADIMPLÊNCIA — Os clientes estão vendo a tela de suspensão. Desative em Configurações.
+        </div>
+      )}
       {/* Sidebar */}
       <nav className="glass" style={{ 
         width: '260px', 

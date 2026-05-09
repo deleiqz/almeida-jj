@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Link as LinkIcon, DollarSign, CreditCard, Activity } from 'lucide-react';
+import { Save, Link as LinkIcon, DollarSign, CreditCard, Activity, ShieldOff, ShieldCheck, AlertTriangle } from 'lucide-react';
 
 const Settings = ({ settings, updateSettings }) => {
   const [links, setLinks] = useState({
@@ -10,6 +10,8 @@ const Settings = ({ settings, updateSettings }) => {
     gympass: ''
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [isBlocking, setIsBlocking] = useState(false);
+  const isSystemBlocked = settings?.system_blocked === 'true' || settings?.system_blocked === true;
 
   useEffect(() => {
     if (settings.payment_links) {
@@ -128,6 +130,100 @@ const Settings = ({ settings, updateSettings }) => {
           <p style={{ fontSize: '0.85rem' }}>Em breve: Configurações de e-mail e notificações WhatsApp.</p>
         </div>
       </div>
+
+        {/* SYSTEM BLOCK - DANGER ZONE */}
+        <div className="glass" style={{ 
+          padding: '24px', 
+          border: isSystemBlocked ? '2px solid rgba(239, 68, 68, 0.5)' : '1px solid rgba(239, 68, 68, 0.15)',
+          background: isSystemBlocked ? 'rgba(239, 68, 68, 0.05)' : 'rgba(0,0,0,0.2)'
+        }}>
+          <h3 style={{ 
+            display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px', 
+            color: isSystemBlocked ? '#ef4444' : '#f59e0b' 
+          }}>
+            {isSystemBlocked ? <ShieldOff size={22} /> : <AlertTriangle size={22} />}
+            Zona de Perigo — Bloqueio do Sistema
+          </h3>
+          
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '20px', lineHeight: '1.6' }}>
+            {isSystemBlocked 
+              ? '⛔ O sistema está BLOQUEADO. Todos os usuários (exceto você) estão vendo a tela de suspensão por inadimplência. O cliente não consegue acessar nenhuma funcionalidade.'
+              : 'Ative o bloqueio para suspender o acesso do cliente ao sistema. Conforme Cláusula 4.2 do contrato, após 15 dias de inadimplência a CONTRATADA pode suspender o sistema.'
+            }
+          </p>
+
+          {isSystemBlocked && (
+            <div style={{
+              background: 'rgba(239, 68, 68, 0.1)',
+              border: '1px solid rgba(239, 68, 68, 0.2)',
+              borderRadius: '12px',
+              padding: '15px',
+              marginBottom: '20px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px'
+            }}>
+              <ShieldOff size={24} color="#ef4444" />
+              <div>
+                <div style={{ color: '#ef4444', fontWeight: '700', fontSize: '0.95rem' }}>SISTEMA SUSPENSO</div>
+                <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.8rem' }}>
+                  O cliente está vendo a página de bloqueio com referência à Cláusula 4.2
+                </div>
+              </div>
+            </div>
+          )}
+
+          <button 
+            onClick={async () => {
+              const newState = !isSystemBlocked;
+              const action = newState ? 'BLOQUEAR' : 'DESBLOQUEAR';
+              const confirmMsg = newState 
+                ? '⚠️ ATENÇÃO: Isso vai BLOQUEAR o acesso de TODOS os usuários do sistema (exceto você). O cliente verá uma tela de suspensão por inadimplência.\n\nTem certeza?'
+                : '✅ Isso vai RESTAURAR o acesso ao sistema para todos os usuários.\n\nConfirma?';
+              
+              if (!window.confirm(confirmMsg)) return;
+              
+              setIsBlocking(true);
+              await updateSettings('system_blocked', newState ? 'true' : 'false');
+              setIsBlocking(false);
+              alert(newState ? '🔒 Sistema BLOQUEADO com sucesso.' : '🔓 Sistema DESBLOQUEADO com sucesso.');
+            }}
+            disabled={isBlocking}
+            style={{ 
+              width: '100%', 
+              padding: '16px', 
+              borderRadius: '12px',
+              fontWeight: '800',
+              fontSize: '1rem',
+              letterSpacing: '0.5px',
+              textTransform: 'uppercase',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '10px',
+              transition: 'all 0.3s ease',
+              border: 'none',
+              background: isSystemBlocked 
+                ? 'linear-gradient(135deg, #16a34a, #15803d)' 
+                : 'linear-gradient(135deg, #dc2626, #991b1b)',
+              color: 'white',
+              boxShadow: isSystemBlocked 
+                ? '0 4px 15px rgba(22, 163, 74, 0.3)'
+                : '0 4px 15px rgba(220, 38, 38, 0.3)'
+            }}
+          >
+            {isBlocking ? 'Processando...' : isSystemBlocked ? (
+              <><ShieldCheck size={20} /> Desbloquear Sistema</>
+            ) : (
+              <><ShieldOff size={20} /> Bloquear Sistema por Inadimplência</>
+            )}
+          </button>
+
+          <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.3)', marginTop: '12px', textAlign: 'center' }}>
+            Base legal: Cláusula 4.2 — Contrato SaaS de Prestação de Serviços
+          </p>
+        </div>
     </div>
   );
 };
