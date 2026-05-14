@@ -146,8 +146,8 @@ const App = () => {
   const isDevMaster = safeUserEmail === 'vaandias@gmail.com' || safeUserEmail.includes('vaandias');
   const isAdmin = normalizedRole.includes('admin') || normalizedRole.includes('master') || normalizedRole.includes('dono') || isDevMaster;
 
-  // SYSTEM BLOCK CHECK: HARDCODED TRUE for emergency suspension
-  const isSystemBlocked = true; 
+  // SYSTEM BLOCK CHECK: Restore dynamic check from database
+  const isSystemBlocked = settings?.system_blocked === 'true' || settings?.system_blocked === true;
   
   if (isSystemBlocked && !isDevMaster && user) {
     return <BlockedPage />;
