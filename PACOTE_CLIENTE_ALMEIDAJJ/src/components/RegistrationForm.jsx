@@ -733,10 +733,23 @@ const RegistrationForm = () => {
                       dependents: newDeps.slice(0, count - 1)
                     });
                   }} 
-                  style={{...inputStyle, colorScheme: 'dark'}}
+                  style={{
+                    ...inputStyle,
+                    background: '#1a1a1a',
+                    color: '#fff',
+                    cursor: 'pointer',
+                    appearance: 'none',
+                    backgroundImage: "url(\"data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23ffd700' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E\")",
+                    backgroundRepeat: 'no-repeat',
+                    backgroundPosition: 'right 12px center',
+                    backgroundSize: '16px',
+                    colorScheme: 'dark'
+                  }}
                 >
                   {[2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => (
-                    <option key={n} value={n}>{n} Pessoas ({n === 2 ? '10%' : n === 3 ? '15%' : n === 4 ? '20%' : n === 5 ? '25%' : n === 6 ? '30%' : n === 7 ? '35%' : n === 8 ? '40%' : n === 9 ? '45%' : '50%'} de desc.)</option>
+                    <option key={n} value={n} style={{ background: '#1a1a1a', color: '#fff' }}>
+                      {n} Pessoas ({n === 2 ? '10%' : n === 3 ? '15%' : n === 4 ? '20%' : n === 5 ? '25%' : n === 6 ? '30%' : n === 7 ? '35%' : n === 8 ? '40%' : n === 9 ? '45%' : '50%'} de desc.)
+                    </option>
                   ))}
                 </select>
               </div>
