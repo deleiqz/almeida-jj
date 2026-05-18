@@ -95,6 +95,7 @@ const RegistrationForm = () => {
   const [loading, setLoading] = useState(false);
   const [newStudentId, setNewStudentId] = useState(null);
   const [paymentLinks, setPaymentLinks] = useState({});
+  const [generatedPaymentUrl, setGeneratedPaymentUrl] = useState('');
 
   const getPaymentUrl = (method) => {
     let url = paymentLinks?.[method];
@@ -331,6 +332,35 @@ const RegistrationForm = () => {
     const paymentValue = PRICES[formData.planType][formData.subPlan][formData.plan].toString();
     let medicalInfo = formData.hasRestriction === 'sim' ? `Restrição Médica: ${formData.restrictionDesc}` : '';
 
+    let dynamicPaymentLink = '';
+    if (formData.paymentMethod === 'credito' || formData.paymentMethod === 'debito') {
+      try {
+        let totalAmount = PRICES[formData.planType][formData.subPlan][formData.plan];
+        if (formData.plan !== 'anual') {
+          totalAmount += 150; // Matrícula
+        }
+        const planLabel = `${formData.planType === 'familia' ? 'Família' : 'Individual'} - ${formData.subPlan.charAt(0).toUpperCase() + formData.subPlan.slice(1)} (${formData.plan.toUpperCase()})`;
+        
+        const mpResponse = await fetch('/api/mercado-pago-student', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            studentName: formData.name, 
+            planName: planLabel, 
+            amount: totalAmount 
+          })
+        });
+        const mpData = await mpResponse.json();
+        if (mpData.init_point) {
+          dynamicPaymentLink = mpData.init_point;
+        }
+      } catch (err) {
+        console.error("Erro ao gerar link dinâmico do Mercado Pago:", err);
+      }
+    }
+
+    const finalPaymentLink = dynamicPaymentLink || getPaymentUrl(formData.paymentMethod);
+
     const { data: insertedData, error } = await supabase
       .from('students')
       .insert([{ 
@@ -343,7 +373,7 @@ const RegistrationForm = () => {
         sub_plan: `${formData.planType === 'familia' ? 'Família - ' : ''}${formData.subPlan.charAt(0).toUpperCase() + formData.subPlan.slice(1)}`,
         payment_value: paymentValue,
         payment_method: formData.paymentMethod === 'credito' ? 'Cartão de Crédito' : formData.paymentMethod === 'debito' ? 'Cartão de Débito' : formData.paymentMethod.charAt(0).toUpperCase() + formData.paymentMethod.slice(1),
-        payment_link: getPaymentUrl(formData.paymentMethod),
+        payment_link: finalPaymentLink,
         birth_date: formData.birthDate,
         cpf: formData.cpf,
         parent_name: isMinor ? formData.parentName : '',
@@ -387,6 +417,7 @@ const RegistrationForm = () => {
         }
       }
       setNewStudentId(insertedData.id);
+      setGeneratedPaymentUrl(finalPaymentLink);
       setSubmitted(true);
     }
     setLoading(false);
@@ -437,7 +468,7 @@ const RegistrationForm = () => {
     const whatsappLink = `https://wa.me/${formData.phone.replace(/\D/g, '')}?text=${whatsappMsg}`;
     
     const selectedMethod = formData.paymentMethod;
-    const paymentUrl = getPaymentUrl(selectedMethod);
+    const paymentUrl = generatedPaymentUrl || getPaymentUrl(selectedMethod);
 
     return (
       <div style={{ ...pageStyle, alignItems: 'center' }}>
