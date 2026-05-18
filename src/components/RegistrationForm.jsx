@@ -95,6 +95,17 @@ const RegistrationForm = () => {
   const [loading, setLoading] = useState(false);
   const [newStudentId, setNewStudentId] = useState(null);
   const [paymentLinks, setPaymentLinks] = useState({});
+
+  const getPaymentUrl = (method) => {
+    let url = paymentLinks?.[method];
+    if (!url && (method === 'credito' || method === 'debito')) {
+      return 'https://link.mercadopago.com.br/almeidajjcamps';
+    }
+    if (url && !url.startsWith('http')) {
+      return `https://${url}`;
+    }
+    return url || '';
+  };
   
   const canvasRef = useRef(null);
   const pointsRef = useRef([]);
@@ -332,7 +343,7 @@ const RegistrationForm = () => {
         sub_plan: `${formData.planType === 'familia' ? 'Família - ' : ''}${formData.subPlan.charAt(0).toUpperCase() + formData.subPlan.slice(1)}`,
         payment_value: paymentValue,
         payment_method: formData.paymentMethod === 'credito' ? 'Cartão de Crédito' : formData.paymentMethod === 'debito' ? 'Cartão de Débito' : formData.paymentMethod.charAt(0).toUpperCase() + formData.paymentMethod.slice(1),
-        payment_link: paymentLinks[formData.paymentMethod] || '',
+        payment_link: getPaymentUrl(formData.paymentMethod),
         birth_date: formData.birthDate,
         cpf: formData.cpf,
         parent_name: isMinor ? formData.parentName : '',
@@ -426,7 +437,7 @@ const RegistrationForm = () => {
     const whatsappLink = `https://wa.me/${formData.phone.replace(/\D/g, '')}?text=${whatsappMsg}`;
     
     const selectedMethod = formData.paymentMethod;
-    const paymentUrl = paymentLinks[selectedMethod];
+    const paymentUrl = getPaymentUrl(selectedMethod);
 
     return (
       <div style={{ ...pageStyle, alignItems: 'center' }}>
