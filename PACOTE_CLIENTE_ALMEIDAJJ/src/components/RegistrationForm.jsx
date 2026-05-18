@@ -63,8 +63,28 @@ const PRICES = {
     performance: { mensal: 229, trimestral: 651, semestral: 1230, anual: 2316 }
   },
   familia: {
-    evolucao: { mensal: 340, trimestral: 966, semestral: 1825, anual: 3454 },
-    performance: { mensal: 412, trimestral: 1171, semestral: 2214, anual: 4168 }
+    evolucao: {
+      2: { mensal: 340, trimestral: 966, semestral: 1825, anual: 3454 },
+      3: { mensal: 481, trimestral: 1369, semestral: 2585, anual: 4893 },
+      4: { mensal: 604, trimestral: 1718, semestral: 3244, anual: 6140 },
+      5: { mensal: 708, trimestral: 2013, semestral: 3802, anual: 7196 },
+      6: { mensal: 793, trimestral: 2255, semestral: 4258, anual: 8059 },
+      7: { mensal: 860, trimestral: 2443, semestral: 4613, anual: 8731 },
+      8: { mensal: 907, trimestral: 2577, semestral: 4867, anual: 9211 },
+      9: { mensal: 935, trimestral: 2658, semestral: 5019, anual: 9499 },
+      10: { mensal: 945, trimestral: 2685, semestral: 5070, anual: 9595 }
+    },
+    performance: {
+      2: { mensal: 412, trimestral: 1171, semestral: 2214, anual: 4168 },
+      3: { mensal: 583, trimestral: 1660, semestral: 3136, anual: 5905 },
+      4: { mensal: 732, trimestral: 2083, semestral: 3936, anual: 7411 },
+      5: { mensal: 858, trimestral: 2441, semestral: 4612, anual: 8685 },
+      6: { mensal: 961, trimestral: 2734, semestral: 5166, anual: 9727 },
+      7: { mensal: 1041, trimestral: 2962, semestral: 5596, anual: 10537 },
+      8: { mensal: 1099, trimestral: 3124, semestral: 5904, anual: 11116 },
+      9: { mensal: 1133, trimestral: 3222, semestral: 6088, anual: 11464 },
+      10: { mensal: 1145, trimestral: 3255, semestral: 6150, anual: 11580 }
+    }
   }
 };
 
@@ -87,7 +107,9 @@ const RegistrationForm = () => {
     subPlan: 'evolucao',
     paymentMethod: 'pix',
     imageAuth: true,
-    marketingAuth: true
+    marketingAuth: true,
+    familyCount: 2,
+    dependents: []
   });
   
   const [isMinor, setIsMinor] = useState(false);
@@ -106,6 +128,13 @@ const RegistrationForm = () => {
       return `https://${url}`;
     }
     return url || '';
+  };
+
+  const getCurrentPrice = (planType = formData.planType, subPlan = formData.subPlan, plan = formData.plan, familyCount = formData.familyCount || 2) => {
+    if (planType === 'familia') {
+      return PRICES.familia[subPlan][familyCount]?.[plan] || PRICES.familia[subPlan][2][plan];
+    }
+    return PRICES.individual[subPlan][plan];
   };
   
   const canvasRef = useRef(null);
@@ -329,17 +358,21 @@ const RegistrationForm = () => {
       }
     }
 
-    const paymentValue = PRICES[formData.planType][formData.subPlan][formData.plan].toString();
+    const paymentValue = getCurrentPrice().toString();
     let medicalInfo = formData.hasRestriction === 'sim' ? `Restrição Médica: ${formData.restrictionDesc}` : '';
+    if (formData.planType === 'familia' && formData.dependents?.length > 0) {
+      const depString = formData.dependents.map((d, i) => `Dependente ${i + 2}: ${d.name} (${d.birthDate})`).join(' | ');
+      medicalInfo = medicalInfo ? `${medicalInfo} || ${depString}` : depString;
+    }
 
     let dynamicPaymentLink = '';
     if (formData.paymentMethod === 'credito' || formData.paymentMethod === 'debito') {
       try {
-        let totalAmount = PRICES[formData.planType][formData.subPlan][formData.plan];
-        if (formData.plan !== 'anual') {
-          totalAmount += 150; // Matrícula
+        let totalAmount = getCurrentPrice();
+        if (formData.planType !== 'familia' && formData.plan !== 'anual') {
+          totalAmount += 150; // Matrícula is only charged for individual non-anual plans
         }
-        const planLabel = `${formData.planType === 'familia' ? 'Família' : 'Individual'} - ${formData.subPlan.charAt(0).toUpperCase() + formData.subPlan.slice(1)} (${formData.plan.toUpperCase()})`;
+        const planLabel = `${formData.planType === 'familia' ? `Família (${formData.familyCount || 2} Pessoas)` : 'Individual'} - ${formData.subPlan.charAt(0).toUpperCase() + formData.subPlan.slice(1)} (${formData.plan.toUpperCase()})`;
         
         const mpResponse = await fetch('/api/mercado-pago-student', {
           method: 'POST',
@@ -370,7 +403,7 @@ const RegistrationForm = () => {
         address: formData.address,
         belt: 'Branca',
         plan: formData.plan.charAt(0).toUpperCase() + formData.plan.slice(1),
-        sub_plan: `${formData.planType === 'familia' ? 'Família - ' : ''}${formData.subPlan.charAt(0).toUpperCase() + formData.subPlan.slice(1)}`,
+        sub_plan: `${formData.planType === 'familia' ? `Família (${formData.familyCount || 2} Pessoas) - ` : ''}${formData.subPlan.charAt(0).toUpperCase() + formData.subPlan.slice(1)}`,
         payment_value: paymentValue,
         payment_method: formData.paymentMethod === 'credito' ? 'Cartão de Crédito' : formData.paymentMethod === 'debito' ? 'Cartão de Débito' : formData.paymentMethod.charAt(0).toUpperCase() + formData.paymentMethod.slice(1),
         payment_link: finalPaymentLink,
@@ -452,7 +485,7 @@ const RegistrationForm = () => {
 
   if (submitted) {
     const contractUrl = `${window.location.origin}/?contrato=${newStudentId}`;
-    const planValue = PRICES[formData.planType][formData.subPlan][formData.plan];
+    const planValue = getCurrentPrice();
     const pixKey = paymentLinks.pix || 'almeidajjcamps@gmail.com';
     
     const whatsappMsg = encodeURIComponent(
@@ -483,8 +516,8 @@ const RegistrationForm = () => {
 
           <div style={{ background: 'rgba(255,255,255,0.03)', padding: '20px', borderRadius: '15px', border: '1px solid rgba(255,215,0,0.1)', marginBottom: '25px' }}>
             <div style={{ fontSize: '0.8rem', color: '#a1a1aa', marginBottom: '8px' }}>Valor a Pagar</div>
-            <div style={{ fontSize: '1.8rem', color: '#fff', fontWeight: '800' }}>R$ {PRICES[formData.planType][formData.subPlan][formData.plan]},00</div>
-            {formData.plan !== 'anual' && <div style={{ fontSize: '0.75rem', color: '#ffd700', marginTop: '4px' }}>+ R$ 150,00 (Matrícula)</div>}
+            <div style={{ fontSize: '1.8rem', color: '#fff', fontWeight: '800' }}>R$ {planValue},00</div>
+            {formData.planType !== 'familia' && formData.plan !== 'anual' && <div style={{ fontSize: '0.75rem', color: '#ffd700', marginTop: '4px' }}>+ R$ 150,00 (Matrícula)</div>}
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -682,6 +715,69 @@ const RegistrationForm = () => {
             </button>
           </div>
 
+          {formData.planType === 'familia' && (
+            <div style={{ background: 'rgba(255, 215, 0, 0.05)', padding: '20px', border: '1px solid rgba(255, 215, 0, 0.15)', borderRadius: '15px', marginBottom: '20px' }}>
+              <div style={{ marginBottom: '16px' }}>
+                <label style={labelStyle}>Quantidade de Pessoas no Plano Família</label>
+                <select 
+                  value={formData.familyCount || 2} 
+                  onChange={e => {
+                    const count = parseInt(e.target.value);
+                    const newDeps = [...(formData.dependents || [])];
+                    while (newDeps.length < count - 1) {
+                      newDeps.push({ name: '', birthDate: '' });
+                    }
+                    setFormData({
+                      ...formData, 
+                      familyCount: count,
+                      dependents: newDeps.slice(0, count - 1)
+                    });
+                  }} 
+                  style={{...inputStyle, colorScheme: 'dark'}}
+                >
+                  {[2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => (
+                    <option key={n} value={n}>{n} Pessoas ({n === 2 ? '10%' : n === 3 ? '15%' : n === 4 ? '20%' : n === 5 ? '25%' : n === 6 ? '30%' : n === 7 ? '35%' : n === 8 ? '40%' : n === 9 ? '45%' : '50%'} de desc.)</option>
+                  ))}
+                </select>
+              </div>
+
+              {(formData.dependents || []).map((dep, idx) => (
+                <div key={idx} style={{ background: 'rgba(255, 255, 255, 0.03)', padding: '16px', border: '1px dashed rgba(255, 215, 0, 0.15)', borderRadius: '12px', marginBottom: '16px' }}>
+                  <div style={{ color: '#ffd700', fontSize: '0.85rem', fontWeight: '700', marginBottom: '10px' }}>🧑‍🧑‍🧒 Dependente {idx + 2}</div>
+                  <div style={{ marginBottom: '10px' }}>
+                    <label style={labelStyle}>Nome Completo</label>
+                    <input 
+                      type="text" 
+                      required 
+                      placeholder="Nome do dependente" 
+                      value={dep.name} 
+                      onChange={e => {
+                        const newDeps = [...formData.dependents];
+                        newDeps[idx].name = e.target.value;
+                        setFormData({...formData, dependents: newDeps});
+                      }} 
+                      style={inputStyle} 
+                    />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Data de Nascimento</label>
+                    <input 
+                      type="date" 
+                      required 
+                      value={dep.birthDate} 
+                      onChange={e => {
+                        const newDeps = [...formData.dependents];
+                        newDeps[idx].birthDate = e.target.value;
+                        setFormData({...formData, dependents: newDeps});
+                      }} 
+                      style={{...inputStyle, colorScheme: 'dark'}} 
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '20px' }}>
             <button 
               type="button" 
@@ -718,22 +814,11 @@ const RegistrationForm = () => {
           {/* Duração do Plano */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
             {(() => {
-              const PRICES = {
-                individual: {
-                  evolucao: { mensal: 189, trimestral: 537, semestral: 1014, anual: 1919 },
-                  performance: { mensal: 229, trimestral: 651, semestral: 1230, anual: 2316 }
-                },
-                familia: {
-                  evolucao: { mensal: 340, trimestral: 966, semestral: 1825, anual: 3454 },
-                  performance: { mensal: 412, trimestral: 1171, semestral: 2214, anual: 4168 }
-                }
-              };
-              const currentPrices = PRICES[formData.planType][formData.subPlan];
               const durations = [
-                { id: 'mensal', label: 'Mensal', price: currentPrices.mensal },
-                { id: 'trimestral', label: 'Trimestral', price: currentPrices.trimestral },
-                { id: 'semestral', label: 'Semestral', price: currentPrices.semestral },
-                { id: 'anual', label: 'Anual', price: currentPrices.anual, promo: true }
+                { id: 'mensal', label: 'Mensal', price: getCurrentPrice(formData.planType, formData.subPlan, 'mensal') },
+                { id: 'trimestral', label: 'Trimestral', price: getCurrentPrice(formData.planType, formData.subPlan, 'trimestral') },
+                { id: 'semestral', label: 'Semestral', price: getCurrentPrice(formData.planType, formData.subPlan, 'semestral') },
+                { id: 'anual', label: 'Anual', price: getCurrentPrice(formData.planType, formData.subPlan, 'anual'), promo: true }
               ];
 
               return durations.map(d => (
@@ -771,8 +856,8 @@ const RegistrationForm = () => {
           
           <div style={{ marginBottom: '20px' }}>
             <label style={labelStyle}>Matrícula</label>
-            <div style={{ color: formData.plan === 'anual' ? '#10b981' : '#fff', fontWeight: '700', fontSize: '1.1rem' }}>
-              {formData.plan === 'anual' ? 'ISENTA 🎁' : 'R$ 150,00'}
+            <div style={{ color: (formData.planType === 'familia' || formData.plan === 'anual') ? '#10b981' : '#fff', fontWeight: '700', fontSize: '1.1rem' }}>
+              {(formData.planType === 'familia' || formData.plan === 'anual') ? 'ISENTA 🎁' : 'R$ 150,00'}
             </div>
           </div>
 
