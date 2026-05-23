@@ -517,11 +517,16 @@ async function runDailyNotifications() {
                         formattedDueDate = d.toLocaleDateString('pt-BR');
                     }
 
+                    let finalLink = student.payment_link || 'https://link.mercadopago.com.br/almeidajjcamps';
+                    if (finalLink.includes('402502578')) {
+                        finalLink = 'https://link.mercadopago.com.br/almeidajjcamps';
+                    }
+
                     const formattedMsg = textTemplate
                         .replace(/{nome}/g, student.name || '')
                         .replace(/{plano}/g, student.plan || 'Mensal')
                         .replace(/{vencimento}/g, formattedDueDate)
-                        .replace(/{link_pagamento}/g, student.payment_link || '');
+                        .replace(/{link_pagamento}/g, finalLink);
 
                     try {
                         await client.sendMessage(`${fullPhone}@c.us`, formattedMsg);

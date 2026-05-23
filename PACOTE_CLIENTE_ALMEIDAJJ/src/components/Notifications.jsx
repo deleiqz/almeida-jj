@@ -103,11 +103,17 @@ const Notifications = ({ students, isDevMaster }) => {
         formattedDate = d.toLocaleDateString('pt-BR');
       }
     }
+    
+    let finalLink = student.paymentLink || 'https://link.mercadopago.com.br/almeidajjcamps';
+    if (finalLink.includes('402502578')) {
+      finalLink = 'https://link.mercadopago.com.br/almeidajjcamps';
+    }
+
     return rawMessage
       .replace(/{nome}/g, student.name || '')
       .replace(/{plano}/g, student.plan || '')
       .replace(/{vencimento}/g, formattedDate || '')
-      .replace(/{link_pagamento}/g, student.paymentLink || '');
+      .replace(/{link_pagamento}/g, finalLink);
   };
 
   const sendNext = async (indexOverride = null, queueOverride = null) => {
