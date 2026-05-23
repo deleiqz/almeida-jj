@@ -282,7 +282,7 @@ const App = () => {
           <div style={{ fontWeight: '600', fontSize: '0.9rem', marginBottom: '15px' }}>
             {userName || user.email} <br/>
             <span style={{ color: 'var(--accent-primary)', fontSize: '0.8rem' }}>
-              [{isDevMaster || normalizedRole === 'master' ? 'Desenvolvedor Master' : normalizedRole === 'admin' ? 'Dono Master' : 'Funcionário'}]
+              [{isDevMaster || normalizedRole === 'master' ? 'Desenvolvedor Master' : (normalizedRole === 'admin' || normalizedRole === 'dono') ? 'Dono Master' : 'Funcionário'}]
             </span>
           </div>
           <button 
