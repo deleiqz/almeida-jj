@@ -20,9 +20,9 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { studentName, planName, amount } = req.body;
+    const { studentName, planName, amount, externalReference } = req.body;
 
-    const token = process.env.MP_ACCESS_TOKEN || 'APP_USR-989386315722115-052310-7107168e08120f173cc36d78050a88dc-2531472158';
+    const token = process.env.MP_STUDENT_ACCESS_TOKEN || 'APP_USR-989386315722115-052310-7107168e08120f173cc36d78050a88dc-2531472158';
 
     const client = new MercadoPagoConfig({
       accessToken: token,
@@ -45,6 +45,8 @@ export default async function handler(req, res) {
           pending: 'https://almeida-jj.vercel.app/',
         },
         auto_return: 'approved',
+        external_reference: externalReference,
+        notification_url: 'https://almeida-jj.vercel.app/api/webhook-mp-student'
       },
     });
 

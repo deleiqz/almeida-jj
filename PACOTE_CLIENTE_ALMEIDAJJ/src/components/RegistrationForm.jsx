@@ -382,7 +382,8 @@ const RegistrationForm = () => {
           body: JSON.stringify({ 
             studentName: formData.name, 
             planName: planLabel, 
-            amount: totalAmount 
+            amount: totalAmount,
+            externalReference: formData.cpf
           })
         });
         const mpData = await mpResponse.json();

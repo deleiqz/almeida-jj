@@ -358,6 +358,205 @@ async function initAirtableSchema() {
 // Inicializa o Schema ao ligar o servidor
 initAirtableSchema();
 
+// =========================================================================
+// 🔔 ENVIO AUTOMÁTICO DE LEMBRETES E ANIVERSÁRIOS 🔔
+// =========================================================================
+const fs = require('fs');
+const path = require('path');
+
+const SENT_LOG_FILE = path.join(__dirname, 'sent_notifications.json');
+
+// Helper para ler os logs de envios
+const getSentLogs = () => {
+    if (!fs.existsSync(SENT_LOG_FILE)) {
+        return { birthday: {}, payment: {}, lastRunDate: '' };
+    }
+    try {
+        return JSON.parse(fs.readFileSync(SENT_LOG_FILE, 'utf8'));
+    } catch (e) {
+        return { birthday: {}, payment: {}, lastRunDate: '' };
+    }
+};
+
+// Helper para salvar os logs de envios
+const saveSentLogs = (logs) => {
+    fs.writeFileSync(SENT_LOG_FILE, JSON.stringify(logs, null, 2), 'utf8');
+};
+
+// Rotina Diária de Notificações Automáticas
+async function runDailyNotifications() {
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_KEY;
+
+    if (!supabaseUrl || !supabaseKey) {
+        console.log("⚠️ [Notificações Automáticas] SUPABASE_URL ou SUPABASE_KEY não configurados no .env do bridge. Ignorando disparos automáticos.");
+        return;
+    }
+
+    if (!isReady) {
+        console.log("⚠️ [Notificações Automáticas] WhatsApp não conectado ainda. Tentará novamente mais tarde.");
+        return;
+    }
+
+    try {
+        const today = new Date();
+        const todayStr = today.toISOString().split('T')[0]; // YYYY-MM-DD
+        const currentHour = today.getHours();
+
+        // Só executa se for entre 09:00 e 21:00 (evita disparar de madrugada caso o servidor reinicie)
+        if (currentHour < 9 || currentHour > 21) {
+            return;
+        }
+
+        const logs = getSentLogs();
+
+        // Se já rodou hoje com sucesso, não executa novamente
+        if (logs.lastRunDate === todayStr) {
+            return;
+        }
+
+        console.log("🚀 [Notificações Automáticas] Iniciando verificação diária de cobranças e aniversariantes...");
+
+        // Busca alunos no Supabase
+        const url = `${supabaseUrl}/rest/v1/students?select=*`;
+        const response = await fetch(url, {
+            headers: {
+                'apikey': supabaseKey,
+                'Authorization': `Bearer ${supabaseKey}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`Erro ao buscar estudantes do Supabase: ${response.statusText}`);
+        }
+
+        const students = await response.json();
+        console.log(`[Notificações Automáticas] ${students.length} alunos carregados do Supabase.`);
+
+        // Inicializa logs para o dia de hoje
+        if (!logs.birthday[todayStr]) logs.birthday[todayStr] = [];
+        if (!logs.payment[todayStr]) logs.payment[todayStr] = [];
+
+        let sentCount = 0;
+
+        for (const student of students) {
+            if (!student.phone) continue;
+
+            const cleanPhone = student.phone.replace(/\D/g, '');
+            if (!cleanPhone) continue;
+            const fullPhone = `55${cleanPhone}`;
+
+            // --- 🎂 VERIFICAÇÃO DE ANIVERSÁRIO ---
+            if (student.birth_date) {
+                const bDateParts = student.birth_date.split('-');
+                if (bDateParts.length >= 3) {
+                    const bMonth = parseInt(bDateParts[1], 10);
+                    const bDay = parseInt(bDateParts[2], 10);
+
+                    const tMonth = today.getMonth() + 1; // 0-11 -> 1-12
+                    const tDay = today.getDate();
+
+                    if (bMonth === tMonth && bDay === tDay) {
+                        // É aniversariante de hoje! Verifica se já recebeu
+                        if (!logs.birthday[todayStr].includes(student.id)) {
+                            console.log(`🎂 [Notificações Automáticas] Aniversário hoje de: ${student.name}`);
+                            const msg = `Parabéns, ${student.name}! 🎂🥋\n\nA família Almeida JJ te deseja um feliz aniversário! Que seu novo ciclo seja de muita saúde, paz, conquistas e evolução nos treinos. Oss!`;
+                            
+                            try {
+                                await client.sendMessage(`${fullPhone}@c.us`, msg);
+                                logs.birthday[todayStr].push(student.id);
+                                saveSentLogs(logs);
+                                sentCount++;
+                                console.log(`✔️ Mensagem de aniversário enviada para ${student.name}`);
+                                
+                                // Delay de segurança
+                                const waitTime = Math.floor(Math.random() * (15000 - 10000 + 1) + 10000);
+                                await delay(waitTime);
+                            } catch (err) {
+                                console.error(`❌ Erro ao enviar parabéns para ${student.name}:`, err.message);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // --- 💵 VERIFICAÇÃO DE LEMBRETE DE PAGAMENTO ---
+            // Apenas cobramos se o status não for "pago"
+            if (student.status !== 'pago' && student.next_due) {
+                const nextDue = new Date(student.next_due + 'T00:00:00');
+                
+                // Zera horas para comparação precisa de dias
+                const dToday = new Date(today);
+                dToday.setHours(0, 0, 0, 0);
+                nextDue.setHours(0, 0, 0, 0);
+
+                const diffTime = nextDue.getTime() - dToday.getTime();
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                let shouldRemind = false;
+                let textTemplate = '';
+
+                if (diffDays === 7) {
+                    shouldRemind = true;
+                    textTemplate = 'Olá, {nome}! Passando para lembrar que o vencimento da sua mensalidade do plano {plano} está próximo ({vencimento}). Você pode realizar o pagamento através do link: {link_pagamento} \n\nQualquer dúvida estamos à disposição! 🥋';
+                } else if (diffDays === 0) {
+                    shouldRemind = true;
+                    textTemplate = 'Olá, {nome}! Passando para lembrar que a sua mensalidade do plano {plano} vence hoje ({vencimento}). Você pode realizar o pagamento através do link: {link_pagamento} \n\nNos vemos no tatame! Oss! 🥋';
+                } else if (diffDays < 0 && Math.abs(diffDays) % 7 === 0) {
+                    // Cobra semanalmente se estiver atrasado (para não ser invasivo)
+                    shouldRemind = true;
+                    textTemplate = 'Olá, {nome}! Constamos que a sua mensalidade do plano {plano} está pendente desde {vencimento}. Para regularizar e continuar treinando, você pode pagar pelo link: {link_pagamento} \n\nQualquer dúvida fale conosco! Oss! 🥋';
+                }
+
+                if (shouldRemind && !logs.payment[todayStr].includes(student.id)) {
+                    console.log(`💵 [Notificações Automáticas] Lembrete de pagamento para: ${student.name} (${diffDays} dias de diferença)`);
+                    
+                    let formattedDueDate = '';
+                    const d = new Date(student.next_due + 'T00:00:00');
+                    if (!isNaN(d.getTime())) {
+                        formattedDueDate = d.toLocaleDateString('pt-BR');
+                    }
+
+                    const formattedMsg = textTemplate
+                        .replace(/{nome}/g, student.name || '')
+                        .replace(/{plano}/g, student.plan || 'Mensal')
+                        .replace(/{vencimento}/g, formattedDueDate)
+                        .replace(/{link_pagamento}/g, student.payment_link || '');
+
+                    try {
+                        await client.sendMessage(`${fullPhone}@c.us`, formattedMsg);
+                        logs.payment[todayStr].push(student.id);
+                        saveSentLogs(logs);
+                        sentCount++;
+                        console.log(`✔️ Lembrete de pagamento enviado para ${student.name}`);
+                        
+                        // Delay de segurança
+                        const waitTime = Math.floor(Math.random() * (15000 - 10000 + 1) + 10000);
+                        await delay(waitTime);
+                    } catch (err) {
+                        console.error(`❌ Erro ao enviar cobrança para ${student.name}:`, err.message);
+                    }
+                }
+            }
+        }
+
+        // Atualiza a última data de execução
+        logs.lastRunDate = todayStr;
+        saveSentLogs(logs);
+        console.log(`✅ [Notificações Automáticas] Verificação diária concluída. ${sentCount} mensagens automáticas enviadas hoje.`);
+
+    } catch (error) {
+        console.error("❌ [Notificações Automáticas] Erro durante o disparo automático diário:", error.message);
+    }
+}
+
+// Verifica a cada 30 minutos
+setInterval(runDailyNotifications, 30 * 60 * 1000);
+
+// Executa também após iniciar o servidor e o cliente WhatsApp estar pronto
+client.on('ready', () => {
+    setTimeout(runDailyNotifications, 10000); // 10s após conexão
+});
 
 const PORT = process.env.PORT || 3005;
 app.listen(PORT, '0.0.0.0', () => {
