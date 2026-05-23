@@ -26,7 +26,7 @@ const ContractView = ({ studentId, onBack }) => {
   if (!student) return <div className="error">Aluno não encontrado.</div>;
 
   // Calculate age for template selection
-  const dob = new Date(student.birth_date);
+  const dob = new Date(student.birth_date + 'T00:00:00');
   const today = new Date();
   let age = today.getFullYear() - dob.getFullYear();
   const m = today.getMonth() - dob.getMonth();
@@ -45,7 +45,7 @@ const ContractView = ({ studentId, onBack }) => {
       name: data.name,
       cpf: data.cpf,
       email: data.email || 'Não informado',
-      birthDate: new Date(data.birth_date).toLocaleDateString('pt-BR'),
+      birthDate: new Date(data.birth_date + 'T00:00:00').toLocaleDateString('pt-BR'),
       address: data.address || 'Não informado',
       plan: data.plan,
       sub_plan: data.sub_plan?.toUpperCase() || 'EVOLUÇÃO',

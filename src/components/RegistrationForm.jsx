@@ -199,7 +199,7 @@ const RegistrationForm = () => {
   // Calculate age when birthDate changes
   useEffect(() => {
     if (formData.birthDate) {
-      const dob = new Date(formData.birthDate);
+      const dob = new Date(formData.birthDate + 'T00:00:00');
       if (!isNaN(dob.getTime())) {
         const today = new Date();
         let age = today.getFullYear() - dob.getFullYear();
@@ -942,7 +942,7 @@ const RegistrationForm = () => {
                 let text = responsibilityTerm;
                 const replacements = {
                   name: formData.name || '________________',
-                  birthDate: formData.birthDate ? new Date(formData.birthDate).toLocaleDateString('pt-BR') : '________________',
+                  birthDate: formData.birthDate ? new Date(formData.birthDate + 'T00:00:00').toLocaleDateString('pt-BR') : '________________',
                   phone: formData.phone || '________________',
                   email: formData.email || '________________',
                   address: formData.address || '________________',
