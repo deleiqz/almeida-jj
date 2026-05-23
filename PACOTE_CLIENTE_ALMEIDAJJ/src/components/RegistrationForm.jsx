@@ -366,6 +366,9 @@ const RegistrationForm = () => {
     }
 
     let dynamicPaymentLink = '';
+    // OPÇÃO 1 ATIVADA (Temporário até obter o Token correto da Almeida JJ):
+    // Redireciona diretamente para o link estático principal da Almeida JJ Camps para exibir o beneficiário correto.
+    /*
     if (formData.paymentMethod === 'credito' || formData.paymentMethod === 'debito') {
       try {
         let totalAmount = getCurrentPrice();
@@ -374,7 +377,7 @@ const RegistrationForm = () => {
         }
         const planLabel = `${formData.planType === 'familia' ? `Família (${formData.familyCount || 2} Pessoas)` : 'Individual'} - ${formData.subPlan.charAt(0).toUpperCase() + formData.subPlan.slice(1)} (${formData.plan.toUpperCase()})`;
         
-        const mpResponse = await fetch('/api/mercado-pago-student', {
+        const mpResponse = await fetch('/api/mercago-pago-student', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
@@ -391,6 +394,7 @@ const RegistrationForm = () => {
         console.error("Erro ao gerar link dinâmico do Mercado Pago:", err);
       }
     }
+    */
 
     const finalPaymentLink = dynamicPaymentLink || getPaymentUrl(formData.paymentMethod);
 
