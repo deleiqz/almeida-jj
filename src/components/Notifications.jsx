@@ -58,6 +58,24 @@ const Notifications = ({ students, isDevMaster }) => {
     if (filter === 'all') return matchesSearch;
     if (filter === 'active') return matchesSearch && s.status === 'pago';
     if (filter === 'pending') return matchesSearch && (s.status === 'pendente' || s.status === 'vencido');
+    if (filter === 'birthdays') {
+      const today = new Date();
+      return matchesSearch && s.birthDate && (() => {
+        const bdate = new Date(s.birthDate + 'T00:00:00');
+        return bdate.getMonth() === today.getMonth();
+      })();
+    }
+    if (filter === 'near_due') {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      return matchesSearch && s.nextDue && (() => {
+        const due = new Date(s.nextDue + 'T00:00:00');
+        due.setHours(0, 0, 0, 0);
+        const diffTime = due.getTime() - today.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return diffDays <= 7 && s.status !== 'pago';
+      })();
+    }
     return matchesSearch && s.belt === filter;
   });
 
@@ -77,6 +95,21 @@ const Notifications = ({ students, isDevMaster }) => {
     }
   };
 
+  const formatMessage = (rawMessage, student) => {
+    let formattedDate = '';
+    if (student.nextDue) {
+      const d = new Date(student.nextDue + 'T00:00:00');
+      if (!isNaN(d.getTime())) {
+        formattedDate = d.toLocaleDateString('pt-BR');
+      }
+    }
+    return rawMessage
+      .replace(/{nome}/g, student.name || '')
+      .replace(/{plano}/g, student.plan || '')
+      .replace(/{vencimento}/g, formattedDate || '')
+      .replace(/{link_pagamento}/g, student.paymentLink || '');
+  };
+
   const sendNext = async (indexOverride = null, queueOverride = null) => {
     const idx = indexOverride !== null ? indexOverride : currentIndex;
     const queue = queueOverride !== null ? queueOverride : sendingQueue;
@@ -87,9 +120,10 @@ const Notifications = ({ students, isDevMaster }) => {
 
       const phone = student.phone.replace(/\D/g, '');
       const fullPhone = `55${phone}`;
+      const formattedMessage = formatMessage(message, student);
 
       if (sendMode === 'manual') {
-        const url = `https://web.whatsapp.com/send?phone=${fullPhone}&text=${encodeURIComponent(message)}`;
+        const url = `https://web.whatsapp.com/send?phone=${fullPhone}&text=${encodeURIComponent(formattedMessage)}`;
         window.open(url, '_blank');
         updateProgress(student.id, idx, queue);
       } else if (sendMode === 'api') {
@@ -108,7 +142,7 @@ const Notifications = ({ students, isDevMaster }) => {
             },
             body: JSON.stringify({
               phone: fullPhone,
-              message: message
+              message: formattedMessage
             })
           });
 
@@ -141,7 +175,7 @@ const Notifications = ({ students, isDevMaster }) => {
             },
             body: JSON.stringify({
               phone: fullPhone,
-              message: message
+              message: formattedMessage
             })
           });
 
@@ -222,7 +256,8 @@ const Notifications = ({ students, isDevMaster }) => {
   const sendSingle = (student) => {
     if (!message) return alert("Digite uma mensagem primeiro!");
     const phone = (student.phone || '').replace(/\D/g, '');
-    const url = `https://web.whatsapp.com/send?phone=55${phone}&text=${encodeURIComponent(message)}`;
+    const formattedMsg = formatMessage(message, student);
+    const url = `https://web.whatsapp.com/send?phone=55${phone}&text=${encodeURIComponent(formattedMsg)}`;
     window.open(url, '_blank');
   };
 
@@ -344,6 +379,33 @@ const Notifications = ({ students, isDevMaster }) => {
           )}
 
           <div style={{ marginBottom: '20px' }}>
+            <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Modelos de Mensagem Rápidos</label>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '12px' }}>
+              <button 
+                type="button"
+                onClick={() => setMessage('Olá, {nome}! Passando para lembrar que o vencimento da sua mensalidade do plano {plano} está próximo ({vencimento}). Você pode realizar o pagamento através do link: {link_pagamento} \n\nQualquer dúvida estamos à disposição! 🥋')}
+                style={{ padding: '6px 12px', background: 'rgba(255,215,0,0.1)', border: '1px solid rgba(255,215,0,0.2)', color: 'var(--accent-primary)', borderRadius: '6px', fontSize: '0.75rem', cursor: 'pointer' }}
+              >
+                💵 Lembrete de Mensalidade
+              </button>
+              <button 
+                type="button"
+                onClick={() => setMessage('Parabéns, {nome}! 🎂🥋\n\nA família Almeida JJ te deseja um feliz aniversário! Que seu novo ciclo seja de muita saúde, paz, conquistas e evolução nos treinos. Oss!')}
+                style={{ padding: '6px 12px', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', color: '#10b981', borderRadius: '6px', fontSize: '0.75rem', cursor: 'pointer' }}
+              >
+                🎂 Parabéns Aniversário
+              </button>
+              <button 
+                type="button"
+                onClick={() => setMessage('Seja muito bem-vindo(a) à Almeida JJ, {nome}! 🥋\n\nFicamos felizes com a sua matrícula no plano {plano}. Nos vemos no tatame! Oss!')}
+                style={{ padding: '6px 12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '6px', fontSize: '0.75rem', cursor: 'pointer' }}
+              >
+                👋 Boas-vindas
+              </button>
+            </div>
+            <p style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', marginTop: '-8px', marginBottom: '12px' }}>
+              * Variáveis automáticas: <strong>{'{nome}'}</strong>, <strong>{'{plano}'}</strong>, <strong>{'{vencimento}'}</strong>, <strong>{'{link_pagamento}'}</strong>
+            </p>
             <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Mensagem para Disparo</label>
             <textarea 
               value={message}
@@ -495,6 +557,28 @@ const Notifications = ({ students, isDevMaster }) => {
               }}
             >
               Pendentes / Vencidos
+            </button>
+            <button 
+              onClick={() => setFilter('birthdays')}
+              style={{ 
+                padding: '10px', borderRadius: '8px', textAlign: 'left',
+                background: filter === 'birthdays' ? 'rgba(16,185,129,0.1)' : 'rgba(255,255,255,0.05)',
+                color: filter === 'birthdays' ? '#10b981' : 'white',
+                border: 'none', cursor: 'pointer'
+              }}
+            >
+              🎂 Aniversariantes do Mês
+            </button>
+            <button 
+              onClick={() => setFilter('near_due')}
+              style={{ 
+                padding: '10px', borderRadius: '8px', textAlign: 'left',
+                background: filter === 'near_due' ? 'rgba(255,215,0,0.1)' : 'rgba(255,255,255,0.05)',
+                color: filter === 'near_due' ? 'var(--accent-primary)' : 'white',
+                border: 'none', cursor: 'pointer'
+              }}
+            >
+              ⏳ Vencimentos Próximos (7 dias)
             </button>
             
             <div style={{ marginTop: '15px' }}>
