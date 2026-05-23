@@ -261,9 +261,17 @@ const StudentList = ({ students, classes, enrollments, addStudent, updateStudent
                               <span>{inst.open} abertas</span>
                             </div>
                             <div style={{ display: 'flex', gap: '2px', height: '5px' }}>
-                              {Array.from({ length: inst.total }).map((_, i) => (
-                                <div key={i} style={{ flex: 1, backgroundColor: i < inst.paid ? '#10b981' : 'rgba(255,255,255,0.15)', borderRadius: '2px' }} />
-                              ))}
+                              {Array.from({ length: inst.total }).map((_, i) => {
+                                let bgColor = '#f59e0b'; // Laranja (em aberto)
+                                if (i < inst.paid) {
+                                  bgColor = '#10b981'; // Verde (pago)
+                                } else if (student.status === 'vencido' || student.status === 'atrasado') {
+                                  bgColor = '#ef4444'; // Vermelho (atrasado)
+                                }
+                                return (
+                                  <div key={i} style={{ flex: 1, backgroundColor: bgColor, borderRadius: '2px' }} />
+                                );
+                              })}
                             </div>
                           </div>
                         );
