@@ -3,20 +3,15 @@ name: Gym Management System (Almeida JJ)
 description: Full-stack gym/academy management platform with Supabase, WhatsApp automation, digital contracts, and public student registration.
 ---
 
-# Gym Management System Skill
+# Almeida JJ Master Ecosystem Skill 🏛️🛡️
 
-## Overview
+Esta skill documenta o ecossistema completo de gestão e automação para a **Almeida JJ** (Brazilian Jiu-Jitsu). Ela serve como o "DNA" do projeto, permitindo que qualquer sessão futura entenda, mantenha ou replique o sistema inteiro de forma "Inquebrável".
 
-This skill documents a complete gym/academy management SaaS platform built for **Almeida JJ** (Brazilian Jiu-Jitsu). It enables a future Antigravity session to understand, maintain, extend, or replicate the entire system without any additional context.
-
-The system provides:
-- **Dashboard** with real-time financial analytics (revenue, expenses, profit)
-- **Student Management** (CRUD, belt tracking, attendance, payment status)
-- **Public Registration Form** with digital signature capture
-- **Dynamic Legal Contracts** (Adult/Minor) and a Responsibility Term
-- **WhatsApp Automation** via a local bridge server for mass messaging
-- **Role-Based Access Control** (Developer Master, Dono Master, Funcionário)
-- **Supabase Row Level Security (RLS)** for database protection
+O império está dividido em quatro **Módulos de Poder**:
+1.  **📡 Módulo ORÁCULO (Comunicação)**: Automação de WhatsApp para engajamento e cobrança.
+2.  **📜 Módulo HERMES (Sincronia & Contratos)**: Onboarding SaaS, PDFs multi-página e espelhamento no Airtable.
+3.  **🥋 Módulo DOJO (Gestão Técnica)**: Controle de alunos, faixas, presenças e registros públicos.
+4.  **💰 Módulo TESOURARIA (Analítico)**: Dashboards financeiros, controle de gastos e faturamento.
 
 ---
 
@@ -180,266 +175,51 @@ This renders the `ContractView.jsx` component with the student's signed contract
 |---|---|---|
 | `iniciar_whatsapp_invisivel.vbs` | Root | Launches WhatsApp bridge silently in background |
 | `LIGAR_MOTOR_WHATSAPP.bat` | Root | Manual WhatsApp bridge launcher (visible terminal) |
-| `CONFIGURAR_SISTEMA.bat` | Root | System setup automation |
-| `gerar_contrato_abnt.py` | Root | Python script to generate ABNT-formatted contracts |
-| `whatsapp-bridge/server.js` | `whatsapp-bridge/` | Express server that bridges WhatsApp Web to the frontend |
-| `whatsapp-bridge/ngrok.exe` | `whatsapp-bridge/` | Optional tunnel for exposing bridge to the internet |
+| `CONFIGURAR_S## Módulos de Poder e Padrões Técnicos
+
+### 1. 📡 Módulo ORÁCULO (WhatsApp Bridge)
+- **Motor**: Node.js + `whatsapp-web.js`.
+- **Modo de Operação**: Roda como um servidor local (`port 3000`) em uma máquina Windows dedicada.
+- **Resiliência**: Utiliza `iniciar_whatsapp_invisivel.vbs` para persistência em segundo plano.
+- **Segurança**: Intervalo aleatório de 10-15s entre envios para evitar banimentos.
+
+### 2. 📜 Módulo HERMES (Onboarding & Sincronia)
+- **Auto-Scanner (PDF)**: Implementa um loop que picota o canvas HTML em fatias A4, suportando contratos de 3+ páginas via `jsPDF`.
+- **Blindagem de Assinatura**: Uso de filtro `brightness(0)` nas assinaturas PNG para garantir tinta preta no PDF branco.
+- **Sincronia Mestra**: Trigger SQL `AFTER INSERT OR UPDATE` que utiliza o método `PATCH` com `performUpsert` no Airtable, usando `Link ID` como âncora.
+- **Recuperação de Link**: Lógica no frontend que detecta `link_id` na URL e recupera automaticamente o estado de pagamento/sucesso do usuário.
+
+### 3. 🥋 Módulo DOJO (Gestão de Alunos)
+- **Registro Público**: URL `/?registro` acessível sem senha para novos alunos.
+- **Sistema de Faixas**: Promoção visual e lógica baseada no histórico de frequência (`Attendance.jsx`).
+- **RLS (Security)**: Políticas públicas para `INSERT` na tabela `students` e polícias restritas para o dashboard.
+
+### 4. 💰 Módulo TESOURARIA (Financeiro)
+- **Analíticos**: Gráficos dinâmicos via `Recharts` integrados diretamente com a tabela `expenses` e `students`.
+- **Controle de Acesso**: Aba "Financeiro" visível apenas para usuários com permissão `admin` ou `dono`.
 
 ---
 
-## API / Integration Details
+## Passo a Passo: O Setup Lendário
 
-### Supabase (Backend-as-a-Service)
-- **Project ID**: `dospnbzzcjrmwpakldmy`
-- **Auth**: Email/password login via `supabase.auth.signInWithPassword()`
-- **Storage Bucket**: `documents` (public, stores digital signatures)
-- **Client Init**: `src/lib/supabase.js` using `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`
-
-### WhatsApp Bridge (Local REST API)
-
-**Base URL**: `http://localhost:3000` (configurable in Notifications.jsx)
-
-#### `GET /status`
-Returns the bridge connection status.
-```json
-{
-  "connected": true,
-  "messageCount": 42,
-  "platform": "win32",
-  "uptime": 3600
-}
-```
-
-#### `GET /qr`
-Returns an HTML page with the QR code image for WhatsApp Web authentication.
-
-#### `POST /send-message`
-Sends a WhatsApp message to a single phone number.
-```json
-// Request
-{
-  "phone": "5511999999999",
-  "message": "Olá! Sua mensalidade vence dia 24."
-}
-
-// Success Response
-{ "success": true }
-
-// Error Response (503 - Not Connected)
-{ "error": "WhatsApp não está conectado ainda." }
-```
-
-**Important**: Each message has a built-in random delay of 10-15 seconds between sends to avoid WhatsApp bans.
-
-### Vercel (Frontend Hosting)
-- **Domain**: `almeida-jj.vercel.app`
-- **Config**: `vercel.json` — SPA rewrite rule sends all routes to `index.html`
-- **Auto-deploy**: Pushes to `main` branch trigger automatic builds
+1.  **Clone e Instalação**: Seguir a estrutura de pastas descrita acima.
+2.  **Configuração Supabase**: Criar o bucket `documents` (público) e as tabelas conforme o schema.
+3.  **Segredo do Airtable**: Salvar o `AIRTABLE_PAT` e `BASE_ID` no script SQL do gatilho `tr_sync_airtable`.
+4.  **Ligar o Oráculo**: Executar `LIGAR_MOTOR_WHATSAPP.bat` e escanear o QR Code.
+5.  **Deploy**: Puxar para a `main` para atualização automática via Vercel.
 
 ---
 
-## Database / Storage Schema
-
-### Supabase Tables
-
-#### `students`
-| Column | Type | Description |
-|---|---|---|
-| `id` | uuid (PK) | Auto-generated |
-| `name` | text | Full name |
-| `phone` | text | WhatsApp number |
-| `email` | text | Email address |
-| `address` | text | Full address |
-| `cpf` | text | Brazilian tax ID |
-| `birth_date` | date | Date of birth |
-| `belt` | text | Current belt (Branca, Azul, etc.) |
-| `status` | text | Payment status (ativo, pendente, inativo) |
-| `plan` | text | Subscription plan (Mensal, Trimestral, Anual) |
-| `sub_plan` | text | Training tier (evolucao, performance) |
-| `payment_value` | text | Monthly amount (e.g., "120") |
-| `payment_method` | text | Payment method (pix, debito, credito, dinheiro) |
-| `next_due` | date | Next payment due date |
-| `last_payment` | date | Last payment date |
-| `parent_name` | text | Guardian name (if minor) |
-| `parent_cpf` | text | Guardian CPF (if minor) |
-| `medical_info` | text | Medical restrictions |
-| `has_authorization` | boolean | Image rights authorization |
-| `marketing_auth` | boolean | Marketing/WhatsApp message consent |
-| `document_url` | text | URL to uploaded digital signature image |
-| `created_at` | timestamptz | Auto-generated creation timestamp |
-
-#### `expenses`
-| Column | Type | Description |
-|---|---|---|
-| `id` | uuid (PK) | Auto-generated |
-| `description` | text | Expense description |
-| `amount` | numeric | Expense value |
-| `category` | text | Category (Aluguel, Material, etc.) |
-| `due_date` | date | Due date |
-| `paid` | boolean | Whether paid |
-| `payment_method` | text | How it was paid |
-
-#### `classes`
-| Column | Type | Description |
-|---|---|---|
-| `id` | uuid (PK) | Auto-generated |
-| `name` | text | Class name |
-| `day` | text | Day of week |
-| `time` | text | Class time |
-| `instructor` | text | Instructor name |
-
-#### `attendance`
-| Column | Type | Description |
-|---|---|---|
-| `id` | uuid (PK) | Auto-generated |
-| `student_id` | uuid (FK) | References students.id |
-| `class_id` | uuid (FK) | References classes.id |
-| `date` | date | Attendance date |
-
-#### `class_enrollments`
-| Column | Type | Description |
-|---|---|---|
-| `id` | uuid (PK) | Auto-generated |
-| `student_id` | uuid (FK) | References students.id |
-| `class_id` | uuid (FK) | References classes.id |
-
-### Row Level Security (RLS) Policies
-All tables have RLS enabled with these policies:
-- **`students`**: Public `INSERT` allowed (for registration form). Authenticated users have full access.
-- **All other tables**: Only authenticated users have access (full CRUD).
-
-### Storage Bucket: `documents`
-- **Public read/write** for signature uploads during registration
-- Stores files at path: `registration-docs/signature_<timestamp>.png`
+## Checklist de Estabilização (Sempre Verificar)
+- [ ] O arquivo `consolidated_sql.sql` foi rodado no Supabase?
+- [ ] O `Link ID` está definido como único no banco?
+- [ ] O redirecionamento de SPAs (`vercel.json`) está correto?
+- [ ] O Oráculo está rodando na máquina local com conexão ativa?
 
 ---
 
-## Role-Based Access Control
-
-Roles are determined by the `role` field in the Supabase `users_metadata` table and the user's email:
-
-| Role | Access | Determined By |
-|---|---|---|
-| **Desenvolvedor Master** | Everything + all WhatsApp modes + server config | Email = `vaandias@gmail.com` |
-| **Dono Master** | All tabs including Financeiro | `role` contains 'admin' or 'dono' |
-| **Funcionário** | All tabs except Financeiro; only "WhatsApp" send mode | Default role |
-
-**Implementation**: See `App.jsx` lines 132-136 for the role normalization logic:
-```javascript
-const isDevMaster = safeUserEmail === 'vaandias@gmail.com' || safeUserEmail.includes('vaandias');
-const isAdmin = normalizedRole.includes('admin') || normalizedRole.includes('master') || normalizedRole.includes('dono') || isDevMaster;
-```
-
-### WhatsApp Notification Modes
-| Mode | Tab Label | Who Can See | Description |
-|---|---|---|---|
-| `manual` | Modo Manual (Abas) | Dev Master only | Opens individual WhatsApp tabs |
-| `api` | Modo Profissional (Z-API) | Dev Master only | Uses Z-API cloud service |
-| `local` | WhatsApp | Everyone | Uses local bridge server |
-
----
-
-## Contract Templates
-
-Located in `src/lib/contractTemplates.js`. Three exports:
-
-1. **`studentContractAdult`** — Adult student contract
-2. **`studentContractMinor`** — Minor student contract (includes guardian fields)
-3. **`responsibilityTerm`** — Health/liability waiver (matches official PDF from gym owners)
-
-### Template Placeholders
-| Placeholder | Source Field | Description |
-|---|---|---|
-| `{{name}}` | `student.name` | Student full name |
-| `{{cpf}}` | `student.cpf` | Student CPF |
-| `{{email}}` | `student.email` | Student email |
-| `{{birthDate}}` | `student.birth_date` | Formatted birth date |
-| `{{address}}` | `student.address` | Full address |
-| `{{phone}}` | `student.phone` | Phone/WhatsApp |
-| `{{plan}}` | `student.plan` | Subscription plan |
-| `{{sub_plan}}` | `student.sub_plan` | Training tier |
-| `{{payment_value}}` | `student.payment_value` | Monthly amount |
-| `{{paymentMethod}}` | `student.payment_method` | Payment method |
-| `{{parent_name}}` | `student.parent_name` | Guardian name |
-| `{{parent_cpf}}` | `student.parent_cpf` | Guardian CPF |
-| `{{image_auth}}` | `student.has_authorization` | AUTORIZADO / NÃO AUTORIZADO |
-| `{{parent_name_or_self}}` | Conditional | Guardian if minor, self if adult |
-| `{{parent_cpf_or_self}}` | Conditional | Guardian CPF if minor, self if adult |
-| `{{day}}` | `Date.getDate()` | Current day number |
-| `{{month}}` | Portuguese month name | Current month in Portuguese |
-
----
-
-## Design System
-
-### Theme
-- **Background**: `#0a0a0a` (near-black)
-- **Primary Accent**: `#ffd700` (gold)
-- **Success**: `#10b981` (emerald green)
-- **Danger**: `#ef4444` (red)
-- **Text Primary**: `#ffffff`
-- **Text Secondary**: `#a1a1aa`
-- **Glass Effect**: `rgba(255, 255, 255, 0.03)` background with subtle borders
-
-### Typography
-- **Primary Font**: `'Outfit'` (Google Fonts)
-- **Fallback**: `sans-serif`
-
-### UI Patterns
-- Dark glassmorphism panels (`.glass` class)
-- Gold accent borders on active states
-- Smooth transitions on hover (0.2s ease)
-- Responsive sidebar navigation
-- Custom-styled dropdowns (no native appearance)
-
-### Branding Footer
-The sidebar includes a subtle "Desenvolvido por VANDERLEI DIAS" credit at the bottom, styled in gold with 50% opacity.
-
----
-
-## Quick Start
-
-```bash
-# 1. Clone and install
-git clone https://github.com/deleiqz/almeida-jj.git AG
-cd AG && npm install
-cd whatsapp-bridge && npm install && cd ..
-
-# 2. Create .env file with Supabase credentials
-# VITE_SUPABASE_URL=https://dospnbzzcjrmwpakldmy.supabase.co
-# VITE_SUPABASE_ANON_KEY=<key>
-
-# 3. Start development
-npm run dev
-
-# 4. (Optional) Start WhatsApp bridge
-cd whatsapp-bridge && npm start
-
-# 5. Access the app
-# Admin Panel: http://localhost:5173
-# Public Registration: http://localhost:5173/?registro
-# Contract View: http://localhost:5173/?contrato=<STUDENT_UUID>
-```
-
-### Production URLs
-- **Admin Panel**: `https://almeida-jj.vercel.app`
-- **Public Registration**: `https://almeida-jj.vercel.app/?registro`
-- **Contract View**: `https://almeida-jj.vercel.app/?contrato=<UUID>`
-
----
-
-## Dependencies
-
-### Frontend (`package.json`)
-| Package | Version | Purpose |
-|---|---|---|
-| `react` | ^19.2.4 | UI framework |
-| `react-dom` | ^19.2.4 | DOM rendering |
-| `@supabase/supabase-js` | ^2.99.2 | Supabase client |
-| `lucide-react` | ^0.577.0 | Icon library |
-| `recharts` | ^3.8.0 | Dashboard charts |
-| `framer-motion` | ^12.38.0 | Animations |
-| `vite` | ^8.0.0 | Build tool |
+**Ecossistema Almeida JJ: Blindado, Automatizado e Lendário.** 🛡️🚀🏆
+`vite` | ^8.0.0 | Build tool |
 
 ### WhatsApp Bridge (`whatsapp-bridge/package.json`)
 | Package | Version | Purpose |

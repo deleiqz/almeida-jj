@@ -12,7 +12,7 @@ const Notifications = ({ students, isDevMaster }) => {
   const [sendMode, setSendMode] = useState('local'); // Default to local for everyone
   const [apiConfig, setApiConfig] = useState(() => {
     const saved = localStorage.getItem('whatsapp_api_config');
-    return saved ? JSON.parse(saved) : { instance: '', token: '', clientToken: '', localUrl: 'http://localhost:3000' };
+    return saved ? JSON.parse(saved) : { instance: '', token: '', clientToken: '', localUrl: 'http://127.0.0.1:3005' };
   });
   const [isSendingAuto, setIsSendingAuto] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState({ online: false, connected: false, loading: false });
@@ -27,10 +27,11 @@ const Notifications = ({ students, isDevMaster }) => {
     if (sendMode !== 'local') return;
     setConnectionStatus(prev => ({ ...prev, loading: true }));
     try {
-      const baseUrl = apiConfig.localUrl || 'http://localhost:3000';
+      const baseUrl = apiConfig.localUrl || 'http://127.0.0.1:3005';
       const response = await fetch(`${baseUrl}/status`, {
         headers: {
-          'ngrok-skip-browser-warning': 'true' // Ignora tela de aviso do ngrok grátis
+          'ngrok-skip-browser-warning': 'true',
+          'x-api-key': import.meta.env.VITE_BRIDGE_SECURITY_KEY
         }
       });
       if (response.ok) {
@@ -128,14 +129,15 @@ const Notifications = ({ students, isDevMaster }) => {
           setIsSendingAuto(false);
         }
       } else if (sendMode === 'local') {
-        const baseUrl = apiConfig.localUrl || 'http://localhost:3000';
+        const baseUrl = apiConfig.localUrl || 'http://127.0.0.1:3005';
         setIsSendingAuto(true);
         try {
           const response = await fetch(`${baseUrl}/send-message`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'ngrok-skip-browser-warning': 'true' // Ignora aviso do ngrok
+              'ngrok-skip-browser-warning': 'true',
+              'x-api-key': import.meta.env.VITE_BRIDGE_SECURITY_KEY
             },
             body: JSON.stringify({
               phone: fullPhone,
@@ -303,7 +305,7 @@ const Notifications = ({ students, isDevMaster }) => {
               <h4 style={{ fontSize: '0.9rem', marginBottom: '10px', color: '#10b981' }}>Configuração Servidor Local</h4>
               <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                 <input 
-                  type="text" placeholder="URL do Servidor (Ex: http://192.168.1.10:3000)" 
+                  type="text" placeholder="URL do Servidor (Ex: http://192.168.1.10:3005)" 
                   value={apiConfig.localUrl}
                   onChange={(e) => saveApiConfig({...apiConfig, localUrl: e.target.value})}
                   style={{ flex: 1, padding: '8px', fontSize: '0.8rem', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '4px' }}
@@ -336,7 +338,7 @@ const Notifications = ({ students, isDevMaster }) => {
                 </a>
               </div>
               <p style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.3)', marginTop: '8px' }}>
-                * Link do <strong>ngrok</strong> ou <strong>IP:3000</strong>. Cada mensagem tem delay de 10-15s para sua segurança.
+                * Link do <strong>ngrok</strong> ou <strong>IP:3005</strong>. Cada mensagem tem delay de 10-15s para sua segurança.
               </p>
             </div>
           )}

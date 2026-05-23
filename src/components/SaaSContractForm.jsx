@@ -404,7 +404,10 @@ const SaaSContractForm = () => {
                 const names = formData.responsibleName2 ? `${formData.responsibleName1} e ${formData.responsibleName2}` : formData.responsibleName1;
                 await fetch('https://almeidajj-mp.loca.lt/send-message', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'x-api-key': import.meta.env.VITE_BRIDGE_SECURITY_KEY
+                    },
                     body: JSON.stringify({
                         phone: '5511986423450',
                         message: `✅ *CONTRATO SaaS ASSINADO!* \nAcademia: *${formData.gymName}* \nResponsáveis: ${names}\nDia Vencimento: ${formData.paymentDay}\nValor Setup: R$ 3.250,00`

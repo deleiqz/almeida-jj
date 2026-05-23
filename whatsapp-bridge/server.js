@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const { Client, LocalAuth } = require('whatsapp-web.js');
@@ -5,21 +6,34 @@ const qrcodeTerminal = require('qrcode-terminal');
 const imageQr = require('qrcode');
 const { MercadoPagoConfig, Preference, Payment } = require('mercadopago');
 
-// CONFIGURAÇÃO MERCADO PAGO - ADICIONE SEU ACCESS TOKEN DE PRODUÇÃO AQUI
-const MP_ACCESS_TOKEN = 'APP_USR-941031687557097-040713-68cec6df2e1b1705c30cec5e71899475-402502578';
+// CONFIGURAÇÃO MERCADO PAGO
+const MP_ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN;
 
 const clientMp = new MercadoPagoConfig({ accessToken: MP_ACCESS_TOKEN });
 const preference = new Preference(clientMp);
 
 // CONFIGURAÇÃO AIRTABLE
-const AIRTABLE_PAT = 'patKV3AcK9gDHNvg7.38645088e5ab443298c6091ab2b3801aef1792de655cc0e6c9365d512464b822';
-const AIRTABLE_BASE_ID = 'app4o6LoQEhgWFGz1';
+const AIRTABLE_PAT = process.env.AIRTABLE_PAT;
+const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID;
 const Airtable = require('airtable');
 const airtableBase = new Airtable({ apiKey: AIRTABLE_PAT }).base(AIRTABLE_BASE_ID);
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// MIDDLEWARE DE SEGURANÇA (BLINDAGEM)
+const securityMiddleware = (req, res, next) => {
+    const apiKey = req.headers['x-api-key'];
+    const validKey = process.env.SECURITY_KEY;
+
+    if (!apiKey || apiKey !== validKey) {
+        console.warn(`🚨 Tentativa de acesso não autorizado bloqueada! IP: ${req.ip}`);
+        return res.status(401).json({ error: 'Acesso não autorizado. Chave de segurança inválida.' });
+    }
+    next();
+};
+
 
 let isReady = false;
 let lastQr = '';
@@ -71,7 +85,7 @@ const client = new Client({
             '--disable-client-side-phishing-detection'
         ]
     },
-    // Desativando cache remoto problemático para evitar o erro "Execution context was destroyed"
+    // Usando cache padrão para evitar o erro "Execution context was destroyed" associado a HTMLs antigos
     webVersionCache: {
         type: 'local'
     }
@@ -153,7 +167,7 @@ app.get('/qr', (req, res) => {
 });
 
 // Rota de Envio de Mensagem Individual
-app.post('/send-message', async (req, res) => {
+app.post('/send-message', securityMiddleware, async (req, res) => {
     const { phone, message } = req.body;
 
     if (!isReady) {
@@ -203,7 +217,7 @@ app.post('/send-message', async (req, res) => {
 });
 
 // Rota para Criar Link de Pagamento Mercado Pago (SaaS Setup)
-app.post('/create-saas-payment', async (req, res) => {
+app.post('/create-saas-payment', securityMiddleware, async (req, res) => {
     const { gymName, amountSetup, amountMonthly } = req.body;
 
     if (MP_ACCESS_TOKEN === 'COLOQUE_SEU_TOKEN_AQUI') {
@@ -345,7 +359,7 @@ async function initAirtableSchema() {
 initAirtableSchema();
 
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3005;
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`\n🖥️  Ponte WhatsApp rodando em http://localhost:${PORT}`);
     console.log('--------------------------------------------------');
