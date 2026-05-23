@@ -22,7 +22,7 @@ export default async function handler(req, res) {
   try {
     const { studentName, planName, amount } = req.body;
 
-    const token = process.env.MP_ACCESS_TOKEN || 'APP_USR-941031687557097-040713-68cec6df2e1b1705c30cec5e71899475-402502578';
+    const token = process.env.MP_ACCESS_TOKEN || 'APP_USR-989386315722115-052310-7107168e08120f173cc36d78050a88dc-2531472158';
 
     const client = new MercadoPagoConfig({
       accessToken: token,
