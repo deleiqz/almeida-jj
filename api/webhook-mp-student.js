@@ -87,14 +87,29 @@ export default async function handler(req, res) {
             const formattedNextDue = nextDueDate.toISOString().split('T')[0];
             const formattedLastPayment = today.toISOString().split('T')[0];
 
-            console.log(`[Webhook MP Student] Atualizando aluno: ${student.name} (ID: ${student.id}) para pago. Próximo vencimento: ${formattedNextDue}`);
+            // Identificar a forma exata de pagamento (Ex: Pix, Crédito em 12x, Boleto)
+            let exactPaymentMethod = 'Mercado Pago';
+            if (paymentData.payment_method_id === 'pix') {
+              exactPaymentMethod = 'Pix (À vista)';
+            } else if (paymentData.payment_type_id === 'credit_card') {
+              exactPaymentMethod = `Cartão de Crédito (${paymentData.installments || 1}x)`;
+            } else if (paymentData.payment_type_id === 'debit_card') {
+              exactPaymentMethod = 'Cartão de Débito (À vista)';
+            } else if (paymentData.payment_type_id === 'ticket') {
+              exactPaymentMethod = 'Boleto (À vista)';
+            } else if (paymentData.payment_type_id === 'account_money') {
+              exactPaymentMethod = 'Saldo Mercado Pago';
+            }
+
+            console.log(`[Webhook MP Student] Atualizando aluno: ${student.name} (ID: ${student.id}) para pago. Próximo vencimento: ${formattedNextDue}. Método: ${exactPaymentMethod}`);
 
             const { error: updateError } = await supabase
               .from('students')
               .update({
                 status: 'pago',
                 last_payment: formattedLastPayment,
-                next_due: formattedNextDue
+                next_due: formattedNextDue,
+                payment_method: exactPaymentMethod
               })
               .eq('id', student.id);
 
