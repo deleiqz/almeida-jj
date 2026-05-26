@@ -80,7 +80,10 @@ const App = () => {
         // Fetch profile if role/name is missing
         if (!role || !userName) {
           supabase.from('profiles').select('role, full_name').eq('id', session.user.id).single()
-            .then(({ data: profile }) => {
+            .then(({ data: profile, error }) => {
+              if (error) {
+                console.error("Erro ao sincronizar perfil:", error);
+              }
               if (profile) {
                 setRole(profile.role?.toLowerCase() || 'employee');
                 setUserName(profile.full_name || '');
@@ -144,7 +147,8 @@ const App = () => {
   const normalizedRole = (role || '').toLowerCase().trim();
   const safeUserEmail = (user?.email || '').toLowerCase().trim();
   const isDevMaster = safeUserEmail === 'vaandias@gmail.com' || safeUserEmail.includes('vaandias');
-  const isAdmin = normalizedRole.includes('admin') || normalizedRole.includes('master') || normalizedRole.includes('dono') || isDevMaster;
+  const isBrenoDono = safeUserEmail === 'breno@almeidajj.com';
+  const isAdmin = normalizedRole.includes('admin') || normalizedRole.includes('master') || normalizedRole.includes('dono') || isDevMaster || isBrenoDono;
 
   // SYSTEM BLOCK CHECK: Restore dynamic check from database
   const isSystemBlocked = settings?.system_blocked === 'true' || settings?.system_blocked === true;
@@ -282,7 +286,7 @@ const App = () => {
           <div style={{ fontWeight: '600', fontSize: '0.9rem', marginBottom: '15px' }}>
             {userName || user.email} <br/>
             <span style={{ color: 'var(--accent-primary)', fontSize: '0.8rem' }}>
-              [{isDevMaster || normalizedRole === 'master' ? 'Desenvolvedor Master' : (normalizedRole === 'admin' || normalizedRole === 'dono') ? 'Dono Master' : 'Funcionário'}]
+              [{isDevMaster || normalizedRole === 'master' ? 'Desenvolvedor Master' : (normalizedRole === 'admin' || normalizedRole === 'dono' || isBrenoDono) ? 'Dono Master' : 'Funcionário'}]
             </span>
           </div>
           <button 

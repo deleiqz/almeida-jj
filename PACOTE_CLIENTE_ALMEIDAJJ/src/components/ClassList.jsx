@@ -1,0 +1,228 @@
+import React, { useState } from 'react';
+import { Plus, Users, Clock, Edit2 } from 'lucide-react';
+import Modal from './Modal';
+
+const ClassList = ({ classes, enrollments, addClass, updateClass, deleteClass }) => {
+  const [isModalOpen, setModalOpen] = useState(false);
+  const [isEditMode, setEditMode] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [newClass, setNewClass] = useState({ name: '', time: '', instructor: '', capacity: 20, days: [] });
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (newClass.days.length === 0) {
+      alert("Selecione pelo menos um dia da semana.");
+      return;
+    }
+    
+    if (isEditMode) {
+      updateClass(editingId, newClass);
+    } else {
+      addClass(newClass);
+    }
+    
+    closeModal();
+  };
+
+  const openAddModal = () => {
+    setEditMode(false);
+    setNewClass({ name: '', time: '', instructor: '', capacity: 20, days: [] });
+    setModalOpen(true);
+  };
+
+  const openEditModal = (clase) => {
+    setEditMode(true);
+    setEditingId(clase.id);
+    setNewClass({
+      name: clase.name,
+      time: clase.time,
+      instructor: clase.instructor,
+      capacity: clase.capacity,
+      days: clase.days || []
+    });
+    setModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setModalOpen(false);
+    setEditingId(null);
+    setNewClass({ name: '', time: '', instructor: '', capacity: 20, days: [] });
+  };
+
+  const handleDelete = (id, name) => {
+    if (window.confirm(`Tem certeza que deseja excluir a turma "${name}"?`)) {
+      deleteClass(id);
+    }
+  };
+
+  const toggleDay = (day) => {
+    setNewClass(prev => ({
+      ...prev,
+      days: prev.days.includes(day) 
+        ? prev.days.filter(d => d !== day)
+        : [...prev.days, day]
+    }));
+  };
+
+  const weekDays = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
+
+  const getEnrollmentCount = (classId) => {
+    return enrollments.filter(e => e.class_id === classId).length;
+  };
+
+  return (
+    <div className="class-list">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+        <h2 className="title-gradient">Gestão de Turmas</h2>
+        <button className="btn-primary" onClick={openAddModal} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Plus size={18} /> Nova Turma
+        </button>
+      </div>
+
+      <div className="dashboard-grid">
+        {classes.map(c => {
+          const count = getEnrollmentCount(c.id);
+          const cap = c.capacity || 20;
+          const percentage = (count / cap) * 100;
+          
+          return (
+            <div key={c.id} className="card glass">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '16px' }}>
+                <h3 style={{ color: 'var(--accent-primary)', margin: 0 }}>{c.name}</h3>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                    <Clock size={16} /> {c.time}
+                  </div>
+                </div>
+              </div>
+              
+              <div style={{ marginBottom: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)', marginBottom: '8px' }}>
+                  <Users size={16} /> 
+                  <span style={{ fontSize: '0.9rem' }}>Instrutor: {c.instructor}</span>
+                </div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--accent-primary)', opacity: 0.8 }}>
+                  {c.days?.join(', ') || 'Dias não definidos'}
+                </div>
+              </div>
+
+              <div style={{ marginTop: '20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '8px' }}>
+                  <span style={{ color: 'var(--text-secondary)' }}>Ocupação</span>
+                  <span style={{ color: percentage >= 100 ? '#ff4d4d' : 'white', fontWeight: 'bold' }}>
+                    {count} / {cap} alunos
+                  </span>
+                </div>
+                <div style={{ height: '6px', background: 'rgba(255,255,255,0.05)', borderRadius: '3px', overflow: 'hidden' }}>
+                  <div style={{ 
+                    height: '100%', 
+                    width: `${Math.min(percentage, 100)}%`, 
+                    background: percentage >= 90 ? '#ff4d4d' : 'var(--accent-primary)',
+                    transition: 'width 0.3s ease'
+                  }} />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px', paddingTop: '15px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                <button 
+                  onClick={() => openEditModal(c)}
+                  style={{ background: 'transparent', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                >
+                  <Edit2 size={14} /> Editar
+                </button>
+                <button 
+                  onClick={() => handleDelete(c.id, c.name)}
+                  style={{ background: 'transparent', border: 'none', color: '#ff4d4d', cursor: 'pointer', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                >
+                  Excluir
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <Modal title={isEditMode ? "Editar Turma" : "Cadastrar Nova Turma"} isOpen={isModalOpen} onClose={closeModal}>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div className="form-group">
+            <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Nome da Turma</label>
+            <input 
+              required
+              type="text" 
+              placeholder="Ex: Jiu-Jitsu Iniciante"
+              value={newClass.name}
+              onChange={(e) => setNewClass({...newClass, name: e.target.value})}
+              style={{ width: '100%', padding: '12px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--card-border)', color: 'white' }}
+            />
+          </div>
+          
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Horário</label>
+              <input 
+                required
+                type="text" 
+                placeholder="Ex: 19:00"
+                value={newClass.time}
+                onChange={(e) => setNewClass({...newClass, time: e.target.value})}
+                style={{ width: '100%', padding: '12px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--card-border)', color: 'white' }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Capacidade</label>
+              <input 
+                required
+                type="number" 
+                value={newClass.capacity}
+                onChange={(e) => setNewClass({...newClass, capacity: Number(e.target.value)})}
+                style={{ width: '100%', padding: '12px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--card-border)', color: 'white' }}
+              />
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Instrutor</label>
+            <input 
+              required
+              type="text" 
+              value={newClass.instructor}
+              onChange={(e) => setNewClass({...newClass, instructor: e.target.value})}
+              style={{ width: '100%', padding: '12px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--card-border)', color: 'white' }}
+            />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)' }}>Dias da Semana</label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              {weekDays.map(day => (
+                <button
+                  key={day}
+                  type="button"
+                  onClick={() => toggleDay(day)}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '20px',
+                    fontSize: '0.8rem',
+                    border: '1px solid var(--card-border)',
+                    background: newClass.days.includes(day) ? 'var(--accent-primary)' : 'transparent',
+                    color: newClass.days.includes(day) ? 'black' : 'white',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  {day}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <button type="submit" className="btn-primary" style={{ marginTop: '10px' }}>
+            {isEditMode ? "Salvar Alterações" : "Salvar Turma"}
+          </button>
+        </form>
+      </Modal>
+    </div>
+  );
+};
+
+export default ClassList;

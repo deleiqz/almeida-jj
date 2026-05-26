@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { studentContractAdult, studentContractMinor, responsibilityTerm } from '../lib/contractTemplates';
 import logo from '../assets/logo.jpg';
 import { Printer, Download, ArrowLeft } from 'lucide-react';
+import AdBanner from './AdBanner';
 
 const ContractView = ({ studentId, onBack }) => {
   const [student, setStudent] = useState(null);
@@ -83,6 +84,11 @@ const ContractView = ({ studentId, onBack }) => {
         <button onClick={() => window.print()} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '5px', marginLeft: 'auto', background: '#000' }}>
           <Printer size={18} /> Imprimir / PDF
         </button>
+      </div>
+
+      {/* Anúncio AdSense — topo do contrato (oculto na impressão) */}
+      <div className="no-print">
+        <AdBanner slot="" format="auto" />
       </div>
 
       <div id="print-area">

@@ -1,0 +1,336 @@
+import { useState, useEffect, lazy, Suspense } from 'react';
+import { LayoutDashboard, Users, CreditCard, Settings, Dumbbell, CheckCircle, Send } from 'lucide-react';
+import logo from './assets/logo.jpg';
+import jjBg from './assets/jj-bg.png';
+import { useStore } from './hooks/useStore';
+import Login from './components/Login';
+import RegistrationForm from './components/RegistrationForm';
+import ErrorBoundary from './components/ErrorBoundary';
+import { supabase } from './lib/supabase';
+import { LogOut } from 'lucide-react';
+import ContractView from './components/ContractView';
+import SaaSContractForm from './components/SaaSContractForm';
+import BlockedPage from './components/BlockedPage';
+
+
+// Lazy-load heavy components for faster initial render
+const Dashboard = lazy(() => import('./components/Dashboard'));
+const StudentList = lazy(() => import('./components/StudentList'));
+const ExpenseList = lazy(() => import('./components/ExpenseList'));
+const Maintenance = lazy(() => import('./components/Maintenance'));
+const BeltControl = lazy(() => import('./components/BeltControl'));
+const Attendance = lazy(() => import('./components/Attendance'));
+const ClassList = lazy(() => import('./components/ClassList'));
+const Notifications = lazy(() => import('./components/Notifications'));
+const RegistrationLinks = lazy(() => import('./components/RegistrationLinks'));
+const CustomSettings = lazy(() => import('./components/Settings'));
+
+const App = () => {
+  const queryParams = new URLSearchParams(window.location.search);
+  const isPublicRegistration = queryParams.get('registro') !== null;
+  const contractId = queryParams.get('contrato');
+  const isSaaSContract = queryParams.get('contrato_saas') !== null;
+  
+  if (isSaaSContract) {
+    return <SaaSContractForm />;
+  }
+  
+  if (contractId) {
+    return <ContractView studentId={contractId} onBack={() => window.location.href = '/'} />;
+  }
+  
+  // Persistence: initialize from localStorage
+  const [activeTab, setActiveTab] = useState(() => localStorage.getItem('activeTab') || 'dashboard');
+  const [user, setUser] = useState(() => {
+    try {
+      const stored = localStorage.getItem('user');
+      return stored && stored !== "undefined" ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [role, setRole] = useState(() => localStorage.getItem('role') || null);
+  const [userName, setUserName] = useState(() => localStorage.getItem('userName') || '');
+
+  // Persistence: save to localStorage on change
+  useEffect(() => {
+    localStorage.setItem('activeTab', activeTab);
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (user) localStorage.setItem('user', JSON.stringify(user));
+    else localStorage.removeItem('user');
+  }, [user]);
+
+  useEffect(() => {
+    if (role) localStorage.setItem('role', role);
+    else localStorage.removeItem('role');
+  }, [role]);
+
+  useEffect(() => {
+    if (userName) localStorage.setItem('userName', userName);
+    else localStorage.removeItem('userName');
+  }, [userName]);
+
+  // Sync Supabase session on mount
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        setUser(session.user);
+        // Fetch profile if role/name is missing
+        if (!role || !userName) {
+          supabase.from('profiles').select('role, full_name').eq('id', session.user.id).single()
+            .then(({ data: profile, error }) => {
+              if (error) {
+                console.error("Erro ao sincronizar perfil:", error);
+              }
+              if (profile) {
+                setRole(profile.role?.toLowerCase() || 'employee');
+                setUserName(profile.full_name || '');
+              }
+            });
+        }
+      } else {
+        handleLogout();
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        setUser(session.user);
+      } else {
+        // Prevent infinite loop by manually clearing state instead of calling handleLogout()
+        setUser(null);
+        setRole(null);
+        setUserName('');
+        localStorage.removeItem('user');
+        localStorage.removeItem('role');
+        localStorage.removeItem('userName');
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+  const { 
+    students, expenses, classes, attendance, enrollments, settings,
+    addStudent, updateStudent, deleteStudent, enrollStudent, updateStudentBelt, addClass, updateClass, deleteClass, markAttendance, removeAttendance, addExpense, updateExpense, deleteExpense,
+    getStats, getStudentAttendanceCount, updateSettings, loading 
+  } = useStore(isPublicRegistration);
+
+  const handleLogin = (user, role, name) => {
+    setUser(user);
+    setRole(role);
+    setUserName(name || '');
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+    setRole(null);
+    setUserName('');
+    localStorage.clear();
+  };
+
+  const navItems = [
+    { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
+    { id: 'students', label: 'Alunos', icon: <Users size={20} /> },
+    { id: 'belts', label: 'Faixas', icon: <Dumbbell size={20} /> },
+    { id: 'attendance', label: 'Chamada', icon: <CheckCircle size={20} /> },
+    { id: 'classes', label: 'Turmas', icon: <LayoutDashboard size={20} /> },
+    { id: 'links', label: 'Links Enviados', icon: <Send size={20} /> },
+    { id: 'notifications', label: 'Notificações', icon: <Send size={20} /> },
+    { id: 'expenses', label: 'Financeiro', icon: <CreditCard size={20} />, restricted: true },
+    { id: 'settings', label: 'Configurações', icon: <Settings size={20} />, roleRequired: 'master' },
+    { id: 'maintenance', label: 'Manutenção', icon: <Settings size={20} /> },
+  ];
+
+  const normalizedRole = (role || '').toLowerCase().trim();
+  const safeUserEmail = (user?.email || '').toLowerCase().trim();
+  const isDevMaster = safeUserEmail === 'vaandias@gmail.com' || safeUserEmail.includes('vaandias');
+  const isBrenoDono = safeUserEmail === 'breno@almeidajj.com';
+  const isAdmin = normalizedRole.includes('admin') || normalizedRole.includes('master') || normalizedRole.includes('dono') || isDevMaster || isBrenoDono;
+
+  // SYSTEM BLOCK CHECK: Restore dynamic check from database
+  const isSystemBlocked = settings?.system_blocked === 'true' || settings?.system_blocked === true;
+  
+  if (isSystemBlocked && !isDevMaster && user) {
+    return <BlockedPage />;
+  }
+
+  const filteredNavItems = navItems.filter(item => !item.restricted || isAdmin);
+
+  const renderContent = () => {
+    if (loading) return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh', color: 'var(--accent-primary)', fontSize: '1.2rem', fontWeight: '600' }}>
+        Carregando dados do Almeida JJ...
+      </div>
+    );
+
+    switch (activeTab) {
+      case 'dashboard':      return <Dashboard getStats={getStats} role={normalizedRole} students={students} expenses={expenses} userEmail={user?.email} />;
+      case 'students': return <StudentList students={students} classes={classes} enrollments={enrollments} addStudent={addStudent} updateStudent={updateStudent} deleteStudent={deleteStudent} user={user} />;
+      case 'belts':          return <BeltControl 
+          students={students} 
+          updateStudentBelt={updateStudentBelt} 
+          getStudentAttendanceCount={getStudentAttendanceCount}
+          markAttendance={markAttendance}
+          removeAttendance={removeAttendance}
+        />;
+      case 'attendance': return <Attendance students={students} classes={classes} attendance={attendance} enrollments={enrollments} markAttendance={markAttendance} />;
+      case 'classes':        return <ClassList 
+          classes={classes} 
+          enrollments={enrollments} 
+          addClass={addClass}
+          updateClass={updateClass}
+          deleteClass={deleteClass}
+        />; 
+      case 'notifications': return <Notifications students={students} isDevMaster={isDevMaster} user={user} />;
+      case 'links': return <RegistrationLinks user={user} isAdmin={isAdmin} />;
+      case 'expenses': return isAdmin ? <ExpenseList expenses={expenses} addExpense={addExpense} updateExpense={updateExpense} deleteExpense={deleteExpense} /> : <Dashboard getStats={getStats} role={normalizedRole} students={students} expenses={expenses} userEmail={user?.email} />;
+      case 'settings': return (normalizedRole === 'master' || isDevMaster) ? <CustomSettings settings={settings} updateSettings={updateSettings} /> : <Dashboard getStats={getStats} />;
+      case 'maintenance': return <Maintenance user={user} isDevMaster={isDevMaster} />;
+      default: return <Dashboard getStats={getStats} role={normalizedRole} students={students} expenses={expenses} userEmail={user?.email} />;
+    }
+  };
+
+  if (isPublicRegistration) {
+    return (
+      <ErrorBoundary>
+        <RegistrationForm />
+      </ErrorBoundary>
+    );
+  }
+
+  if (!user) {
+    return <Login onLogin={handleLogin} />;
+  }
+
+  const suspenseFallback = (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh', color: 'var(--accent-primary)', fontSize: '1.1rem', fontWeight: '600' }}>
+      Carregando...
+    </div>
+  );
+
+  return (
+    <div className="app-container" style={{ 
+      display: 'flex', 
+      minHeight: '100vh',
+      backgroundColor: '#0a0a0a',
+      backgroundImage: `linear-gradient(rgba(10, 10, 10, 0.85), rgba(10, 10, 10, 0.85)), url(${jjBg})`,
+      backgroundSize: '800px',
+      backgroundPosition: 'center',
+      backgroundRepeat: 'no-repeat',
+      backgroundAttachment: 'fixed'
+    }}>
+      {/* Dev Master warning banner when system is blocked */}
+      {isSystemBlocked && isDevMaster && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 9999,
+          background: 'linear-gradient(90deg, #dc2626, #ef4444, #dc2626)',
+          color: 'white',
+          padding: '10px 20px',
+          textAlign: 'center',
+          fontWeight: '700',
+          fontSize: '0.85rem',
+          letterSpacing: '0.5px',
+          boxShadow: '0 4px 15px rgba(239, 68, 68, 0.4)'
+        }}>
+          ⚠️ SISTEMA BLOQUEADO POR INADIMPLÊNCIA — Os clientes estão vendo a tela de suspensão. Desative em Configurações.
+        </div>
+      )}
+      {/* Sidebar */}
+      <nav className="glass" style={{ 
+        width: '260px', 
+        height: 'calc(100vh - 40px)', 
+        margin: '20px', 
+        padding: '30px 20px',
+        display: 'flex',
+        flexDirection: 'column',
+        position: 'fixed'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '40px', padding: '0 10px' }}>
+          <img src={logo} alt="Logo" style={{ width: '45px', height: '45px', borderRadius: '8px', objectFit: 'cover' }} />
+          <h1 style={{ fontSize: '1.4rem', fontWeight: '800', letterSpacing: '-0.5px', textTransform: 'uppercase' }}>Almeida<span style={{ color: 'var(--accent-primary)' }}>JJ</span></h1>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
+          {filteredNavItems.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => setActiveTab(item.id)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                padding: '12px 16px',
+                borderRadius: '12px',
+                background: activeTab === item.id ? 'rgba(255, 215, 0, 0.1)' : 'transparent',
+                color: activeTab === item.id ? 'var(--accent-primary)' : 'var(--text-secondary)',
+                textAlign: 'left',
+                width: '100%',
+                fontSize: '0.95rem'
+              }}
+            >
+              {item.icon}
+              {item.label}
+            </button>
+          ))}
+        </div>
+
+        <div style={{ marginTop: 'auto', padding: '15px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px' }}>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '5px' }}>Logado como:</div>
+          <div style={{ fontWeight: '600', fontSize: '0.9rem', marginBottom: '15px' }}>
+            {userName || user.email} <br/>
+            <span style={{ color: 'var(--accent-primary)', fontSize: '0.8rem' }}>
+              [{isDevMaster || normalizedRole === 'master' ? 'Desenvolvedor Master' : (normalizedRole === 'admin' || normalizedRole === 'dono' || isBrenoDono) ? 'Dono Master' : 'Funcionário'}]
+            </span>
+          </div>
+          <button 
+            onClick={handleLogout}
+            style={{ 
+              width: '100%', 
+              padding: '8px', 
+              background: 'rgba(239, 68, 68, 0.1)', 
+              color: '#ef4444', 
+              border: 'none', 
+              borderRadius: '8px',
+              fontSize: '0.85rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              cursor: 'pointer'
+            }}
+          >
+            <LogOut size={16} /> Sair
+          </button>
+
+          {/* Elegant Creator Brand */}
+            <div style={{ marginTop: 'auto', paddingTop: '20px', borderTop: '1px solid rgba(255,255,255,0.05)', textAlign: 'center' }}>
+              <p style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>
+                Desenvolvido por
+              </p>
+              <p style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--accent-primary)', letterSpacing: '0.5px' }}>
+                © 2026 fdwords Elite Group. All rights reserved.
+              </p>
+            </div>
+        </div>
+      </nav>
+
+      {/* Main Content */}
+      <main style={{ marginLeft: '300px', padding: '40px 40px 40px 0', flex: 1, maxWidth: '1200px' }}>
+        <ErrorBoundary>
+          <Suspense fallback={suspenseFallback}>
+            {renderContent()}
+          </Suspense>
+        </ErrorBoundary>
+      </main>
+    </div>
+  );
+};
+
+export default App;

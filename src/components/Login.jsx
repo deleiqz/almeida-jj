@@ -39,11 +39,16 @@ const Login = ({ onLogin }) => {
           throw authError;
         }
 
-        const { data: profile } = await supabase
+        const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('role, full_name')
           .eq('id', data.user.id)
           .single();
+
+        if (profileError) {
+          console.error("Erro ao carregar perfil:", profileError);
+          throw new Error("Erro ao carregar perfil do banco: " + profileError.message);
+        }
 
         const roleLower = profile?.role?.toLowerCase() || 'employee';
         onLogin(data.user, roleLower, profile?.full_name);

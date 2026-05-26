@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import logo from '../assets/logo.jpg';
 import jjBg from '../assets/jj-bg.png';
 import { responsibilityTerm } from '../lib/contractTemplates';
+import AdBanner from './AdBanner';
 
 // Validador oficial de CPF
 const validateCPF = (cpf) => {
@@ -508,6 +509,10 @@ const RegistrationForm = () => {
 
     return (
       <div style={{ ...pageStyle, alignItems: 'center' }}>
+        {/* Anúncio AdSense — tela de sucesso */}
+        <div style={{ maxWidth: '560px', width: '100%', marginBottom: '15px' }}>
+          <AdBanner slot="" format="auto" />
+        </div>
         <div style={{ ...cardStyle, textAlign: 'center', padding: '40px 30px' }}>
           <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: 'rgba(16, 185, 129, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 15px' }}>
             <span style={{ fontSize: '1.5rem' }}>🥋</span>
@@ -596,6 +601,9 @@ const RegistrationForm = () => {
           Almeida<span style={{ color: '#ffd700' }}>JJ</span>
         </h1>
         <p style={{ textAlign: 'center', color: '#a1a1aa', fontSize: '0.9rem', marginBottom: '25px' }}>Ficha de Matrícula • Brazilian Jiu Jitsu</p>
+        
+        {/* Anúncio AdSense — topo do formulário */}
+        <AdBanner slot="" format="auto" />
         
         <div style={{ height: '1px', background: 'linear-gradient(90deg, transparent, rgba(255,215,0,0.3), transparent)', marginBottom: '25px' }}></div>
 
@@ -827,6 +835,9 @@ const RegistrationForm = () => {
             </button>
           </div>
 
+          {/* Anúncio AdSense — entre plano e duração */}
+          <AdBanner slot="" format="horizontal" style={{ margin: '15px 0' }} />
+
           {/* Duração do Plano */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
             {(() => {
@@ -1029,6 +1040,9 @@ const RegistrationForm = () => {
             {loading ? 'ENVIANDO...' : '🥋 FINALIZAR MATRÍCULA'}
           </button>
           
+          {/* Anúncio AdSense — rodapé do formulário */}
+          <AdBanner slot="" format="auto" style={{ marginTop: '20px' }} />
+
           <p style={{ textAlign: 'center', fontSize: '0.75rem', color: 'rgba(255,255,255,0.25)', marginTop: '15px' }}>
             © 2026 fdwords Elite Group. All rights reserved.
           </p>
