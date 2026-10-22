@@ -1,0 +1,5 @@
+node_modules
+whatsapp-bridge
+whatsapp-bridge/**
+dist
+.git

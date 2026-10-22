@@ -321,10 +321,22 @@ export const useStore = (skipFetch = false) => {
       
     const expiresOnDay = students.filter(s => s.nextDue === formattedDate).length;
 
-    // Revenue by method
+    // Revenue by method normalizado (evita duplicidades como 'pix' e 'Pix')
+    const formatMethodName = (rawMethod) => {
+      if (!rawMethod) return 'Pix';
+      const m = rawMethod.trim().toLowerCase();
+      if (m.includes('pix')) return 'Pix';
+      if (m.includes('credito') || m.includes('crédito') || m === 'credito') return 'Cartão de Crédito';
+      if (m.includes('debito') || m.includes('débito') || m === 'debito') return 'Cartão de Débito';
+      if (m.includes('totalpass')) return 'Totalpass';
+      if (m.includes('gympass')) return 'Gympass';
+      if (m.includes('dinheiro') || m.includes('especie')) return 'Dinheiro';
+      return rawMethod;
+    };
+
     const revenueByMethod = students.reduce((acc, s) => {
       if (s.status === "pago") {
-        const method = s.paymentMethod || 'Pix';
+        const method = formatMethodName(s.paymentMethod);
         acc[method] = (acc[method] || 0) + Number(s.amount);
       }
       return acc;
