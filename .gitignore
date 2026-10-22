@@ -39,4 +39,4 @@ dist-ssr
 PACOTE_CLIENTE_FINAL/
 INICIAR_TUNEL.bat
 BLINDAR_SISTEMA_CLIENTE.bat
-whatsapp-bridge/tunnel.js
+whatsapp-bridge/tunnel.js.env
